@@ -1,25 +1,25 @@
 # Domain Configuration Guide
 
-## Domain: innovatelhubltd.vbosasset.com
+## Domain: vbosasset.innovatelhubltd.com
 
 ### DNS Configuration
 
 1. **Point your domain DNS to this server:**
    - Type: A Record
-   - Name: innovatelhubltd (or @)
-   - Value: YOUR_SERVER_IP
+   - Name: vbosasset (subdomain)
+   - Value: YOUR_SERVER_IP (207.246.126.171)
    - TTL: 3600 (or default)
 
    Also create A record for www:
    - Type: A Record
-   - Name: www
-   - Value: YOUR_SERVER_IP
+   - Name: www.vbosasset (or www)
+   - Value: YOUR_SERVER_IP (207.246.126.171)
    - TTL: 3600
 
 2. **Check DNS propagation:**
    ```bash
-   dig innovatelhubltd.vbosasset.com
-   nslookup innovatelhubltd.vbosasset.com
+   dig vbosasset.innovatelhubltd.com
+   nslookup vbosasset.innovatelhubltd.com
    ```
 
 ### SSL Certificate Setup (HTTPS)
@@ -32,7 +32,7 @@ sudo apt-get update
 sudo apt-get install certbot python3-certbot-nginx
 
 # Get SSL certificate
-sudo certbot --nginx -d innovatelhubltd.vbosasset.com -d www.innovatelhubltd.vbosasset.com
+sudo certbot --nginx -d vbosasset.innovatelhubltd.com -d www.vbosasset.innovatelhubltd.com
 
 # Certbot will:
 # - Automatically configure nginx for HTTPS
@@ -51,10 +51,10 @@ Add SSL configuration:
 ```nginx
 server {
     listen 443 ssl;
-    server_name innovatelhubltd.vbosasset.com www.innovatelhubltd.vbosasset.com;
+    server_name vbosasset.innovatelhubltd.com www.vbosasset.innovatelhubltd.com;
     
-    ssl_certificate /etc/letsencrypt/live/innovatelhubltd.vbosasset.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/innovatelhubltd.vbosasset.com/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/vbosasset.innovatelhubltd.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/vbosasset.innovatelhubltd.com/privkey.pem;
     
     # ... rest of configuration
 }
@@ -62,7 +62,7 @@ server {
 # HTTP to HTTPS redirect
 server {
     listen 80;
-    server_name innovatelhubltd.vbosasset.com www.innovatelhubltd.vbosasset.com;
+    server_name vbosasset.innovatelhubltd.com www.vbosasset.innovatelhubltd.com;
     return 301 https://$server_name$request_uri;
 }
 ```
@@ -71,12 +71,12 @@ server {
 
 1. **Test HTTP:**
    ```bash
-   curl -I http://innovatelhubltd.vbosasset.com
+   curl -I http://vbosasset.innovatelhubltd.com
    ```
 
 2. **Test HTTPS (after SSL setup):**
    ```bash
-   curl -I https://innovatelhubltd.vbosasset.com
+   curl -I https://vbosasset.innovatelhubltd.com
    ```
 
 3. **Check nginx configuration:**
@@ -87,7 +87,7 @@ server {
 
 ### Current Configuration
 
-- **Domain:** innovatelhubltd.vbosasset.com
+- **Domain:** vbosasset.innovatelhubltd.com
 - **Nginx Config:** /etc/nginx/sites-available/asset_management
 - **Flask App:** Running on port 5000 (proxied by nginx)
 - **HTTP Port:** 80
