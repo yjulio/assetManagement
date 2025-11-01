@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block content %}
+  <div class="upload-form">
+    <h2>Import Items from Excel or CSV</h2>
+    <p>Upload a file to import multiple items at once. The file should be in CSV or Excel format with the following columns:</p>
+    <ul>
+      <li>name (required)</li>
+      <li>quantity (optional, default: 0)</li>
+      <li>price (optional, default: 0.0)</li>
+      <li>description (optional)</li>
+      <li>low_stock_threshold (optional, default: 5)</li>
+      <li>category (optional, default: Uncategorized)</li>
+      <li>supplier (optional, default: Unknown)</li>
+    </ul>
+    <div class="file-input-wrapper">
+      <form method='post' enctype='multipart/form-data'>
+        <input type='file' name='file' accept='.csv,.xlsx,.xls' required>
+        <input type='submit' value='Upload and Import'>
+      </form>
+    </div>
+    <a href='/static/template.csv' class='template-link'>Download Template CSV</a>
+  </div>
+{% endblock %}

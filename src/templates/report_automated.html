@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="fade-in">
+  <h2 style="margin-bottom:10px;">🤖 Automated Report</h2>
+  <p style="color:#7f8c8d;margin-bottom:30px;">System overview and automated insights</p>
+
+  <!-- Key Metrics -->
+  <div class="dashboard" style="margin-bottom:30px;">
+    <div class="metric-card">
+      <div>
+        <div class="metric-label">Total Assets</div>
+        <div class="metric-value">{{ total_assets }}</div>
+      </div>
+      <div class="icon">📦</div>
+    </div>
+    <div class="metric-card">
+      <div>
+        <div class="metric-label">Total Quantity</div>
+        <div class="metric-value">{{ total_quantity }}</div>
+      </div>
+      <div class="icon">📊</div>
+    </div>
+    <div class="metric-card">
+      <div>
+        <div class="metric-label">Total Value</div>
+        <div class="metric-value">VT{{ "%.2f"|format(total_value) }}</div>
+      </div>
+      <div class="icon">💰</div>
+    </div>
+    <div class="metric-card">
+      <div>
+        <div class="metric-label">Low Stock Items</div>
+        <div class="metric-value" style="color:#e74c3c">{{ low_stock_count }}</div>
+      </div>
+      <div class="icon">⚠️</div>
+    </div>
+  </div>
+
+  <!-- Recent Activity -->
+  <div style="background:white;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.1);padding:30px;margin-bottom:30px;">
+    <h3 style="color:#3498db;margin-bottom:20px;">📈 Recent Activity (Last 30 Days)</h3>
+    {% if recent_activity %}
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Asset</th>
+            <th>Action</th>
+            <th>Quantity</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for activity in recent_activity %}
+          <tr>
+            <td>{{ activity.transaction_date.strftime('%Y-%m-%d %H:%M') if activity.transaction_date else 'N/A' }}</td>
+            <td><strong>{{ activity.asset_name }}</strong></td>
+            <td>
+              <span style="background:#e3f2fd;color:#1976d2;padding:4px 8px;border-radius:4px;font-size:12px;">
+                {{ activity.action|title }}
+              </span>
+            </td>
+            <td>{{ activity.quantity }}</td>
+            <td style="max-width:300px;">{{ activity.notes or 'N/A' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p style="color:#7f8c8d;text-align:center;padding:20px;">No recent activity</p>
+    {% endif %}
+  </div>
+
+  <!-- Category Breakdown -->
+  <div style="background:white;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.1);padding:30px;margin-bottom:30px;">
+    <h3 style="color:#9b59b6;margin-bottom:20px;">📊 Assets by Category</h3>
+    {% if category_stats %}
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Asset Count</th>
+            <th>Total Quantity</th>
+            <th>Total Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for category, data in category_stats.items() %}
+          <tr>
+            <td><strong>{{ category }}</strong></td>
+            <td>{{ data.count }}</td>
+            <td>{{ data.quantity }}</td>
+            <td>VT{{ "%.2f"|format(data.value) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p style="color:#7f8c8d;text-align:center;padding:20px;">No category data available</p>
+    {% endif %}
+  </div>
+
+  <!-- Top Assets by Value -->
+  <div style="background:white;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.1);padding:30px;">
+    <h3 style="color:#27ae60;margin-bottom:20px;">💎 Top 10 Assets by Value</h3>
+    {% if top_assets %}
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Asset</th>
+            <th>Category</th>
+            <th>Quantity</th>
+            <th>Total Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for asset in top_assets[:10] %}
+          <tr>
+            <td><strong>#{{ loop.index }}</strong></td>
+            <td>{{ asset.name }}</td>
+            <td>{{ asset.category }}</td>
+            <td>{{ asset.quantity }}</td>
+            <td><strong style="color:#27ae60">VT{{ "%.2f"|format(asset.total_value) }}</strong></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p style="color:#7f8c8d;text-align:center;padding:20px;">No assets available</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

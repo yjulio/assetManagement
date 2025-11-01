@@ -1,0 +1,4 @@
+name,quantity,price,description,low_stock_threshold,category,supplier
+Laptop,10,145000.00,Office laptop,3,Electronics,Unknown
+Chair,25,3500.00,Ergonomic chair,5,Furniture,Unknown
+Printer,2,75000.00,HP LaserJet,2,Electronics,Unknown

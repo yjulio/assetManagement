@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Document Gallery</h2>
+<p>View and manage all documents related to assets, contracts, and maintenance records.</p>
+
+<div style="background:#fff;padding:24px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,.08);margin-top:20px;">
+  <h3>Documents</h3>
+  <p style="color:#7f8c8d;margin-top:10px;">No documents available at this time.</p>
+  
+  <div style="margin-top:20px;">
+    <button class="btn" style="background:linear-gradient(135deg, #f9d423 0%, #4ca1af 50%, #2ecc71 100%);color:#fff;border:none;padding:12px 24px;border-radius:6px;cursor:pointer;">
+      📤 Upload Document
+    </button>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="80" viewBox="0 0 320 80" role="img" aria-label="Vanuatu Bureau of Statistics logo">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1">
+      <stop offset="0" stop-color="#0b6ea6" />
+      <stop offset="1" stop-color="#2aa76a" />
+    </linearGradient>
+  </defs>
+  <rect width="320" height="80" fill="transparent"/>
+  <!-- A simple emblem: stylized island + rising bars -->
+  <g transform="translate(12,12)">
+    <circle cx="20" cy="28" r="16" fill="#f2c94c" />
+    <path d="M8 36 C18 20, 46 20, 56 36 L8 36 Z" fill="#0b6ea6" opacity="0.9" />
+    <rect x="80" y="8" width="14" height="40" fill="url(#g)" rx="3" />
+    <rect x="100" y="18" width="14" height="30" fill="#1e90ff" rx="3" />
+    <rect x="120" y="28" width="14" height="20" fill="#2aa76a" rx="3" />
+  </g>
+  <g transform="translate(160,28)">
+    <text x="0" y="0" font-family="Segoe UI, Arial, sans-serif" font-size="16" fill="#10384a">Vanuatu</text>
+    <text x="0" y="18" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#10384a">Bureau of Statistics</text>
+  </g>
+</svg>

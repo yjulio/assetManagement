@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="fade-in">
+  <h2 style="margin-bottom:10px;">🔍 Audit Report</h2>
+  <p style="color:#7f8c8d;margin-bottom:30px;">Data integrity audit and system health check</p>
+
+  <!-- Summary Cards -->
+  <div class="dashboard" style="margin-bottom:30px;">
+    <div class="metric-card">
+      <div>
+        <div class="metric-label">Total Assets</div>
+        <div class="metric-value">{{ total_assets }}</div>
+      </div>
+      <div class="icon">📦</div>
+    </div>
+    <div class="metric-card">
+      <div>
+        <div class="metric-label">Total Quantity</div>
+        <div class="metric-value">{{ total_quantity }}</div>
+      </div>
+      <div class="icon">📊</div>
+    </div>
+    <div class="metric-card">
+      <div>
+        <div class="metric-label">Total Value</div>
+        <div class="metric-value">VT{{ "%.2f"|format(total_value) }}</div>
+      </div>
+      <div class="icon">💰</div>
+    </div>
+    <div class="metric-card">
+      <div>
+        <div class="metric-label">Audit Issues</div>
+        <div class="metric-value" style="color:{% if audit_findings|length > 0 %}#e74c3c{% else %}#27ae60{% endif %}">{{ audit_findings|length }}</div>
+      </div>
+      <div class="icon">{% if audit_findings|length > 0 %}⚠️{% else %}✓{% endif %}</div>
+    </div>
+  </div>
+
+  <!-- Audit Findings -->
+  {% if audit_findings|length > 0 %}
+  <div style="background:white;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.1);padding:30px;margin-bottom:30px;">
+    <h3 style="color:#e74c3c;margin-bottom:20px;">⚠️ Audit Findings</h3>
+    {% for finding in audit_findings %}
+    <div style="margin-bottom:25px;border-left:4px solid {% if finding.severity == 'High' %}#e74c3c{% elif finding.severity == 'Medium' %}#f39c12{% else %}#3498db{% endif %};padding:15px;background:#f8f9fa;border-radius:6px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <h4 style="margin:0;color:#2c3e50;">{{ finding.category }}</h4>
+        <span style="background:{% if finding.severity == 'High' %}#e74c3c{% elif finding.severity == 'Medium' %}#f39c12{% else %}#3498db{% endif %};color:white;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;">
+          {{ finding.severity }}
+        </span>
+      </div>
+      <div style="color:#7f8c8d;font-size:14px;margin-bottom:8px;">Found {{ finding.count }} issue(s)</div>
+      <details style="margin-top:10px;">
+        <summary style="cursor:pointer;color:#3498db;font-weight:600;">View Details</summary>
+        <ul style="margin:10px 0 0 20px;color:#2c3e50;">
+          {% for detail in finding.details[:10] %}
+          <li>{{ detail }}</li>
+          {% endfor %}
+          {% if finding.details|length > 10 %}
+          <li style="color:#7f8c8d;font-style:italic;">... and {{ finding.details|length - 10 }} more</li>
+          {% endif %}
+        </ul>
+      </details>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div style="background:#e8f5e9;border-left:4px solid #4caf50;padding:20px;border-radius:8px;margin-bottom:30px;">
+    <h3 style="color:#2e7d32;margin:0 0 10px 0;">✓ No Issues Found</h3>
+    <p style="color:#424242;margin:0;">All systems operational. No data integrity issues detected.</p>
+  </div>
+  {% endif %}
+
+  <!-- Transaction Statistics -->
+  <div style="background:white;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.1);padding:30px;">
+    <h3 style="color:#3498db;margin-bottom:20px;">📊 Transaction Statistics</h3>
+    {% if transaction_stats %}
+    <div class="table-responsive">
+      <table>
+        <tr>
+          <th>Action Type</th>
+          <th>Count</th>
+          <th>Total Quantity</th>
+        </tr>
+        {% for stat in transaction_stats %}
+        <tr>
+          <td><strong>{{ stat[0]|title }}</strong></td>
+          <td>{{ stat[1] }}</td>
+          <td>{{ stat[2] or 0 }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+    {% else %}
+    <p style="color:#7f8c8d;text-align:center;padding:20px;">No transaction data available</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block content %}
+  <h2>User Groups</h2>
+  <table>
+    <tr><th>Name</th><th>Description</th></tr>
+    {% for n, g in groups %}
+      <tr>
+        <td>{{ n }}</td>
+        <td>{{ g.description or '' }}</td>
+      </tr>
+    {% endfor %}
+  </table>
+  <h3>Add Group</h3>
+  <form method='post'>
+    <div class="form-group">
+      <label>Name</label>
+      <input name='name'>
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <input name='description'>
+    </div>
+    <input type='submit' value='Add'>
+  </form>
+{% endblock %}

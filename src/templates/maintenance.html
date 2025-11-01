@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="fade-in">
+  <div style="max-width:900px;margin:0 auto;">
+    <div style="margin-bottom:30px;">
+      <h2 style="color:#2c3e50;margin-bottom:10px;">🔧 Asset Maintenance</h2>
+      <p style="color:#7f8c8d;">Schedule and track maintenance activities for your assets</p>
+    </div>
+
+    <div style="background:white;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.1);padding:30px;">
+      <form method="post">
+        <!-- Asset Selection -->
+        <div style="margin-bottom:30px;padding-bottom:20px;border-bottom:2px solid #3498db;">
+          <h3 style="color:#3498db;margin-bottom:20px;">📦 Asset Selection</h3>
+          <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;">
+            <div>
+              <label style="display:block;font-weight:600;color:#2c3e50;margin-bottom:8px;">
+                Select Asset <span style="color:#e74c3c;">*</span>
+              </label>
+              <select name="asset_name" required style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:15px;background:#fafafa;">
+                <option value="">-- Select an asset --</option>
+                {% for name, data in assets %}
+                <option value="{{ name }}">{{ name }} - {{ data.category }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <label style="display:block;font-weight:600;color:#2c3e50;margin-bottom:8px;">
+                Scheduled Date <span style="color:#e74c3c;">*</span>
+              </label>
+              <input type="date" name="scheduled_date" required style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:15px;background:#fafafa;">
+            </div>
+          </div>
+        </div>
+
+        <!-- Maintenance Details -->
+        <div style="margin-bottom:30px;padding-bottom:20px;border-bottom:2px solid #27ae60;">
+          <h3 style="color:#27ae60;margin-bottom:20px;">🛠️ Maintenance Details</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+            <div>
+              <label style="display:block;font-weight:600;color:#2c3e50;margin-bottom:8px;">
+                Maintenance Type <span style="color:#e74c3c;">*</span>
+              </label>
+              <select name="maintenance_type" required style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:15px;background:#fafafa;">
+                <option value="">-- Select type --</option>
+                <option value="Preventive">Preventive Maintenance</option>
+                <option value="Corrective">Corrective Maintenance</option>
+                <option value="Routine">Routine Check</option>
+                <option value="Repair">Repair</option>
+                <option value="Inspection">Inspection</option>
+                <option value="Calibration">Calibration</option>
+                <option value="Upgrade">Upgrade</option>
+              </select>
+            </div>
+            <div>
+              <label style="display:block;font-weight:600;color:#2c3e50;margin-bottom:8px;">
+                Estimated Cost (VT)
+              </label>
+              <input type="number" name="cost" value="0" min="0" step="0.01" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:15px;background:#fafafa;">
+            </div>
+          </div>
+          <div style="margin-bottom:20px;">
+            <label style="display:block;font-weight:600;color:#2c3e50;margin-bottom:8px;">
+              Description <span style="color:#e74c3c;">*</span>
+            </label>
+            <textarea name="description" rows="3" required placeholder="Describe the maintenance work to be performed..." style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:15px;background:#fafafa;resize:vertical;"></textarea>
+          </div>
+          <div>
+            <label style="display:block;font-weight:600;color:#2c3e50;margin-bottom:8px;">
+              Additional Notes
+            </label>
+            <textarea name="notes" rows="2" placeholder="Any additional information..." style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:15px;background:#fafafa;resize:vertical;"></textarea>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display:flex;gap:15px;justify-content:flex-end;">
+          <a href="{{ url_for('assets') }}" style="background:#95a5a6;color:white;padding:12px 30px;border-radius:8px;text-decoration:none;font-weight:600;">
+            Cancel
+          </a>
+          <button type="submit" style="background:linear-gradient(135deg,#3498db 0%,#2980b9 100%);color:white;padding:12px 30px;border:none;border-radius:8px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(52,152,219,0.3);">
+            🔧 Schedule Maintenance
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div style="background:#e8f5e9;border-left:4px solid #4caf50;padding:20px;margin-top:30px;border-radius:8px;">
+      <div style="font-weight:600;color:#2e7d32;margin-bottom:8px;">✓ Maintenance Best Practices</div>
+      <ul style="color:#424242;font-size:14px;margin:10px 0 0 20px;">
+        <li>Schedule preventive maintenance regularly to extend asset life</li>
+        <li>Document all maintenance activities for warranty and compliance</li>
+        <li>Track costs to optimize maintenance budgets</li>
+        <li>Keep spare parts inventory for critical assets</li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Check-out Report</h2>
+<p style="color:#7f8c8d;">Report of all checked out assets and their current status</p>
+
+<div style="background:#fff;padding:24px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,.08);margin-top:20px;">
+  <h3>Checked Out Items</h3>
+  {% if transactions %}
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Asset Name</th>
+        <th>Quantity</th>
+        <th>Checked Out To</th>
+        <th>Department</th>
+        <th>Location</th>
+        <th>Date/Time</th>
+        <th>By User</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for txn in transactions %}
+      <tr>
+        <td>#{{ txn.id }}</td>
+        <td><strong>{{ txn.item_name }}</strong></td>
+        <td>{{ txn.quantity }}</td>
+        <td>{{ txn.person or '-' }}</td>
+        <td>{{ txn.department or '-' }}</td>
+        <td>{{ txn.location or '-' }}</td>
+        <td>{{ txn.created_at }}</td>
+        <td>{{ txn.username or '-' }}</td>
+        <td>{{ txn.notes or '-' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p style="margin-top:20px;color:#7f8c8d;">Total: {{ transactions|length }} checkout records</p>
+  {% else %}
+  <p style="color:#7f8c8d;">No check-out records available.</p>
+  {% endif %}
+</div>
+{% endblock %}

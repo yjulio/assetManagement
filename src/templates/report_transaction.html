@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Transaction Report</h2>
+<p style="color:#7f8c8d;">Report of all transactions and financial activities</p>
+
+<div style="background:#fff;padding:24px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,.08);margin-top:20px;">
+  <h3>Transaction History (Last 100)</h3>
+  {% if transactions %}
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Date/Time</th>
+        <th>Action</th>
+        <th>Asset Name</th>
+        <th>Quantity</th>
+        <th>Person</th>
+        <th>Department</th>
+        <th>Location</th>
+        <th>By User</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for txn in transactions %}
+      <tr>
+        <td>#{{ txn.id }}</td>
+        <td>{{ txn.created_at }}</td>
+        <td>
+          {% if txn.action == 'checkout' %}
+            <span style="background:#e74c3c;color:white;padding:3px 8px;border-radius:3px;font-size:12px;">CHECK-OUT</span>
+          {% elif txn.action == 'checkin' %}
+            <span style="background:#27ae60;color:white;padding:3px 8px;border-radius:3px;font-size:12px;">CHECK-IN</span>
+          {% else %}
+            <span style="background:#95a5a6;color:white;padding:3px 8px;border-radius:3px;font-size:12px;">{{ txn.action|upper }}</span>
+          {% endif %}
+        </td>
+        <td><strong>{{ txn.item_name }}</strong></td>
+        <td>{{ txn.quantity }}</td>
+        <td>{{ txn.person or '-' }}</td>
+        <td>{{ txn.department or '-' }}</td>
+        <td>{{ txn.location or '-' }}</td>
+        <td>{{ txn.username or '-' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p style="margin-top:20px;color:#7f8c8d;">Showing {{ transactions|length }} recent transactions</p>
+  {% else %}
+  <p style="color:#7f8c8d;">No transaction data available.</p>
+  {% endif %}
+</div>
+{% endblock %}

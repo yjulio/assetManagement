@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block content %}
+  <h2>Suppliers</h2>
+  <table>
+    <tr><th>Name</th><th>Contact</th><th>Email</th></tr>
+    {% for n, s in suppliers %}
+      <tr>
+        <td>{{ n }}</td>
+        <td>{{ s.contact or '' }}</td>
+        <td>{{ s.email or '' }}</td>
+      </tr>
+    {% endfor %}
+  </table>
+
+  <h3>Add Supplier</h3>
+  <form method='post'>
+    <div class="form-group">
+      <label>Name</label>
+      <input name='name'>
+    </div>
+    <div class="form-group">
+      <label>Contact</label>
+      <input name='contact'>
+    </div>
+    <div class="form-group">
+      <label>Email</label>
+      <input name='email'>
+    </div>
+    <input type='submit' value='Add'>
+  </form>
+{% endblock %}

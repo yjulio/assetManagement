@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="fade-in">
+  <h2 style="margin-bottom:10px;">📅 Reservation Report</h2>
+  <p style="color:#7f8c8d;margin-bottom:30px;">Asset reservations and booking status</p>
+
+  <!-- Summary Cards -->
+  <div class="dashboard" style="margin-bottom:30px;">
+    <div class="metric-card">
+      <div>
+        <div class="metric-label">Total Reservations</div>
+        <div class="metric-value">{{ reservation_data|length }}</div>
+      </div>
+      <div class="icon">📅</div>
+    </div>
+    <div class="metric-card">
+      <div>
+        <div class="metric-label">Active</div>
+        <div class="metric-value" style="color:#27ae60">{{ reservation_data|selectattr('status', 'equalto', 'Active')|list|length }}</div>
+      </div>
+      <div class="icon">✓</div>
+    </div>
+    <div class="metric-card">
+      <div>
+        <div class="metric-label">Completed</div>
+        <div class="metric-value" style="color:#3498db">{{ reservation_data|selectattr('status', 'equalto', 'Completed')|list|length }}</div>
+      </div>
+      <div class="icon">✔️</div>
+    </div>
+    <div class="metric-card">
+      <div>
+        <div class="metric-label">Cancelled</div>
+        <div class="metric-value" style="color:#e74c3c">{{ reservation_data|selectattr('status', 'equalto', 'Cancelled')|list|length }}</div>
+      </div>
+      <div class="icon">❌</div>
+    </div>
+  </div>
+
+  <!-- Reservation Table -->
+  <div style="background:white;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.1);padding:30px;">
+    <h3 style="color:#3498db;margin-bottom:20px;">📋 Reservation Details</h3>
+    {% if reservation_data %}
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Asset</th>
+            <th>Reserved By</th>
+            <th>Reserved For</th>
+            <th>Quantity</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th>Status</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for reservation in reservation_data %}
+          <tr>
+            <td><strong>{{ reservation.asset_name }}</strong></td>
+            <td>{{ reservation.reserved_by }}</td>
+            <td>{{ reservation.reserved_for or 'N/A' }}</td>
+            <td>{{ reservation.quantity }}</td>
+            <td>{{ reservation.start_date.strftime('%Y-%m-%d') if reservation.start_date else 'N/A' }}</td>
+            <td>{{ reservation.end_date.strftime('%Y-%m-%d') if reservation.end_date else 'N/A' }}</td>
+            <td>
+              {% if reservation.status == 'Active' %}
+              <span style="background:#e8f5e9;color:#2e7d32;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;">✓ Active</span>
+              {% elif reservation.status == 'Completed' %}
+              <span style="background:#e3f2fd;color:#1976d2;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;">✔️ Completed</span>
+              {% else %}
+              <span style="background:#ffebee;color:#c62828;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;">❌ Cancelled</span>
+              {% endif %}
+            </td>
+            <td style="max-width:300px;">{{ reservation.notes or 'N/A' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p style="color:#7f8c8d;text-align:center;padding:40px;">No reservation records found</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

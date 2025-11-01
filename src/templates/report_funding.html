@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="fade-in">
+  <h2 style="margin-bottom:10px;">💰 Funding Report</h2>
+  <p style="color:#7f8c8d;margin-bottom:30px;">Investment analysis and asset value overview</p>
+
+  <!-- Summary Cards -->
+  <div class="dashboard" style="margin-bottom:30px;">
+    <div class="metric-card">
+      <div>
+        <div class="metric-label">Total Investment</div>
+        <div class="metric-value">VT{{ "%.2f"|format(total_investment) }}</div>
+      </div>
+      <div class="icon">💵</div>
+    </div>
+    <div class="metric-card">
+      <div>
+        <div class="metric-label">Current Value</div>
+        <div class="metric-value">VT{{ "%.2f"|format(total_current_value) }}</div>
+      </div>
+      <div class="icon">📈</div>
+    </div>
+    <div class="metric-card">
+      <div>
+        <div class="metric-label">Depreciation</div>
+        <div class="metric-value" style="color:#e74c3c">VT{{ "%.2f"|format(total_investment - total_current_value) }}</div>
+      </div>
+      <div class="icon">📉</div>
+    </div>
+    <div class="metric-card">
+      <div>
+        <div class="metric-label">Value Retained</div>
+        <div class="metric-value" style="color:#27ae60">{{ "%.1f"|format((total_current_value/total_investment*100) if total_investment > 0 else 0) }}%</div>
+      </div>
+      <div class="icon">💹</div>
+    </div>
+  </div>
+
+  <!-- Category Summary -->
+  <div style="background:white;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.1);padding:30px;margin-bottom:30px;">
+    <h3 style="color:#3498db;margin-bottom:20px;">📊 Investment by Category</h3>
+    {% if category_summary %}
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Asset Count</th>
+            <th>Total Investment</th>
+            <th>Current Value</th>
+            <th>Depreciation</th>
+            <th>% Retained</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for category, data in category_summary.items() %}
+          <tr>
+            <td><strong>{{ category }}</strong></td>
+            <td>{{ data.count }}</td>
+            <td>VT{{ "%.2f"|format(data.invested) }}</td>
+            <td>VT{{ "%.2f"|format(data.current) }}</td>
+            <td style="color:#e74c3c">VT{{ "%.2f"|format(data.invested - data.current) }}</td>
+            <td>
+              <span style="color:{% if (data.current/data.invested*100) > 75 %}#27ae60{% elif (data.current/data.invested*100) > 50 %}#f39c12{% else %}#e74c3c{% endif %}">
+                {{ "%.1f"|format((data.current/data.invested*100) if data.invested > 0 else 0) }}%
+              </span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p style="color:#7f8c8d;text-align:center;padding:20px;">No category data available</p>
+    {% endif %}
+  </div>
+
+  <!-- Detailed Funding Data -->
+  <div style="background:white;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.1);padding:30px;">
+    <h3 style="color:#9b59b6;margin-bottom:20px;">📋 Asset Investment Details</h3>
+    {% if funding_data %}
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Asset</th>
+            <th>Category</th>
+            <th>Quantity</th>
+            <th>Purchase Value</th>
+            <th>Current Value</th>
+            <th>Depreciation</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for asset in funding_data %}
+          <tr>
+            <td><strong>{{ asset.name }}</strong></td>
+            <td>{{ asset.category }}</td>
+            <td>{{ asset.quantity }}</td>
+            <td>VT{{ "%.2f"|format(asset.purchase_value) }}</td>
+            <td>VT{{ "%.2f"|format(asset.current_value) }}</td>
+            <td style="color:#e74c3c">-VT{{ "%.2f"|format(asset.purchase_value - asset.current_value) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p style="color:#7f8c8d;text-align:center;padding:40px;">No funding records found</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

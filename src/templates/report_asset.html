@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Asset Report</h2>
+<p style="color:#7f8c8d;">Detailed report of all assets and their properties</p>
+
+<div style="background:#fff;padding:24px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,.08);margin-top:20px;">
+  <h3>Asset Details</h3>
+  {% if assets %}
+  <table>
+    <thead>
+      <tr>
+        <th>Asset Name</th>
+        <th>Brand/Model</th>
+        <th>Serial Number</th>
+        <th>Quantity</th>
+        <th>Purchase Price</th>
+        <th>Current Value</th>
+        <th>Category</th>
+        <th>Supplier</th>
+        <th>Location</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for name, item in assets %}
+      <tr>
+        <td><strong>{{ name }}</strong></td>
+        <td>
+          {% if item.brand %}{{ item.brand }}{% endif %}
+          {% if item.model %}<br><small>{{ item.model }}</small>{% endif %}
+          {% if not item.brand and not item.model %}-{% endif %}
+        </td>
+        <td>{{ item.serial_number or '-' }}</td>
+        <td>{{ item.quantity }}</td>
+        <td>VT{{ '%.2f'|format(item.price) }}</td>
+        <td style="color:#27ae60;font-weight:600;">VT{{ '%.2f'|format(item.current_value) }}</td>
+        <td>{{ item.category }}</td>
+        <td>{{ item.supplier }}</td>
+        <td>{{ item.location or '-' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p>No assets found.</p>
+  {% endif %}
+</div>
+{% endblock %}

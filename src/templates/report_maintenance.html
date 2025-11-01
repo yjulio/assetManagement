@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="fade-in">
+  <h2 style="margin-bottom:10px;">🔧 Maintenance Report</h2>
+  <p style="color:#7f8c8d;margin-bottom:30px;">Asset maintenance history and cost analysis</p>
+
+  <!-- Summary Cards -->
+  <div class="dashboard" style="margin-bottom:30px;">
+    <div class="metric-card">
+      <div>
+        <div class="metric-label">Total Records</div>
+        <div class="metric-value">{{ maintenance_data|length }}</div>
+      </div>
+      <div class="icon">🔧</div>
+    </div>
+    <div class="metric-card">
+      <div>
+        <div class="metric-label">Total Cost</div>
+        <div class="metric-value">VT{{ "%.2f"|format(total_cost) }}</div>
+      </div>
+      <div class="icon">💰</div>
+    </div>
+    <div class="metric-card">
+      <div>
+        <div class="metric-label">Average Cost</div>
+        <div class="metric-value">VT{{ "%.2f"|format(avg_cost) }}</div>
+      </div>
+      <div class="icon">📊</div>
+    </div>
+    <div class="metric-card">
+      <div>
+        <div class="metric-label">Assets Serviced</div>
+        <div class="metric-value">{{ maintenance_data|map(attribute='asset_name')|unique|list|length }}</div>
+      </div>
+      <div class="icon">📦</div>
+    </div>
+  </div>
+
+  <!-- Maintenance Table -->
+  <div style="background:white;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.1);padding:30px;">
+    <h3 style="color:#3498db;margin-bottom:20px;">📋 Maintenance History</h3>
+    {% if maintenance_data %}
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Asset</th>
+            <th>Maintenance Type</th>
+            <th>Cost</th>
+            <th>Quantity</th>
+            <th>Scheduled Date</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for record in maintenance_data %}
+          <tr>
+            <td><strong>{{ record.asset_name }}</strong></td>
+            <td>
+              <span style="background:#e3f2fd;color:#1976d2;padding:4px 8px;border-radius:4px;font-size:12px;">
+                {{ record.type }}
+              </span>
+            </td>
+            <td>
+              {% if record.cost %}
+              <strong style="color:#27ae60">VT{{ "%.2f"|format(record.cost) }}</strong>
+              {% else %}
+              <span style="color:#7f8c8d">N/A</span>
+              {% endif %}
+            </td>
+            <td>{{ record.quantity }}</td>
+            <td>{{ record.scheduled_date.strftime('%Y-%m-%d') if record.scheduled_date else 'N/A' }}</td>
+            <td style="max-width:300px;">{{ record.notes or 'N/A' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p style="color:#7f8c8d;text-align:center;padding:40px;">No maintenance records found</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

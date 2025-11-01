@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="fade-in">
+  <div style="max-width:900px;margin:0 auto;">
+    <div style="margin-bottom:30px;">
+      <h2 style="color:#2c3e50;margin-bottom:10px;">🔖 Reserve Asset</h2>
+      <p style="color:#7f8c8d;">Reserve assets for future use, events, or specific projects</p>
+    </div>
+
+    <div style="background:white;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.1);padding:30px;">
+      <form method="post">
+        <!-- Asset Selection -->
+        <div style="margin-bottom:30px;padding-bottom:20px;border-bottom:2px solid #f39c12;">
+          <h3 style="color:#f39c12;margin-bottom:20px;">📦 Asset Selection</h3>
+          <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;">
+            <div>
+              <label style="display:block;font-weight:600;color:#2c3e50;margin-bottom:8px;">
+                Select Asset <span style="color:#e74c3c;">*</span>
+              </label>
+              <select name="asset_name" id="asset_name" required onchange="updateAvailability()" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:15px;background:#fafafa;">
+                <option value="">-- Select an asset --</option>
+                {% for name, data in assets %}
+                <option value="{{ name }}" data-quantity="{{ data.quantity }}">
+                  {{ name }} (Available: {{ data.quantity }})
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <label style="display:block;font-weight:600;color:#2c3e50;margin-bottom:8px;">
+                Quantity <span style="color:#e74c3c;">*</span>
+              </label>
+              <input type="number" name="quantity" id="quantity" value="1" min="1" required style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:15px;background:#fafafa;">
+              <small id="avail_msg" style="color:#7f8c8d;display:block;margin-top:5px;">Select an asset first</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reservation Details -->
+        <div style="margin-bottom:30px;padding-bottom:20px;border-bottom:2px solid #3498db;">
+          <h3 style="color:#3498db;margin-bottom:20px;">📅 Reservation Details</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+            <div>
+              <label style="display:block;font-weight:600;color:#2c3e50;margin-bottom:8px;">
+                Reserved By <span style="color:#e74c3c;">*</span>
+              </label>
+              <input type="text" name="reserved_by" required placeholder="Enter person's name" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:15px;background:#fafafa;">
+            </div>
+            <div>
+              <label style="display:block;font-weight:600;color:#2c3e50;margin-bottom:8px;">
+                Reserved For <span style="color:#e74c3c;">*</span>
+              </label>
+              <input type="text" name="reserved_for" required placeholder="Event, project, or purpose" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:15px;background:#fafafa;">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+            <div>
+              <label style="display:block;font-weight:600;color:#2c3e50;margin-bottom:8px;">
+                Start Date <span style="color:#e74c3c;">*</span>
+              </label>
+              <input type="date" name="start_date" required style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:15px;background:#fafafa;">
+            </div>
+            <div>
+              <label style="display:block;font-weight:600;color:#2c3e50;margin-bottom:8px;">
+                End Date <span style="color:#e74c3c;">*</span>
+              </label>
+              <input type="date" name="end_date" required style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:15px;background:#fafafa;">
+            </div>
+          </div>
+          <div>
+            <label style="display:block;font-weight:600;color:#2c3e50;margin-bottom:8px;">
+              Reservation Notes
+            </label>
+            <textarea name="notes" rows="3" placeholder="Special requirements, contact information, delivery details..." style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:15px;background:#fafafa;resize:vertical;"></textarea>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display:flex;gap:15px;justify-content:flex-end;">
+          <a href="{{ url_for('assets') }}" style="background:#95a5a6;color:white;padding:12px 30px;border-radius:8px;text-decoration:none;font-weight:600;">
+            Cancel
+          </a>
+          <button type="submit" style="background:linear-gradient(135deg,#f39c12 0%,#e67e22 100%);color:white;padding:12px 30px;border:none;border-radius:8px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(243,156,18,0.3);">
+            🔖 Reserve Asset
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div style="background:#e8f5e9;border-left:4px solid#4caf50;padding:20px;margin-top:30px;border-radius:8px;">
+      <div style="font-weight:600;color:#2e7d32;margin-bottom:8px;">ℹ️ Reservation Info</div>
+      <ul style="color:#424242;font-size:14px;margin:10px 0 0 20px;">
+        <li>Reservations ensure assets are available when needed</li>
+        <li>Reserved assets are tracked but not removed from inventory</li>
+        <li>Set appropriate date ranges to avoid conflicts</li>
+        <li>Contact information helps coordinate asset delivery</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+function updateAvailability() {
+  const select = document.getElementById('asset_name');
+  const selectedOption = select.options[select.selectedIndex];
+  const quantityInput = document.getElementById('quantity');
+  const availMsg = document.getElementById('avail_msg');
+  
+  if (selectedOption.value) {
+    const quantity = selectedOption.getAttribute('data-quantity');
+    quantityInput.max = quantity;
+    availMsg.textContent = `Available: ${quantity} units`;
+    availMsg.style.color = '#27ae60';
+  } else {
+    availMsg.textContent = 'Select an asset first';
+    availMsg.style.color = '#7f8c8d';
+  }
+}
+
+document.getElementById('quantity').addEventListener('input', function() {
+  const max = parseInt(this.max);
+  const value = parseInt(this.value);
+  
+  if (value > max) {
+    this.value = max;
+    alert('Quantity cannot exceed available stock: ' + max);
+  }
+});
+</script>
+{% endblock %}

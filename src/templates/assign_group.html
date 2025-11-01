@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block content %}
+  <h2>Assign User to Group</h2>
+  <form method='post'>
+    <div class="form-group">
+      <label>User</label>
+      <select name="username">
+        {% for uname in users %}
+          <option value="{{ uname }}">{{ uname }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Group</label>
+      <select name="group">
+        {% for gname in groups %}
+          <option value="{{ gname }}">{{ gname }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <input type='submit' value='Assign'>
+  </form>
+{% endblock %}

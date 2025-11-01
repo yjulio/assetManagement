@@ -1,0 +1,135 @@
+﻿{% extends 'base.html' %}
+
+{% block content %}
+
+  <div class="dashboard-header">
+    <div>
+      <h2>Manage Dashboard</h2>
+      <p>Customize dashboard widgets and charts.</p>
+    </div>
+  </div>
+
+  <form method="post">
+    <!-- Widgets Section -->
+    <div style="background:#fff;padding:24px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,.08);margin-bottom:30px;">
+      <h3 style="margin-bottom:20px;display:flex;align-items:center;gap:10px;"><i>🎨</i> Dashboard Widgets</h3>
+      <p style="color:#7f8c8d;margin-bottom:20px;">Select which widgets to display on your dashboard.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:15px;">
+        <label style="display:flex;align-items:center;gap:10px;padding:12px;border:2px solid #e0e0e0;border-radius:6px;cursor:pointer;transition:all 0.2s;">
+          <input type="checkbox" name="widget" value="total_assets" {% if 'total_assets' in current_widgets %}checked{% endif %}>
+          <span><strong>📦 Total Assets</strong> - Display total asset count</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:12px;border:2px solid #e0e0e0;border-radius:6px;cursor:pointer;transition:all 0.2s;">
+          <input type="checkbox" name="widget" value="total_value" {% if 'total_value' in current_widgets %}checked{% endif %}>
+          <span><strong>💰 Total Value</strong> - Show total inventory value</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:12px;border:2px solid #e0e0e0;border-radius:6px;cursor:pointer;transition:all 0.2s;">
+          <input type="checkbox" name="widget" value="low_stock" {% if 'low_stock' in current_widgets %}checked{% endif %}>
+          <span><strong>⚠️ Low Stock Alert</strong> - Items below threshold</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:12px;border:2px solid #e0e0e0;border-radius:6px;cursor:pointer;transition:all 0.2s;">
+          <input type="checkbox" name="widget" value="categories" {% if 'categories' in current_widgets %}checked{% endif %}>
+          <span><strong>🏷️ Categories</strong> - Number of categories</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:12px;border:2px solid #e0e0e0;border-radius:6px;cursor:pointer;transition:all 0.2s;">
+          <input type="checkbox" name="widget" value="suppliers" {% if 'suppliers' in current_widgets %}checked{% endif %}>
+          <span><strong>🏢 Suppliers</strong> - Total supplier count</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:12px;border:2px solid #e0e0e0;border-radius:6px;cursor:pointer;transition:all 0.2s;">
+          <input type="checkbox" name="widget" value="recent_activity" {% if 'recent_activity' in current_widgets %}checked{% endif %}>
+          <span><strong>📋 Recent Activity</strong> - Latest transactions</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:12px;border:2px solid #e0e0e0;border-radius:6px;cursor:pointer;transition:all 0.2s;">
+          <input type="checkbox" name="widget" value="pending_maintenance" {% if 'pending_maintenance' in current_widgets %}checked{% endif %}>
+          <span><strong>🔧 Pending Maintenance</strong> - Assets needing service</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:12px;border:2px solid #e0e0e0;border-radius:6px;cursor:pointer;transition:all 0.2s;">
+          <input type="checkbox" name="widget" value="checked_out" {% if 'checked_out' in current_widgets %}checked{% endif %}>
+          <span><strong>📤 Checked Out</strong> - Currently checked out items</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div style="background:#fff;padding:24px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,.08);margin-bottom:30px;">
+      <h3 style="margin-bottom:20px;display:flex;align-items:center;gap:10px;"><i>📊</i> Dashboard Charts</h3>
+      <p style="color:#7f8c8d;margin-bottom:20px;">Choose chart types to visualize your asset data.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:15px;">
+        <label style="display:flex;align-items:center;gap:10px;padding:12px;border:2px solid #e0e0e0;border-radius:6px;cursor:pointer;transition:all 0.2s;">
+          <input type="checkbox" name="chart" value="bar_chart" {% if 'bar_chart' in current_charts %}checked{% endif %}>
+          <span><strong>📊 Bar Chart</strong> - Assets by category</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:12px;border:2px solid #e0e0e0;border-radius:6px;cursor:pointer;transition:all 0.2s;">
+          <input type="checkbox" name="chart" value="line_chart" {% if 'line_chart' in current_charts %}checked{% endif %}>
+          <span><strong>📈 Line Chart</strong> - Asset value over time</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:12px;border:2px solid #e0e0e0;border-radius:6px;cursor:pointer;transition:all 0.2s;">
+          <input type="checkbox" name="chart" value="pie_chart" {% if 'pie_chart' in current_charts %}checked{% endif %}>
+          <span><strong>🥧 Pie Chart</strong> - Category distribution</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:12px;border:2px solid #e0e0e0;border-radius:6px;cursor:pointer;transition:all 0.2s;">
+          <input type="checkbox" name="chart" value="donut_chart" {% if 'donut_chart' in current_charts %}checked{% endif %}>
+          <span><strong>�� Donut Chart</strong> - Department breakdown</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:12px;border:2px solid #e0e0e0;border-radius:6px;cursor:pointer;transition:all 0.2s;">
+          <input type="checkbox" name="chart" value="area_chart" {% if 'area_chart' in current_charts %}checked{% endif %}>
+          <span><strong>📉 Area Chart</strong> - Stock levels trend</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:12px;border:2px solid #e0e0e0;border-radius:6px;cursor:pointer;transition:all 0.2s;">
+          <input type="checkbox" name="chart" value="scatter_chart" {% if 'scatter_chart' in current_charts %}checked{% endif %}>
+          <span><strong>⚫ Scatter Chart</strong> - Price vs quantity</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:12px;border:2px solid #e0e0e0;border-radius:6px;cursor:pointer;transition:all 0.2s;">
+          <input type="checkbox" name="chart" value="heatmap" {% if 'heatmap' in current_charts %}checked{% endif %}>
+          <span><strong>🔥 Heat Map</strong> - Usage by department</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:12px;border:2px solid #e0e0e0;border-radius:6px;cursor:pointer;transition:all 0.2s;">
+          <input type="checkbox" name="chart" value="gauge" {% if 'gauge' in current_charts %}checked{% endif %}>
+          <span><strong>🎯 Gauge Chart</strong> - Stock utilization</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div style="background:#fff;padding:24px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,.08);margin-bottom:30px;">
+      <button type="submit" style="background:linear-gradient(135deg, #f9d423 0%, #4ca1af 50%, #2ecc71 100%);color:#fff;border:none;padding:12px 24px;border-radius:6px;cursor:pointer;font-size:16px;font-weight:500;box-shadow:0 2px 4px rgba(0,0,0,0.1);transition:all 0.3s;">
+        💾 Save Dashboard Configuration
+      </button>
+      <a href="/manage-dashboard" style="background:#e0e0e0;color:#333;border:none;padding:12px 24px;border-radius:6px;cursor:pointer;font-size:16px;margin-left:10px;transition:all 0.3s;text-decoration:none;display:inline-block;">
+        🔄 Refresh
+      </a>
+    </div>
+  </form>
+
+  <!-- Summary Section -->
+  <div style="background:#fff;padding:24px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,.08);">
+    <h3 style="margin-bottom:20px;display:flex;align-items:center;gap:10px;"><i>ℹ️</i> Current Configuration</h3>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:20px;">
+      <div>
+        <h4 style="color:#2c3e50;margin-bottom:10px;">Active Widgets ({{ current_widgets|length }})</h4>
+        {% if current_widgets %}
+          <ul style="list-style:none;padding:0;">
+            {% for widget in current_widgets %}
+              <li style="padding:5px 0;color:#7f8c8d;">✓ {{ widget|replace('_', ' ')|title }}</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p style="color:#7f8c8d;font-style:italic;">No widgets selected</p>
+        {% endif %}
+      </div>
+      <div>
+        <h4 style="color:#2c3e50;margin-bottom:10px;">Active Charts ({{ current_charts|length }})</h4>
+        {% if current_charts %}
+          <ul style="list-style:none;padding:0;">
+            {% for chart in current_charts %}
+              <li style="padding:5px 0;color:#7f8c8d;">✓ {{ chart|replace('_', ' ')|title }}</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p style="color:#7f8c8d;font-style:italic;">No charts selected</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+{% endblock %}

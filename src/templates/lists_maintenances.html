@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Lists of Maintenances</h2>
+<p>Complete list of all maintenance records and schedules.</p>
+
+<div style="background:#fff;padding:24px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,.08);margin-top:20px;">
+  {% if maintenances %}
+  <table>
+    <thead>
+      <tr>
+        <th>Asset</th>
+        <th>Maintenance Type</th>
+        <th>Date</th>
+        <th>Status</th>
+        <th>Cost</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for maintenance in maintenances %}
+      <tr>
+        <td>{{ maintenance.asset }}</td>
+        <td>{{ maintenance.type }}</td>
+        <td>{{ maintenance.date }}</td>
+        <td>{{ maintenance.status }}</td>
+        <td>${{ "%.2f"|format(maintenance.cost) }}</td>
+        <td>{{ maintenance.notes }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="color:#7f8c8d;">No maintenance records found.</p>
+  {% endif %}
+</div>
+{% endblock %}

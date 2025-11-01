@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block content %}
+  <h2>Users</h2>
+  <table>
+    <tr><th>Username</th><th>Email</th><th>Groups</th></tr>
+    {% for uname, u in users %}
+      <tr>
+        <td>{{ uname }}</td>
+        <td>{{ u.email or '' }}</td>
+        <td>{{ (u.groups|list)|join(', ') if u.groups else '-' }}</td>
+      </tr>
+    {% endfor %}
+  </table>
+  <h3>Add User</h3>
+  <form method='post'>
+    <div class="form-group">
+      <label>Username</label>
+      <input name='username'>
+    </div>
+    <div class="form-group">
+      <label>Email</label>
+      <input name='email'>
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type='password' name='password'>
+    </div>
+    <input type='submit' value='Add User'>
+  </form>
+{% endblock %}

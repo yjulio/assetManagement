@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Lists of Assets</h2>
+<p>Complete list of all assets in the inventory system.</p>
+
+<div style="background:#fff;padding:24px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,.08);margin-top:20px;">
+  {% if assets %}
+  <table>
+    <thead>
+      <tr>
+        <th>Asset Name</th>
+        <th>Quantity</th>
+        <th>Price</th>
+        <th>Category</th>
+        <th>Supplier</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for name, item in assets %}
+      <tr>
+        <td>{{ name }}</td>
+        <td>{{ item.quantity }}</td>
+        <td>${{ "%.2f"|format(item.price) }}</td>
+        <td>{{ item.category }}</td>
+        <td>{{ item.supplier }}</td>
+        <td>
+          {% if item.quantity <= item.low_stock_threshold %}
+          <span style="color:#e74c3c;font-weight:bold;">Low Stock</span>
+          {% else %}
+          <span style="color:#2ecc71;">In Stock</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="color:#7f8c8d;">No assets found.</p>
+  {% endif %}
+</div>
+{% endblock %}

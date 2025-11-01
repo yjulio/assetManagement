@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block content %}
+  <div class="dashboard-header">
+    <div>
+      <h2>{{ heading or title }}</h2>
+      {% if description %}
+        <p>{{ description }}</p>
+      {% endif %}
+    </div>
+  </div>
+  <div class="card" style="background:#fff;padding:24px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,.08);">
+    <p>This page is a placeholder. Build out functionality as needed.</p>
+  </div>
+{% endblock %}

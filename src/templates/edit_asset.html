@@ -1,0 +1,272 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-header">
+  <h2>Edit Asset: {{ asset_name }}</h2>
+  <p style="color:#7f8c8d;margin-top:5px;">Update the asset information below</p>
+</div>
+
+<div class="form-container">
+  <form method="post" class="asset-form">
+    
+    <!-- Basic Information Section -->
+    <div class="form-section">
+      <h3 class="section-title">Basic Information</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="quantity">Quantity <span class="required">*</span></label>
+          <input type="number" id="quantity" name="quantity" value="{{ asset.quantity }}" required min="0">
+        </div>
+        <div class="form-group">
+          <label for="price">Price (VT) <span class="required">*</span></label>
+          <input type="number" id="price" name="price" step="0.01" value="{{ asset.price }}" required min="0">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="category">Category <span class="required">*</span></label>
+          <input type="text" id="category" name="category" value="{{ asset.category }}" required>
+        </div>
+        <div class="form-group">
+          <label for="low_stock_threshold">Low Stock Threshold</label>
+          <input type="number" id="low_stock_threshold" name="low_stock_threshold" value="{{ asset.low_stock_threshold }}" required min="0">
+        </div>
+      </div>
+
+      <div class="form-group full-width">
+        <label for="description">Description</label>
+        <textarea id="description" name="description" rows="3" placeholder="Enter detailed description">{{ asset.description or '' }}</textarea>
+      </div>
+    </div>
+
+    <!-- Asset Details Section -->
+    <div class="form-section">
+      <h3 class="section-title">Asset Details</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="brand">Brand/Manufacturer</label>
+          <input type="text" id="brand" name="brand" value="{{ asset.brand or '' }}" placeholder="e.g., Lenovo, Dell, HP">
+        </div>
+        <div class="form-group">
+          <label for="model">Model</label>
+          <input type="text" id="model" name="model" value="{{ asset.model or '' }}" placeholder="e.g., ThinkPad X1 Carbon">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="serial_number">Serial Number</label>
+          <input type="text" id="serial_number" name="serial_number" value="{{ asset.serial_number or '' }}" placeholder="e.g., SN123456789">
+        </div>
+        <div class="form-group">
+          <label for="purchase_date">Purchase Date</label>
+          <input type="date" id="purchase_date" name="purchase_date" value="{{ asset.purchase_date or '' }}">
+        </div>
+      </div>
+    </div>
+
+    <!-- Supplier & Location Section -->
+    <div class="form-section">
+      <h3 class="section-title">Supplier & Location</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="supplier">Supplier <span class="required">*</span></label>
+          <select id="supplier" name="supplier" required>
+            <option value="Unknown" {% if asset.supplier == 'Unknown' %}selected{% endif %}>Select Supplier</option>
+            {% for sup in suppliers %}
+            <option value="{{ sup }}" {% if asset.supplier == sup %}selected{% endif %}>{{ sup }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="department">Department</label>
+          <input type="text" id="department" name="department" value="{{ asset.department or '' }}" placeholder="e.g., IT, Finance, HR">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="location">Location</label>
+          <input type="text" id="location" name="location" value="{{ asset.location or '' }}" placeholder="e.g., Building A, Room 101">
+        </div>
+      </div>
+    </div>
+
+    <!-- Depreciation Section -->
+    <div class="form-section">
+      <h3 class="section-title">Depreciation Information</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="depreciation_method">Depreciation Method</label>
+          <select id="depreciation_method" name="depreciation_method">
+            <option value="straight_line" {% if asset.depreciation_method == 'straight_line' %}selected{% endif %}>Straight Line</option>
+            <option value="declining_balance" {% if asset.depreciation_method == 'declining_balance' %}selected{% endif %}>Declining Balance</option>
+            <option value="none" {% if asset.depreciation_method == 'none' %}selected{% endif %}>No Depreciation</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="useful_life_years">Useful Life (Years)</label>
+          <input type="number" id="useful_life_years" name="useful_life_years" value="{{ asset.useful_life_years or 5 }}" min="1" step="1">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="salvage_value">Salvage Value (VT)</label>
+          <input type="number" id="salvage_value" name="salvage_value" step="0.01" value="{{ asset.salvage_value or 0.0 }}" min="0" placeholder="Estimated value at end of useful life">
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="form-actions">
+      <button type="submit" class="btn-primary">
+        <svg width="16" height="16" fill="currentColor" style="vertical-align:middle;margin-right:5px;" viewBox="0 0 16 16">
+          <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.499.499 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11l.178-.178z"/>
+        </svg>
+        Update Asset
+      </button>
+      <a href="{{ url_for('assets') }}" class="btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+
+<style>
+.page-header {
+  margin-bottom: 30px;
+}
+
+.form-container {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  padding: 0;
+  max-width: 1000px;
+}
+
+.asset-form {
+  padding: 30px;
+}
+
+.form-section {
+  margin-bottom: 35px;
+  padding-bottom: 25px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.form-section:last-of-type {
+  border-bottom: none;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #3498db;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 15px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-group label {
+  font-weight: 600;
+  color: #34495e;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.required {
+  color: #e74c3c;
+  margin-left: 3px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 10px 12px;
+  border: 1px solid #dcdcdc;
+  border-radius: 5px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 15px;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #e8e8e8;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+  color: white;
+  padding: 12px 30px;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+
+.btn-secondary {
+  background: #95a5a6;
+  color: white;
+  padding: 12px 30px;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background: #7f8c8d;
+}
+
+@media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+{% endblock %}

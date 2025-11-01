@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="fade-in">
+  <h2 style="margin-bottom:10px;">🏢 Lease Asset Report</h2>
+  <p style="color:#7f8c8d;margin-bottom:30px;">Active lease agreements and asset assignments</p>
+
+  <!-- Summary Card -->
+  <div class="dashboard" style="margin-bottom:30px;">
+    <div class="metric-card">
+      <div>
+        <div class="metric-label">Total Leases</div>
+        <div class="metric-value">{{ lease_data|length }}</div>
+      </div>
+      <div class="icon">🏢</div>
+    </div>
+    <div class="metric-card">
+      <div>
+        <div class="metric-label">Active Leases</div>
+        <div class="metric-value" style="color:#27ae60">{{ lease_data|selectattr('status', 'equalto', 'Active')|list|length }}</div>
+      </div>
+      <div class="icon">✓</div>
+    </div>
+    <div class="metric-card">
+      <div>
+        <div class="metric-label">Expired Leases</div>
+        <div class="metric-value" style="color:#e74c3c">{{ lease_data|selectattr('status', 'equalto', 'Expired')|list|length }}</div>
+      </div>
+      <div class="icon">⏰</div>
+    </div>
+    <div class="metric-card">
+      <div>
+        <div class="metric-label">Pending Leases</div>
+        <div class="metric-value" style="color:#f39c12">{{ lease_data|selectattr('status', 'equalto', 'Pending')|list|length }}</div>
+      </div>
+      <div class="icon">⏳</div>
+    </div>
+  </div>
+
+  <!-- Lease Table -->
+  <div style="background:white;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.1);padding:30px;">
+    <h3 style="color:#3498db;margin-bottom:20px;">📋 Lease Details</h3>
+    {% if lease_data %}
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Asset</th>
+            <th>Lessee</th>
+            <th>Department</th>
+            <th>Quantity</th>
+            <th>Lease Date</th>
+            <th>Status</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for lease in lease_data %}
+          <tr>
+            <td><strong>{{ lease.asset_name }}</strong></td>
+            <td>{{ lease.lessee }}</td>
+            <td>{{ lease.department or 'N/A' }}</td>
+            <td>{{ lease.quantity }}</td>
+            <td>{{ lease.lease_date.strftime('%Y-%m-%d') if lease.lease_date else 'N/A' }}</td>
+            <td>
+              {% if lease.status == 'Active' %}
+              <span style="background:#e8f5e9;color:#2e7d32;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;">✓ Active</span>
+              {% elif lease.status == 'Expired' %}
+              <span style="background:#ffebee;color:#c62828;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;">⏰ Expired</span>
+              {% else %}
+              <span style="background:#fff3e0;color:#e65100;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;">⏳ Pending</span>
+              {% endif %}
+            </td>
+            <td style="max-width:300px;">{{ lease.notes or 'N/A' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p style="color:#7f8c8d;text-align:center;padding:40px;">No lease records found</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

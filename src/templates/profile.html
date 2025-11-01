@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block content %}
+  <h2>My Profile</h2>
+  <div class="profile-card" style="display:flex;align-items:center;gap:32px;">
+    <div>
+      <img src="{{ user.profile_picture or '/static/asset.png' }}" alt="Profile Picture" style="width:96px;height:96px;border-radius:50%;object-fit:cover;border:2px solid #3498db;">
+    </div>
+    <div>
+      <h3 style="margin-bottom:8px;">{{ user.name or user.username }}</h3>
+      <p><strong>Username:</strong> {{ user.username }}</p>
+      <p><strong>Email:</strong> {{ user.email }}</p>
+      <p><strong>Groups:</strong> {{ user.groups|join(', ') }}</p>
+    </div>
+  </div>
+{% endblock %}

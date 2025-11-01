@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="fade-in">
+  <h2 style="margin-bottom:10px;">📊 Other Report</h2>
+  <p style="color:#7f8c8d;margin-bottom:30px;">Additional insights and grouped analytics</p>
+
+  <!-- Assets by Supplier -->
+  <div style="background:white;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.1);padding:30px;margin-bottom:30px;">
+    <h3 style="color:#3498db;margin-bottom:20px;">🏪 Assets by Supplier</h3>
+    {% if assets_by_supplier %}
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Supplier</th>
+            <th>Asset Count</th>
+            <th>Assets</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for supplier, assets in assets_by_supplier.items() %}
+          <tr>
+            <td><strong>{{ supplier }}</strong></td>
+            <td>{{ assets|length }}</td>
+            <td>{{ assets|join(', ') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p style="color:#7f8c8d;text-align:center;padding:20px;">No supplier data available</p>
+    {% endif %}
+  </div>
+
+  <!-- Assets by Location -->
+  <div style="background:white;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.1);padding:30px;margin-bottom:30px;">
+    <h3 style="color:#9b59b6;margin-bottom:20px;">📍 Assets by Location</h3>
+    {% if assets_by_location %}
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Location</th>
+            <th>Asset Count</th>
+            <th>Assets</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for location, assets in assets_by_location.items() %}
+          <tr>
+            <td><strong>{{ location }}</strong></td>
+            <td>{{ assets|length }}</td>
+            <td>{{ assets|join(', ') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p style="color:#7f8c8d;text-align:center;padding:20px;">No location data available</p>
+    {% endif %}
+  </div>
+
+  <!-- Assets by Department -->
+  <div style="background:white;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.1);padding:30px;margin-bottom:30px;">
+    <h3 style="color:#e67e22;margin-bottom:20px;">🏢 Assets by Department</h3>
+    {% if assets_by_department %}
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Department</th>
+            <th>Asset Count</th>
+            <th>Assets</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for department, assets in assets_by_department.items() %}
+          <tr>
+            <td><strong>{{ department }}</strong></td>
+            <td>{{ assets|length }}</td>
+            <td>{{ assets|join(', ') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p style="color:#7f8c8d;text-align:center;padding:20px;">No department data available</p>
+    {% endif %}
+  </div>
+
+  <!-- Recent Transactions -->
+  <div style="background:white;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.1);padding:30px;">
+    <h3 style="color:#27ae60;margin-bottom:20px;">📋 Recent Transactions (Last 20)</h3>
+    {% if recent_transactions %}
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Asset</th>
+            <th>Action</th>
+            <th>Quantity</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for transaction in recent_transactions %}
+          <tr>
+            <td>{{ transaction.transaction_date.strftime('%Y-%m-%d %H:%M') if transaction.transaction_date else 'N/A' }}</td>
+            <td><strong>{{ transaction.asset_name }}</strong></td>
+            <td>
+              <span style="background:#e3f2fd;color:#1976d2;padding:4px 8px;border-radius:4px;font-size:12px;">
+                {{ transaction.action|title }}
+              </span>
+            </td>
+            <td>{{ transaction.quantity }}</td>
+            <td style="max-width:300px;">{{ transaction.notes or 'N/A' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p style="color:#7f8c8d;text-align:center;padding:20px;">No transaction data available</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
