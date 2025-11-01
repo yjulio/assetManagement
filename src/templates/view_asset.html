@@ -4,7 +4,9 @@
 <div style="max-width:900px;margin:20px auto;padding:20px;">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:30px;">
     <h2 style="margin:0;color:#2c3e50;">Asset Details - {{ asset_name }}</h2>
-    <a href="{{ url_for('assets') }}" style="background-color:#95a5a6;color:white;padding:10px 20px;text-decoration:none;border-radius:5px;">← Back to Assets</a>
+    <a href="{{ url_for('assets') }}"
+      style="background-color:#95a5a6;color:white;padding:10px 20px;text-decoration:none;border-radius:5px;">← Back to
+      Assets</a>
   </div>
 
   <div style="background:white;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.1);padding:30px;">
@@ -13,7 +15,8 @@
       <h3 style="margin:0 0 20px 0;color:#3498db;font-size:18px;">Basic Information</h3>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
         <div>
-          <label style="font-weight:600;color:#7f8c8d;font-size:13px;display:block;margin-bottom:5px;">ASSET NAME</label>
+          <label style="font-weight:600;color:#7f8c8d;font-size:13px;display:block;margin-bottom:5px;">ASSET
+            NAME</label>
           <div style="font-size:16px;color:#2c3e50;">{{ asset_name }}</div>
         </div>
         <div>
@@ -25,7 +28,8 @@
           <div style="font-size:16px;color:#2c3e50;">{{ asset.quantity }}</div>
         </div>
         <div>
-          <label style="font-weight:600;color:#7f8c8d;font-size:13px;display:block;margin-bottom:5px;">LOW STOCK THRESHOLD</label>
+          <label style="font-weight:600;color:#7f8c8d;font-size:13px;display:block;margin-bottom:5px;">LOW STOCK
+            THRESHOLD</label>
           <div style="font-size:16px;color:#2c3e50;">{{ asset.low_stock_threshold }}</div>
         </div>
       </div>
@@ -48,11 +52,13 @@
           <div style="font-size:16px;color:#2c3e50;">{{ asset.model or '-' }}</div>
         </div>
         <div>
-          <label style="font-weight:600;color:#7f8c8d;font-size:13px;display:block;margin-bottom:5px;">SERIAL NUMBER</label>
+          <label style="font-weight:600;color:#7f8c8d;font-size:13px;display:block;margin-bottom:5px;">SERIAL
+            NUMBER</label>
           <div style="font-size:16px;color:#2c3e50;">{{ asset.serial_number or '-' }}</div>
         </div>
         <div>
-          <label style="font-weight:600;color:#7f8c8d;font-size:13px;display:block;margin-bottom:5px;">PURCHASE DATE</label>
+          <label style="font-weight:600;color:#7f8c8d;font-size:13px;display:block;margin-bottom:5px;">PURCHASE
+            DATE</label>
           <div style="font-size:16px;color:#2c3e50;">{{ asset.purchase_date or '-' }}</div>
         </div>
       </div>
@@ -63,38 +69,49 @@
       <h3 style="margin:0 0 20px 0;color:#e67e22;font-size:18px;">Financial Information</h3>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
         <div>
-          <label style="font-weight:600;color:#7f8c8d;font-size:13px;display:block;margin-bottom:5px;">PURCHASE PRICE</label>
-          <div style="font-size:16px;color:#2c3e50;">${{ "%.2f"|format(asset.purchase_price) }}</div>
+          <label style="font-weight:600;color:#7f8c8d;font-size:13px;display:block;margin-bottom:5px;">PURCHASE
+            PRICE</label>
+          <div style="font-size:16px;color:#2c3e50;">${{ "%.2f"|format(asset.price) }}</div>
         </div>
         <div>
-          <label style="font-weight:600;color:#7f8c8d;font-size:13px;display:block;margin-bottom:5px;">CURRENT VALUE</label>
+          <label style="font-weight:600;color:#7f8c8d;font-size:13px;display:block;margin-bottom:5px;">CURRENT
+            VALUE</label>
           <div style="font-size:16px;color:#2c3e50;font-weight:600;">${{ "%.2f"|format(current_value) }}</div>
         </div>
         {% if depreciation_info %}
         <div>
-          <label style="font-weight:600;color:#7f8c8d;font-size:13px;display:block;margin-bottom:5px;">DEPRECIATION AMOUNT</label>
+          <label style="font-weight:600;color:#7f8c8d;font-size:13px;display:block;margin-bottom:5px;">DEPRECIATION
+            AMOUNT</label>
           <div style="font-size:16px;color:#e74c3c;">${{ "%.2f"|format(depreciation_info.amount) }}</div>
         </div>
         <div>
-          <label style="font-weight:600;color:#7f8c8d;font-size:13px;display:block;margin-bottom:5px;">DEPRECIATION PERCENTAGE</label>
+          <label style="font-weight:600;color:#7f8c8d;font-size:13px;display:block;margin-bottom:5px;">DEPRECIATION
+            PERCENTAGE</label>
           <div style="font-size:16px;color:#e74c3c;">{{ "%.1f"|format(depreciation_info.percentage) }}%</div>
         </div>
         <div>
-          <label style="font-weight:600;color:#7f8c8d;font-size:13px;display:block;margin-bottom:5px;">DEPRECIATION METHOD</label>
-          <div style="font-size:16px;color:#2c3e50;">{{ asset.depreciation_method.replace('_', ' ').title() if asset.depreciation_method else '-' }}</div>
+          <label style="font-weight:600;color:#7f8c8d;font-size:13px;display:block;margin-bottom:5px;">DEPRECIATION
+            METHOD</label>
+          <div style="font-size:16px;color:#2c3e50;">{{ asset.depreciation_method.replace('_', ' ').title() if
+            asset.depreciation_method else '-' }}</div>
         </div>
         <div>
-          <label style="font-weight:600;color:#7f8c8d;font-size:13px;display:block;margin-bottom:5px;">USEFUL LIFE (YEARS)</label>
+          <label style="font-weight:600;color:#7f8c8d;font-size:13px;display:block;margin-bottom:5px;">USEFUL LIFE
+            (YEARS)</label>
           <div style="font-size:16px;color:#2c3e50;">{{ asset.useful_life_years or '-' }}</div>
         </div>
         <div>
-          <label style="font-weight:600;color:#7f8c8d;font-size:13px;display:block;margin-bottom:5px;">SALVAGE VALUE</label>
-          <div style="font-size:16px;color:#2c3e50;">${{ "%.2f"|format(asset.salvage_value) if asset.salvage_value else '0.00' }}</div>
+          <label style="font-weight:600;color:#7f8c8d;font-size:13px;display:block;margin-bottom:5px;">SALVAGE
+            VALUE</label>
+          <div style="font-size:16px;color:#2c3e50;">${{ "%.2f"|format(asset.salvage_value) if asset.salvage_value else
+            '0.00' }}</div>
         </div>
         {% endif %}
         <div>
-          <label style="font-weight:600;color:#7f8c8d;font-size:13px;display:block;margin-bottom:5px;">TOTAL VALUE</label>
-          <div style="font-size:16px;color:#2c3e50;font-weight:600;">${{ "%.2f"|format(current_value * asset.quantity) }}</div>
+          <label style="font-weight:600;color:#7f8c8d;font-size:13px;display:block;margin-bottom:5px;">TOTAL
+            VALUE</label>
+          <div style="font-size:16px;color:#2c3e50;font-weight:600;">${{ "%.2f"|format(current_value * asset.quantity)
+            }}</div>
         </div>
       </div>
     </div>
@@ -108,7 +125,8 @@
           <div style="font-size:16px;color:#2c3e50;">{{ asset.supplier or '-' }}</div>
         </div>
         <div>
-          <label style="font-weight:600;color:#7f8c8d;font-size:13px;display:block;margin-bottom:5px;">DEPARTMENT</label>
+          <label
+            style="font-weight:600;color:#7f8c8d;font-size:13px;display:block;margin-bottom:5px;">DEPARTMENT</label>
           <div style="font-size:16px;color:#2c3e50;">{{ asset.department or '-' }}</div>
         </div>
         <div style="grid-column:span 2;">
@@ -119,11 +137,14 @@
     </div>
 
     <!-- Actions -->
-    <div style="display:flex;gap:10px;justify-content:center;margin-top:30px;padding-top:20px;border-top:1px solid #ecf0f1;">
-      <a href="{{ url_for('assign_asset', asset_name=asset_name) }}" style="background:linear-gradient(135deg,#f39c12 0%,#e67e22 100%);color:white;padding:12px 30px;text-decoration:none;border-radius:5px;font-weight:600;display:inline-flex;align-items:center;gap:8px;">
+    <div
+      style="display:flex;gap:10px;justify-content:center;margin-top:30px;padding-top:20px;border-top:1px solid #ecf0f1;">
+      <a href="{{ url_for('assign_asset', asset_name=asset_name) }}"
+        style="background:linear-gradient(135deg,#f39c12 0%,#e67e22 100%);color:white;padding:12px 30px;text-decoration:none;border-radius:5px;font-weight:600;display:inline-flex;align-items:center;gap:8px;">
         <span>📋</span> Assign Asset
       </a>
-      <a href="{{ url_for('edit_asset', asset_name=asset_name) }}" style="background:linear-gradient(135deg,#3498db 0%,#2980b9 100%);color:white;padding:12px 30px;text-decoration:none;border-radius:5px;font-weight:600;display:inline-flex;align-items:center;gap:8px;">
+      <a href="{{ url_for('edit_asset', asset_name=asset_name) }}"
+        style="background:linear-gradient(135deg,#3498db 0%,#2980b9 100%);color:white;padding:12px 30px;text-decoration:none;border-radius:5px;font-weight:600;display:inline-flex;align-items:center;gap:8px;">
         <span>✏️</span> Edit Asset
       </a>
     </div>

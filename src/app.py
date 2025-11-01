@@ -485,17 +485,17 @@ def dispose():
                 system.update_quantity(asset_name, new_quantity)
                 
                 # Record transaction
-                cursor = system.connection.cursor()
+                cursor = system.conn.cursor()
                 cursor.execute('''
                     INSERT INTO asset_transactions 
                     (asset_name, action, quantity, notes, user_id, person, department)
                     VALUES (%s, %s, %s, %s, %s, %s, %s)
                 ''', (asset_name, 'dispose', quantity, 
                       f"Reason: {reason} | Method: {disposal_method} | {notes}",
-                      session.get('user_id'), 
+                      session.get('username'), 
                       f"Disposal - {disposal_method}",
                       reason))
-                system.connection.commit()
+                system.conn.commit()
                 cursor.close()
                 
                 flash(f'Successfully disposed {quantity} unit(s) of {asset_name}', 'success')
@@ -521,17 +521,17 @@ def maintenance():
         notes = request.form.get('notes', '')
         
         if asset_name and asset_name in system.inventory:
-            cursor = system.connection.cursor()
+            cursor = system.conn.cursor()
             cursor.execute('''
                 INSERT INTO asset_transactions 
                 (asset_name, action, quantity, notes, user_id, person, department)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
             ''', (asset_name, 'maintenance', 1, 
                   f"Type: {maintenance_type} | Date: {scheduled_date} | Cost: VT{cost} | {description} | {notes}",
-                  session.get('user_id'), 
+                  session.get('username'), 
                   maintenance_type,
                   f"Cost: VT{cost}"))
-            system.connection.commit()
+            system.conn.commit()
             cursor.close()
             
             flash(f'Maintenance scheduled for {asset_name}', 'success')
@@ -557,7 +557,7 @@ def move():
         
         if asset_name and asset_name in system.inventory:
             # Update asset location
-            cursor = system.connection.cursor()
+            cursor = system.conn.cursor()
             cursor.execute('''
                 UPDATE inventory 
                 SET location = %s, department = %s
@@ -571,11 +571,11 @@ def move():
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             ''', (asset_name, 'move', quantity, 
                   f"From: {from_location}/{from_department} → To: {to_location}/{to_department} | {notes}",
-                  session.get('user_id'), 
+                  session.get('username'), 
                   f"Moved to {to_location}",
                   to_location,
                   to_department))
-            system.connection.commit()
+            system.conn.commit()
             cursor.close()
             
             # Update in-memory
@@ -607,17 +607,17 @@ def reserve():
             asset = system.inventory[asset_name]
             
             if asset['quantity'] >= quantity:
-                cursor = system.connection.cursor()
+                cursor = system.conn.cursor()
                 cursor.execute('''
                     INSERT INTO asset_transactions 
                     (asset_name, action, quantity, notes, user_id, person, department)
                     VALUES (%s, %s, %s, %s, %s, %s, %s)
                 ''', (asset_name, 'reserve', quantity, 
                       f"Reserved by: {reserved_by} | For: {reserved_for} | Period: {start_date} to {end_date} | {notes}",
-                      session.get('user_id'), 
+                      session.get('username'), 
                       reserved_by,
                       reserved_for))
-                system.connection.commit()
+                system.conn.commit()
                 cursor.close()
                 
                 flash(f'Successfully reserved {quantity} unit(s) of {asset_name}', 'success')
@@ -897,19 +897,19 @@ def view_asset(asset_name):
     asset = system.inventory[asset_name]
     
     # Calculate current value if depreciation is enabled
-    current_value = asset['purchase_price']
+    current_value = asset['price']
     depreciation_info = None
     
     if asset.get('depreciation_method') and asset['depreciation_method'] != 'none':
         current_value = calculate_depreciation(
-            asset['purchase_price'],
+            asset['price'],
             asset.get('purchase_date'),
             asset.get('salvage_value', 0),
             asset.get('useful_life_years', 5),
             asset['depreciation_method']
         )
-        depreciation_amount = asset['purchase_price'] - current_value
-        depreciation_percentage = (depreciation_amount / asset['purchase_price'] * 100) if asset['purchase_price'] > 0 else 0
+        depreciation_amount = asset['price'] - current_value
+        depreciation_percentage = (depreciation_amount / asset['price'] * 100) if asset['price'] > 0 else 0
         depreciation_info = {
             'amount': depreciation_amount,
             'percentage': depreciation_percentage,
@@ -939,7 +939,7 @@ def assign_asset(asset_name):
         notes = request.form.get('notes')
         
         # Update asset assignment
-        cursor = system.connection.cursor()
+        cursor = system.conn.cursor()
         cursor.execute('''
             UPDATE inventory 
             SET department = %s, location = %s
@@ -951,9 +951,9 @@ def assign_asset(asset_name):
             INSERT INTO asset_transactions 
             (asset_name, action, quantity, person, department, location, notes, user_id)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        ''', (asset_name, 'assign', 1, person, department, location, notes, session.get('user_id')))
+        ''', (asset_name, 'assign', 1, person, department, location, notes, session.get('username')))
         
-        system.connection.commit()
+        system.conn.commit()
         cursor.close()
         
         # Update in-memory inventory
@@ -1123,7 +1123,7 @@ def report_automated():
     metrics = {
         'total_assets': len(system.inventory),
         'total_quantity': sum(d['quantity'] for d in system.inventory.values()),
-        'total_value': sum(d.get('purchase_price', 0) * d['quantity'] for d in system.inventory.values()),
+        'total_value': sum(d.get('price', 0) * d['quantity'] for d in system.inventory.values()),
         'low_stock_count': sum(1 for d in system.inventory.values() if d['quantity'] <= d.get('low_stock_threshold', 5))
     }
     
@@ -1147,12 +1147,12 @@ def report_automated():
             category_stats[cat] = {'count': 0, 'quantity': 0, 'value': 0}
         category_stats[cat]['count'] += 1
         category_stats[cat]['quantity'] += d['quantity']
-        category_stats[cat]['value'] += d.get('purchase_price', 0) * d['quantity']
+        category_stats[cat]['value'] += d.get('price', 0) * d['quantity']
     
     # Top assets by value
     top_assets = []
     for name, d in system.inventory.items():
-        value = d.get('purchase_price', 0) * d['quantity']
+        value = d.get('price', 0) * d['quantity']
         top_assets.append({'name': name, 'value': value, 'quantity': d['quantity']})
     top_assets.sort(key=lambda x: x['value'], reverse=True)
     top_assets = top_assets[:10]
@@ -1242,7 +1242,7 @@ def report_audit():
         })
     
     # Check for assets with zero or negative prices
-    invalid_prices = [(name, data['purchase_price']) for name, data in system.inventory.items() if data.get('purchase_price', 0) <= 0]
+    invalid_prices = [(name, data['price']) for name, data in system.inventory.items() if data.get('price', 0) <= 0]
     if invalid_prices:
         audit_findings.append({
             'category': 'Invalid Prices',
@@ -1283,7 +1283,7 @@ def report_audit():
     # Calculate totals
     total_assets = len(system.inventory)
     total_quantity = sum(d['quantity'] for d in system.inventory.values())
-    total_value = sum(d.get('purchase_price', 0) * d['quantity'] for d in system.inventory.values())
+    total_value = sum(d.get('price', 0) * d['quantity'] for d in system.inventory.values())
     
     return render_template('report_audit.html', 
                          title='Audit Report',
@@ -1300,7 +1300,7 @@ def report_checkout():
     # Get all checkout transactions
     try:
         system.cursor.execute("""
-            SELECT t.id, t.item_name, t.quantity, t.person, t.department, t.location, 
+            SELECT t.id, t.asset_name, t.quantity, t.person, t.department, t.location, 
                    t.notes, t.username, t.created_at
             FROM asset_transactions t
             WHERE t.action = 'checkout'
@@ -1334,7 +1334,7 @@ def report_contract():
     # Get contracts/licenses from transactions
     try:
         system.cursor.execute("""
-            SELECT t.id, t.item_name as asset_name, t.notes, t.person as vendor,
+            SELECT t.id, t.asset_name, t.notes, t.person as vendor,
                    t.department as contract_type, t.created_at as start_date
             FROM asset_transactions t
             WHERE t.action IN ('lease', 'contract')
@@ -1422,12 +1422,12 @@ def report_funding():
     total_current_value = 0
     
     for name, d in system.inventory.items():
-        purchase_value = d.get('purchase_price', 0) * d.get('quantity', 0)
+        purchase_value = d.get('price', 0) * d.get('quantity', 0)
         current_value = purchase_value
         
         if d.get('purchase_date') and d.get('depreciation_method') != 'none':
             current_value = calculate_depreciation(
-                d.get('purchase_price', 0),
+                d.get('price', 0),
                 d.get('purchase_date'),
                 d.get('salvage_value', 0),
                 d.get('useful_life_years', 5),
@@ -1473,7 +1473,7 @@ def report_lease_asset():
     # Get lease transactions
     try:
         system.cursor.execute("""
-            SELECT t.id, t.item_name, t.quantity, t.person as lessee,
+            SELECT t.id, t.asset_name, t.quantity, t.person as lessee,
                    t.department, t.notes, t.created_at as lease_date, t.username
             FROM asset_transactions t
             WHERE t.action = 'lease'
@@ -1513,7 +1513,7 @@ def report_maintenance():
     # Get maintenance transactions
     try:
         system.cursor.execute("""
-            SELECT t.id, t.item_name, t.person as maintenance_type,
+            SELECT t.id, t.asset_name, t.person as maintenance_type,
                    t.department as cost, t.notes, t.created_at as scheduled_date, t.username
             FROM asset_transactions t
             WHERE t.action = 'maintenance'
@@ -1563,7 +1563,7 @@ def report_reservation():
     # Get reservation transactions
     try:
         system.cursor.execute("""
-            SELECT t.id, t.item_name, t.quantity, t.person as reserved_by,
+            SELECT t.id, t.asset_name, t.quantity, t.person as reserved_by,
                    t.department as reserved_for, t.notes, t.created_at as reservation_date, t.username
             FROM asset_transactions t
             WHERE t.action = 'reserve'
@@ -1650,7 +1650,7 @@ def report_transaction():
     # Get all transactions (both checkin and checkout)
     try:
         system.cursor.execute("""
-            SELECT t.id, t.item_name, t.action, t.quantity, t.person, t.department, 
+            SELECT t.id, t.asset_name, t.action, t.quantity, t.person, t.department, 
                    t.location, t.username, t.created_at
             FROM asset_transactions t
             ORDER BY t.created_at DESC
@@ -1712,7 +1712,7 @@ def report_other():
     # Get recent transactions
     try:
         system.cursor.execute("""
-            SELECT item_name, action, quantity, created_at
+            SELECT asset_name, action, quantity, created_at
             FROM asset_transactions
             ORDER BY created_at DESC
             LIMIT 20

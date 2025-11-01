@@ -29,12 +29,23 @@ class InventorySystem:
                 host=DB_CONFIG['host'],
                 user=DB_CONFIG['user'],
                 password=DB_CONFIG['password'],
-                database=DB_CONFIG['database']
+                database=DB_CONFIG['database'],
+                port=DB_CONFIG.get('port', 3306)
             )
             print("Connected to MySQL database.")
             return conn
         except mysql.connector.Error as err:
             print(f"Error connecting to MySQL: {err}")
+            print(f"Attempted connection with: host={DB_CONFIG['host']}, user={DB_CONFIG['user']}, database={DB_CONFIG['database']}")
+            print("\nPlease ensure:")
+            print("1. MySQL is running (sudo systemctl status mysql)")
+            print("2. Database 'db_asset' exists (sudo mysql -e 'CREATE DATABASE IF NOT EXISTS db_asset;')")
+            print("3. User has proper permissions")
+            print("4. Password matches the configuration in config.py")
+            print("\nTo create the database and user, run as root:")
+            print("  sudo mysql -e \"CREATE DATABASE IF NOT EXISTS db_asset;\"")
+            print("  sudo mysql -e \"CREATE USER IF NOT EXISTS 'root'@'localhost' IDENTIFIED BY 'password';\"")
+            print("  sudo mysql -e \"GRANT ALL PRIVILEGES ON db_asset.* TO 'root'@'localhost';\"")
             exit(1)
 
     def _create_tables(self):
@@ -136,18 +147,50 @@ class InventorySystem:
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS asset_transactions (
                 id INT AUTO_INCREMENT PRIMARY KEY,
-                item_name VARCHAR(255) NOT NULL,
-                action ENUM('checkout','checkin') NOT NULL,
+                asset_name VARCHAR(255) NOT NULL,
+                action VARCHAR(50) NOT NULL,
                 quantity INT NOT NULL,
                 person VARCHAR(255),
                 department VARCHAR(255),
                 location VARCHAR(255),
                 notes TEXT,
                 username VARCHAR(255),
+                user_id VARCHAR(255),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (item_name) REFERENCES inventory(name) ON DELETE CASCADE
+                FOREIGN KEY (asset_name) REFERENCES inventory(name) ON DELETE CASCADE
             )
         ''')
+        # Migrate existing asset_transactions table if needed
+        try:
+            self.cursor.execute("""
+                SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'asset_transactions'
+            """)
+            existing_cols = {r[0] for r in self.cursor.fetchall()}
+            
+            # Rename item_name to asset_name if it exists
+            if 'item_name' in existing_cols and 'asset_name' not in existing_cols:
+                self.cursor.execute("ALTER TABLE asset_transactions CHANGE COLUMN item_name asset_name VARCHAR(255) NOT NULL")
+            
+            # Add user_id if it doesn't exist
+            if 'user_id' not in existing_cols:
+                self.cursor.execute("ALTER TABLE asset_transactions ADD COLUMN user_id VARCHAR(255) AFTER username")
+            
+            # Update action column to support all actions (remove enum constraint for flexibility)
+            # Check current action column type
+            self.cursor.execute("""
+                SELECT DATA_TYPE, COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE() 
+                AND TABLE_NAME = 'asset_transactions' 
+                AND COLUMN_NAME = 'action'
+            """)
+            action_type = self.cursor.fetchone()
+            if action_type and 'ENUM' in action_type[1]:
+                # Change from ENUM to VARCHAR for flexibility
+                self.cursor.execute("ALTER TABLE asset_transactions MODIFY COLUMN action VARCHAR(50) NOT NULL")
+        except Exception as e:
+            print(f"Migration note (non-critical): {e}")
+            pass
         # Dashboard configuration tables
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS dashboard_config (
@@ -444,7 +487,7 @@ class InventorySystem:
             # Log transaction
             self.cursor.execute(
                 """
-                INSERT INTO asset_transactions (item_name, action, quantity, person, department, location, notes, username)
+                INSERT INTO asset_transactions (asset_name, action, quantity, person, department, location, notes, username)
                 VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
                 """,
                 (name, 'checkout', quantity, person, department, location, notes, username)
@@ -466,7 +509,7 @@ class InventorySystem:
             self.cursor.execute("UPDATE inventory SET quantity=%s WHERE name=%s", (new_q, name))
             self.cursor.execute(
                 """
-                INSERT INTO asset_transactions (item_name, action, quantity, person, notes, username)
+                INSERT INTO asset_transactions (asset_name, action, quantity, person, notes, username)
                 VALUES (%s,%s,%s,%s,%s,%s)
                 """,
                 (name, 'checkin', quantity, person, notes, username)
