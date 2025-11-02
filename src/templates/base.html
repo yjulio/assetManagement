@@ -18,29 +18,35 @@
         <img src="/static/asset.png" alt="Vanuatu Bureau of Statistics logo">
       </a>
       <div class="brand">
-        <h1>Asset Management</h1>
-        <div class="sub">Vanuatu Bureau of Statistics</div>
+        <h1>{{ t('app_name') }}</h1>
+        <div class="sub">{{ t('company_name') }}</div>
+      </div>
+      <!-- Language Switcher -->
+      <div class="language-switcher">
+        <a href="/set_language/en" class="lang-btn {% if lang == 'en' %}active{% endif %}" title="English">EN</a>
+        <a href="/set_language/fr" class="lang-btn {% if lang == 'fr' %}active{% endif %}" title="Français">FR</a>
+        <a href="/set_language/bi" class="lang-btn {% if lang == 'bi' %}active{% endif %}" title="Bislama">BI</a>
       </div>
     </div>
     <ul class="sidebar-menu">
   <!-- Dashboard -->
-  <li><a href='/'><i>🏠</i>Dashboard</a></li>
+  <li><a href='/'><i>🏠</i>{{ t('dashboard') }}</a></li>
   
   <!-- Assets Management -->
   <li class="menu-item-has-children">
-    <a href='#' class="submenu-toggle"><i>📦</i>Assets <span class="arrow">▼</span></a>
+    <a href='#' class="submenu-toggle"><i>📦</i>{{ t('assets') }} <span class="arrow">▼</span></a>
     <ul class="submenu">
-      <li><a href='/assets'><i>📋</i>List of Assets</a></li>
-      <li><a href='/add'><i>➕</i>Add an Asset</a></li>
-      <li><a href='/update'><i>🔄</i>Update Quantity</a></li>
-      <li><a href='/checkout'><i>📤</i>Check Out</a></li>
-      <li><a href='/checkin'><i>📥</i>Check In</a></li>
-      <li><a href='/lease'><i>📝</i>Lease</a></li>
-      <li><a href='/lease-return'><i>↩️</i>Lease Return</a></li>
-      <li><a href='/maintenance'><i>🔧</i>Maintenance</a></li>
-      <li><a href='/move'><i>🚚</i>Move</a></li>
-      <li><a href='/reserve'><i>🔖</i>Reserve</a></li>
-      <li><a href='/dispose'><i>🗑️</i>Dispose</a></li>
+      <li><a href='/assets'><i>📋</i>{{ t('list_of_assets') }}</a></li>
+      <li><a href='/add'><i>➕</i>{{ t('add_asset') }}</a></li>
+      <li><a href='/update'><i>🔄</i>{{ t('update_quantity') }}</a></li>
+      <li><a href='/checkout'><i>📤</i>{{ t('checkout') }}</a></li>
+      <li><a href='/checkin'><i>📥</i>{{ t('checkin') }}</a></li>
+      <li><a href='/lease'><i>📝</i>{{ t('lease') }}</a></li>
+      <li><a href='/lease-return'><i>↩️</i>{{ t('lease_return') }}</a></li>
+      <li><a href='/maintenance'><i>🔧</i>{{ t('maintenance') }}</a></li>
+      <li><a href='/move'><i>🚚</i>{{ t('move') }}</a></li>
+      <li><a href='/reserve'><i>🔖</i>{{ t('reserve') }}</a></li>
+      <li><a href='/dispose'><i>🗑️</i>{{ t('dispose') }}</a></li>
     </ul>
   </li>
   

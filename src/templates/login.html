@@ -131,22 +131,22 @@
   </style>
 
   <div class="login-container">
-    <h2>Login</h2>
+    <h2>{{ t('login') }}</h2>
     <form method='post'>
       <div class="form-group">
-        <label>Username</label>
+        <label>{{ t('username') }}</label>
         <input name='username' type="text" required autocomplete="username">
       </div>
       <div class="form-group">
-        <label>Password</label>
+        <label>{{ t('password') }}</label>
         <div class="password-wrapper">
           <input type='password' name='password' id='password-input' required autocomplete="current-password">
-          <button type="button" id="toggle-password" title="Show/Hide Password" aria-label="Toggle password visibility">
+          <button type="button" id="toggle-password" title="{{ t('show_password') }}" aria-label="{{ t('show_password') }}">
             👁️
           </button>
         </div>
       </div>
-      <input type='submit' value='Login'>
+      <input type='submit' value='{{ t("login") }}'>
     </form>
   </div>
 
@@ -154,17 +154,19 @@
     document.getElementById('toggle-password').addEventListener('click', function() {
       const passwordInput = document.getElementById('password-input');
       const button = this;
+      const showText = "{{ t('show_password') }}";
+      const hideText = "{{ t('hide_password') }}";
       
       if (passwordInput.type === 'password') {
         passwordInput.type = 'text';
         button.textContent = '🙈';
-        button.title = 'Hide Password';
-        button.setAttribute('aria-label', 'Hide password');
+        button.title = hideText;
+        button.setAttribute('aria-label', hideText);
       } else {
         passwordInput.type = 'password';
         button.textContent = '👁️';
-        button.title = 'Show Password';
-        button.setAttribute('aria-label', 'Show password');
+        button.title = showText;
+        button.setAttribute('aria-label', showText);
       }
     });
   </script>

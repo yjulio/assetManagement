@@ -160,6 +160,34 @@ body{
   color:rgba(255,255,255,.85);
   margin-top:2px;
 }
+.language-switcher{
+  display:flex;
+  justify-content:center;
+  gap:8px;
+  margin-top:15px;
+  padding-top:12px;
+  border-top:1px solid rgba(255,255,255,0.1);
+}
+.lang-btn{
+  background:rgba(255,255,255,0.1);
+  color:#fff;
+  padding:6px 12px;
+  border-radius:4px;
+  text-decoration:none;
+  font-size:0.8rem;
+  font-weight:600;
+  transition:all 0.3s ease;
+  border:1px solid rgba(255,255,255,0.2);
+}
+.lang-btn:hover{
+  background:rgba(255,255,255,0.2);
+  transform:translateY(-2px);
+}
+.lang-btn.active{
+  background:linear-gradient(135deg, #f9d423 0%, #4ca1af 50%, #2ecc71 100%);
+  border-color:transparent;
+  box-shadow:0 2px 8px rgba(46,204,113,0.3);
+}
 .sidebar-menu{list-style:none;padding:20px 0}
 .sidebar-menu li{
 	padding:10px 20px;
