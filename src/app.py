@@ -51,6 +51,7 @@ if not os.path.exists(UPLOAD_FOLDER):
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max upload size
 app.secret_key = FLASK_CONFIG.get('secret_key', 'change_this_to_a_random_secret')
 system = InventorySystem()
 
