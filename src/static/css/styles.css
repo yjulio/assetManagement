@@ -1787,3 +1787,151 @@ a:not(.btn):not(.logo):hover::after{
 	transform:scale(0.95);
 }
 
+
+/* Print Styles */
+@media print {
+/* Hide non-printable elements */
+.sidebar,
+.topbar,
+.back-to-top,
+.loading-overlay,
+.mobile-menu-toggle,
+.btn-link,
+button:not(.print-include) {
+: none !important;
+}
+
+/* Main content full width */
+.main-content {
+-left: 0 !important;
+100% !important;
+}
+
+.container {
+100% !important;
+g: 20px !important;
+}
+
+/* Add header with logo on every printed page */
+body::before {
+tent: '';
+: block;
+: fixed;
+0;
+0;
+0;
+100px;
+d: white;
+3px solid #667eea;
+dex: 1000;
+}
+
+@page {
+-top: 120px;
+-bottom: 120px;
+}
+
+/* Print header */
+body::after {
+tent: '';
+: block;
+: fixed;
+15px;
+20px;
+70px;
+70px;
+d: url('/static/asset.png') no-repeat center;
+d-size: contain;
+dex: 1001;
+}
+
+/* Print footer signature on every page */
+footer,
+.print-footer {
+: block !important;
+: fixed;
+0;
+0;
+0;
+d: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+white !important;
+g: 15px 20px !important;
+3px solid #f39c12 !important;
+t-size: 11px !important;
+avoid;
+dex: 1000;
+}
+
+footer * {
+white !important;
+}
+
+/* Organization info in print header */
+.print-header-text {
+: fixed;
+20px;
+110px;
+20px;
+dex: 1001;
+t-size: 12px;
+}
+
+.print-header-text h1 {
+: 0;
+t-size: 18px;
+t-weight: 700;
+#2c3e50;
+}
+
+.print-header-text p {
+: 2px 0 0 0;
+t-size: 11px;
+#7f8c8d;
+}
+
+.print-header-text .slogan {
+t-style: italic;
+#667eea;
+t-weight: 600;
+}
+
+/* Ensure content doesn't overlap with fixed header/footer */
+body {
+g-top: 120px !important;
+g-bottom: 100px !important;
+}
+
+/* Better table printing */
+table {
+side: auto;
+collapse;
+100%;
+}
+
+tr {
+side: avoid;
+auto;
+}
+
+thead {
+: table-header-group;
+}
+
+tfoot {
+: table-footer-group;
+}
+
+/* Remove box shadows and transitions for print */
+* {
+none !important;
+none !important;
+sition: none !important;
+imation: none !important;
+}
+
+/* Ensure good contrast */
+body {
+d: white !important;
+black !important;
+}
+}
