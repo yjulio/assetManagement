@@ -281,40 +281,6 @@
   </div>
   
   <script>
-    // Navigate to Settings/Configuration menu
-    function navigateToSettings(e) {
-      e.preventDefault();
-      
-      // Find the Setup/Configuration menu item
-      const setupMenu = Array.from(document.querySelectorAll('.sidebar-menu > li')).find(li => {
-        const link = li.querySelector('a');
-        return link && link.textContent.includes('Setup/Configuration');
-      });
-      
-      if (setupMenu) {
-        // Open sidebar on mobile if needed
-        if (window.innerWidth <= 768) {
-          const sidebar = document.querySelector('.sidebar');
-          const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
-          sidebar.classList.add('mobile-open');
-          if (mobileMenuToggle) mobileMenuToggle.textContent = '✕';
-        }
-        
-        // Expand the Setup/Configuration menu
-        setupMenu.classList.add('active');
-        
-        // Scroll to the Setup/Configuration menu
-        setupMenu.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        
-        // Add a highlight effect
-        setupMenu.style.transition = 'background-color 0.3s';
-        setupMenu.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-        setTimeout(() => {
-          setupMenu.style.backgroundColor = '';
-        }, 1000);
-      }
-    }
-    
     // Back to top button
     const backToTopBtn = document.getElementById('backToTop');
     
