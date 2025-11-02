@@ -140,7 +140,7 @@ body{
   opacity:0.85;
 }
 .logo img{
-  width:120px;
+  width:160px;
   height:auto;
   border-radius:8px;
   padding:8px;
@@ -1233,7 +1233,7 @@ input[type=file]{display:block;width:100%;padding:12px;border:2px dashed #ddd;bo
 		text-align:center;
 	}
 	.logo img{
-		width:100px;
+		width:130px;
 		margin:0 auto;
 	}
 	.brand h1{
