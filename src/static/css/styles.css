@@ -132,12 +132,15 @@ body{
   display:block;
   text-decoration:none;
   color:inherit;
-  transition:opacity 0.2s;
+  transition:all 0.3s ease;
   cursor:pointer;
   margin-bottom:15px;
+  animation: logoFloat 3s ease-in-out infinite, logoPulse 2s ease-in-out infinite;
 }
 .logo:hover{
   opacity:0.85;
+  transform: scale(1.1) rotate(5deg);
+  animation-play-state: paused;
 }
 .logo img{
   width:160px;
@@ -146,7 +149,38 @@ body{
   padding:8px;
   display:block;
   margin:0 auto;
+  filter: drop-shadow(0 4px 8px rgba(249, 212, 35, 0.3));
+  animation: logoGlow 2s ease-in-out infinite;
 }
+
+/* Logo Animation Keyframes */
+@keyframes logoFloat {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes logoPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes logoGlow {
+  0%, 100% {
+    filter: drop-shadow(0 4px 8px rgba(249, 212, 35, 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 6px 16px rgba(249, 212, 35, 0.6));
+  }
+}
+
 .brand{
   text-align:center;
 }
