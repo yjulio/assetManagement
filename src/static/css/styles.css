@@ -123,23 +123,43 @@ body{
 .sidebar::-webkit-scrollbar-thumb:hover{
 	background:rgba(255,255,255,0.5);
 }
-.sidebar-header{padding:12px 20px;border-bottom:1px solid rgba(255,255,255,.1)}
-.logo{display:flex;align-items:center;gap:12px}
+.sidebar-header{
+  padding:20px;
+  border-bottom:1px solid rgba(255,255,255,.1);
+  text-align:center;
+}
 .logo{
-  display:flex;
-  align-items:center;
-  gap:12px;
+  display:block;
   text-decoration:none;
   color:inherit;
   transition:opacity 0.2s;
   cursor:pointer;
+  margin-bottom:15px;
 }
 .logo:hover{
   opacity:0.85;
 }
-.logo img{width:56px;height:auto;border-radius:6px;padding:4px}
-.brand h1{font-size:1.1rem;margin:0;color:#fff}
-.brand .sub{font-size:.8rem;color:rgba(255,255,255,.85);margin-top:2px}
+.logo img{
+  width:120px;
+  height:auto;
+  border-radius:8px;
+  padding:8px;
+  display:block;
+  margin:0 auto;
+}
+.brand{
+  text-align:center;
+}
+.brand h1{
+  font-size:1.2rem;
+  margin:8px 0 4px 0;
+  color:#fff;
+}
+.brand .sub{
+  font-size:.85rem;
+  color:rgba(255,255,255,.85);
+  margin-top:2px;
+}
 .sidebar-menu{list-style:none;padding:20px 0}
 .sidebar-menu li{
 	padding:10px 20px;
@@ -1210,9 +1230,11 @@ input[type=file]{display:block;width:100%;padding:12px;border:2px dashed #ddd;bo
 	}
 	.sidebar-header{
 		padding:15px;
+		text-align:center;
 	}
 	.logo img{
-		width:48px;
+		width:100px;
+		margin:0 auto;
 	}
 	.brand h1{
 		font-size:1rem;
