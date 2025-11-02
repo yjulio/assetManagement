@@ -209,7 +209,7 @@
       <div class="user-menu">
         {% if session.get('username') %}
           <div class="dropdown">
-            <button class="dropdown-toggle" onclick="event.stopPropagation(); this.parentElement.classList.toggle('active');"><i>⚙️</i> Setting ▼</button>
+            <button class="dropdown-toggle" onclick="event.stopPropagation(); this.parentElement.classList.toggle('active');">{{ session.get('username') }} ▼</button>
             <div class="dropdown-menu">
               <a href="/profile">👤 My Profile</a>
               <a href="/change-profile">✏️ Change Profile</a>
