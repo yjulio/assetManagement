@@ -1,0 +1,330 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .contracts-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .contracts-header {
+    text-align: center;
+    padding: 30px;
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    border-radius: 12px;
+    color: white;
+    margin-bottom: 30px;
+  }
+  
+  .filter-section {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+  }
+  
+  .filter-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+  }
+  
+  .filter-row select,
+  .filter-row input {
+    padding: 10px;
+    border: 2px solid #ecf0f1;
+    border-radius: 8px;
+  }
+  
+  .contracts-grid {
+    display: grid;
+    gap: 20px;
+  }
+  
+  .contract-item {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    border-left: 5px solid #11998e;
+    transition: transform 0.3s;
+  }
+  
+  .contract-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 15px rgba(0,0,0,0.15);
+  }
+  
+  .contract-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+  }
+  
+  .contract-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #2c3e50;
+  }
+  
+  .contract-badge {
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  
+  .badge-active {
+    background: #d4edda;
+    color: #155724;
+  }
+  
+  .badge-expiring {
+    background: #fff3cd;
+    color: #856404;
+  }
+  
+  .badge-expired {
+    background: #f8d7da;
+    color: #721c24;
+  }
+  
+  .contract-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+  }
+  
+  .detail-item {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .detail-label {
+    font-size: 12px;
+    color: #7f8c8d;
+    margin-bottom: 3px;
+  }
+  
+  .detail-value {
+    font-weight: 600;
+    color: #2c3e50;
+  }
+  
+  .contract-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  
+  .btn {
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transition: transform 0.2s;
+  }
+  
+  .btn:hover {
+    transform: scale(1.05);
+  }
+  
+  .btn-view {
+    background: #3498db;
+    color: white;
+  }
+  
+  .btn-edit {
+    background: #f39c12;
+    color: white;
+  }
+  
+  .btn-renew {
+    background: #27ae60;
+    color: white;
+  }
+  
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    background: white;
+    border-radius: 12px;
+  }
+  
+  .empty-state-icon {
+    font-size: 80px;
+    margin-bottom: 20px;
+  }
+</style>
+
+<div class="contracts-container">
+  <div class="contracts-header">
+    <h1>📋 All Contracts & Licenses</h1>
+    <p>Manage and track all your contracts and licenses</p>
+  </div>
+  
+  <div class="filter-section">
+    <div class="filter-row">
+      <select>
+        <option value="">All Types</option>
+        <option value="Software License">Software License</option>
+        <option value="Service Contract">Service Contract</option>
+        <option value="Maintenance Agreement">Maintenance Agreement</option>
+      </select>
+      
+      <select>
+        <option value="">All Status</option>
+        <option value="active">Active</option>
+        <option value="expiring">Expiring Soon</option>
+        <option value="expired">Expired</option>
+      </select>
+      
+      <input type="text" placeholder="Search contracts...">
+      
+      <a href="/contracts/add" style="padding: 10px 20px; background: #11998e; color: white; text-decoration: none; border-radius: 8px; text-align: center; font-weight: 600;">
+        ➕ Add New
+      </a>
+    </div>
+  </div>
+  
+  <div class="contracts-grid">
+    <!-- Sample Contract 1 -->
+    <div class="contract-item">
+      <div class="contract-header-row">
+        <div class="contract-title">Microsoft Office 365</div>
+        <span class="contract-badge badge-active">● Active</span>
+      </div>
+      
+      <div class="contract-details">
+        <div class="detail-item">
+          <span class="detail-label">Contract Type</span>
+          <span class="detail-value">Software License</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Vendor</span>
+          <span class="detail-value">Microsoft</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Start Date</span>
+          <span class="detail-value">2024-01-01</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">End Date</span>
+          <span class="detail-value">2025-12-31</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Annual Cost</span>
+          <span class="detail-value">$15,000</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Licenses</span>
+          <span class="detail-value">100</span>
+        </div>
+      </div>
+      
+      <div class="contract-actions">
+        <button class="btn btn-view">👁️ View</button>
+        <button class="btn btn-edit">✏️ Edit</button>
+        <button class="btn btn-renew">🔄 Renew</button>
+      </div>
+    </div>
+    
+    <!-- Sample Contract 2 -->
+    <div class="contract-item" style="border-left-color: #f39c12;">
+      <div class="contract-header-row">
+        <div class="contract-title">Adobe Creative Cloud</div>
+        <span class="contract-badge badge-expiring">⚠️ Expiring Soon</span>
+      </div>
+      
+      <div class="contract-details">
+        <div class="detail-item">
+          <span class="detail-label">Contract Type</span>
+          <span class="detail-value">Software License</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Vendor</span>
+          <span class="detail-value">Adobe Systems</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Start Date</span>
+          <span class="detail-value">2024-01-15</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">End Date</span>
+          <span class="detail-value">2025-01-14</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Annual Cost</span>
+          <span class="detail-value">$8,500</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Licenses</span>
+          <span class="detail-value">15</span>
+        </div>
+      </div>
+      
+      <div class="contract-actions">
+        <button class="btn btn-view">👁️ View</button>
+        <button class="btn btn-edit">✏️ Edit</button>
+        <button class="btn btn-renew">🔄 Renew</button>
+      </div>
+    </div>
+    
+    <!-- Sample Contract 3 -->
+    <div class="contract-item" style="border-left-color: #3498db;">
+      <div class="contract-header-row">
+        <div class="contract-title">IT Support Services</div>
+        <span class="contract-badge badge-active">● Active</span>
+      </div>
+      
+      <div class="contract-details">
+        <div class="detail-item">
+          <span class="detail-label">Contract Type</span>
+          <span class="detail-value">Service Contract</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Vendor</span>
+          <span class="detail-value">Tech Support Inc</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Start Date</span>
+          <span class="detail-value">2024-03-01</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">End Date</span>
+          <span class="detail-value">2026-02-28</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Annual Cost</span>
+          <span class="detail-value">$25,000</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Auto Renew</span>
+          <span class="detail-value">Yes</span>
+        </div>
+      </div>
+      
+      <div class="contract-actions">
+        <button class="btn btn-view">👁️ View</button>
+        <button class="btn btn-edit">✏️ Edit</button>
+        <button class="btn btn-renew">🔄 Renew</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Uncomment this for empty state -->
+  <!-- <div class="empty-state">
+    <div class="empty-state-icon">📄</div>
+    <h3 style="color: #2c3e50; margin-bottom: 10px;">No Contracts Found</h3>
+    <p style="color: #7f8c8d; margin-bottom: 20px;">Get started by adding your first contract or license</p>
+    <a href="/contracts/add" style="display: inline-block; padding: 12px 30px; background: #11998e; color: white; text-decoration: none; border-radius: 25px; font-weight: 600;">➕ Add Contract</a>
+  </div> -->
+</div>
+
+{% endblock %}

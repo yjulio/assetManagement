@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .contract-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .contract-header {
+    text-align: center;
+    padding: 30px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    color: white;
+    margin-bottom: 30px;
+  }
+  
+  .contract-card {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+  }
+  
+  .form-group {
+    margin-bottom: 20px;
+  }
+  
+  .form-group label {
+    display: block;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 8px;
+  }
+  
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ecf0f1;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+  
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: #667eea;
+  }
+  
+  .form-group textarea {
+    resize: vertical;
+    min-height: 100px;
+  }
+  
+  .form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+  }
+  
+  .submit-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px 40px;
+    border: none;
+    border-radius: 25px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    transition: transform 0.3s;
+  }
+  
+  .submit-btn:hover {
+    transform: scale(1.02);
+  }
+  
+  .info-box {
+    background: #e7f3ff;
+    border-left: 4px solid #2196F3;
+    padding: 15px 20px;
+    margin: 20px 0;
+    border-radius: 4px;
+  }
+</style>
+
+<div class="contract-container">
+  <div class="contract-header">
+    <h1>➕ Add New Contract/License</h1>
+    <p>Create a new contract or license record</p>
+  </div>
+  
+  <div class="contract-card">
+    <form method="POST" action="/contracts/add">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="contract_name">Contract Name *</label>
+          <input type="text" id="contract_name" name="contract_name" required placeholder="e.g., Microsoft Office 365">
+        </div>
+        
+        <div class="form-group">
+          <label for="contract_type">Contract Type *</label>
+          <select id="contract_type" name="contract_type" required>
+            <option value="">Select type</option>
+            <option value="Software License">Software License</option>
+            <option value="Service Contract">Service Contract</option>
+            <option value="Maintenance Agreement">Maintenance Agreement</option>
+            <option value="Support Contract">Support Contract</option>
+            <option value="Lease Agreement">Lease Agreement</option>
+            <option value="Warranty">Warranty</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label for="vendor">Vendor/Supplier *</label>
+          <input type="text" id="vendor" name="vendor" required placeholder="Company or provider name">
+        </div>
+        
+        <div class="form-group">
+          <label for="contract_number">Contract Number</label>
+          <input type="text" id="contract_number" name="contract_number" placeholder="Reference number">
+        </div>
+      </div>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label for="start_date">Start Date *</label>
+          <input type="date" id="start_date" name="start_date" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="end_date">End Date *</label>
+          <input type="date" id="end_date" name="end_date" required>
+        </div>
+      </div>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label for="cost">Annual Cost</label>
+          <input type="number" id="cost" name="cost" step="0.01" placeholder="0.00">
+        </div>
+        
+        <div class="form-group">
+          <label for="license_count">License Count</label>
+          <input type="number" id="license_count" name="license_count" placeholder="Number of licenses">
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label for="auto_renew">Auto Renewal</label>
+        <select id="auto_renew" name="auto_renew">
+          <option value="no">No</option>
+          <option value="yes">Yes</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="contact_person">Contact Person</label>
+        <input type="text" id="contact_person" name="contact_person" placeholder="Responsible person">
+      </div>
+      
+      <div class="form-group">
+        <label for="description">Description/Notes</label>
+        <textarea id="description" name="description" placeholder="Additional details about this contract..."></textarea>
+      </div>
+      
+      <div class="info-box">
+        <strong>💡 Reminder:</strong> You will receive notifications 30 days before the contract expiration date.
+      </div>
+      
+      <button type="submit" class="submit-btn">
+        ➕ Add Contract
+      </button>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

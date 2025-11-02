@@ -1,0 +1,492 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .expired-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .expired-header {
+    text-align: center;
+    padding: 30px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    color: white;
+    margin-bottom: 30px;
+  }
+  
+  .alert-banner {
+    background: #fff3cd;
+    border-left: 5px solid #f39c12;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+  
+  .alert-icon {
+    font-size: 40px;
+  }
+  
+  .alert-content h3 {
+    margin: 0 0 5px 0;
+    color: #856404;
+  }
+  
+  .alert-content p {
+    margin: 0;
+    color: #856404;
+  }
+  
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+  }
+  
+  .stat-box {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    text-align: center;
+  }
+  
+  .stat-number {
+    font-size: 42px;
+    font-weight: 700;
+    color: #e74c3c;
+    margin-bottom: 10px;
+  }
+  
+  .stat-label {
+    font-size: 14px;
+    color: #7f8c8d;
+    font-weight: 600;
+  }
+  
+  .filter-bar {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+  }
+  
+  .filter-bar select,
+  .filter-bar input {
+    flex: 1;
+    min-width: 200px;
+    padding: 12px;
+    border: 2px solid #ecf0f1;
+    border-radius: 8px;
+  }
+  
+  .expired-list {
+    display: grid;
+    gap: 20px;
+  }
+  
+  .expired-item {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    border-left: 5px solid #e74c3c;
+    position: relative;
+  }
+  
+  .expired-ribbon {
+    position: absolute;
+    top: 20px;
+    right: -5px;
+    background: #e74c3c;
+    color: white;
+    padding: 8px 20px;
+    font-weight: 700;
+    font-size: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+  }
+  
+  .expired-ribbon::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -5px;
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid #c0392b;
+    border-bottom: 5px solid transparent;
+  }
+  
+  .expired-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+  }
+  
+  .expired-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #2c3e50;
+  }
+  
+  .days-overdue {
+    background: #fee;
+    color: #e74c3c;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 13px;
+  }
+  
+  .expired-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+  }
+  
+  .detail-item {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .detail-label {
+    font-size: 12px;
+    color: #7f8c8d;
+    margin-bottom: 5px;
+  }
+  
+  .detail-value {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 15px;
+  }
+  
+  .impact-section {
+    background: #fff5f5;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 15px;
+    border: 2px dashed #e74c3c;
+  }
+  
+  .impact-title {
+    font-weight: 700;
+    color: #e74c3c;
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+  
+  .impact-text {
+    color: #c0392b;
+    font-size: 13px;
+  }
+  
+  .actions-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+  
+  .btn {
+    padding: 10px 25px;
+    border-radius: 20px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+  }
+  
+  .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  }
+  
+  .btn-urgent {
+    background: #e74c3c;
+    color: white;
+  }
+  
+  .btn-contact {
+    background: #3498db;
+    color: white;
+  }
+  
+  .btn-archive {
+    background: #95a5a6;
+    color: white;
+  }
+  
+  .btn-details {
+    background: #34495e;
+    color: white;
+  }
+</style>
+
+<div class="expired-container">
+  <div class="expired-header">
+    <h1>🔴 Expired Contracts & Licenses</h1>
+    <p>Immediate action required to restore services and maintain compliance</p>
+  </div>
+  
+  <div class="alert-banner">
+    <div class="alert-icon">⚠️</div>
+    <div class="alert-content">
+      <h3>Attention Required!</h3>
+      <p>You have <strong>7 expired contracts</strong> totaling <strong>$89,500</strong> in annual value. Take immediate action to avoid service disruption.</p>
+    </div>
+  </div>
+  
+  <div class="stats-grid">
+    <div class="stat-box">
+      <div class="stat-number">7</div>
+      <div class="stat-label">Total Expired</div>
+    </div>
+    
+    <div class="stat-box">
+      <div class="stat-number">$89,500</div>
+      <div class="stat-label">Annual Value</div>
+    </div>
+    
+    <div class="stat-box">
+      <div class="stat-number">3</div>
+      <div class="stat-label">Critical Systems</div>
+    </div>
+    
+    <div class="stat-box">
+      <div class="stat-number">45</div>
+      <div class="stat-label">Avg Days Overdue</div>
+    </div>
+  </div>
+  
+  <div class="filter-bar">
+    <select>
+      <option value="">All Types</option>
+      <option value="Software License">Software License</option>
+      <option value="Service Contract">Service Contract</option>
+      <option value="Maintenance Agreement">Maintenance Agreement</option>
+    </select>
+    
+    <select>
+      <option value="">Sort By</option>
+      <option value="days_overdue">Days Overdue</option>
+      <option value="cost">Annual Cost</option>
+      <option value="expired_date">Expiration Date</option>
+    </select>
+    
+    <input type="text" placeholder="Search expired contracts...">
+  </div>
+  
+  <div class="expired-list">
+    <!-- Critical Expired Contract -->
+    <div class="expired-item">
+      <div class="expired-ribbon">⚠️ EXPIRED</div>
+      
+      <div class="expired-header-row">
+        <div class="expired-title">Network Security Monitoring - SolarWinds</div>
+        <span class="days-overdue">⏰ 67 DAYS OVERDUE</span>
+      </div>
+      
+      <div class="expired-details">
+        <div class="detail-item">
+          <span class="detail-label">Contract Type</span>
+          <span class="detail-value">Service Contract</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Vendor</span>
+          <span class="detail-value">SolarWinds Inc</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Expired Date</span>
+          <span class="detail-value" style="color: #e74c3c;">2024-11-30</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Annual Cost</span>
+          <span class="detail-value">$24,500</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Impact Level</span>
+          <span class="detail-value" style="color: #e74c3c;">🔴 Critical</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Contact Person</span>
+          <span class="detail-value">David Martinez</span>
+        </div>
+      </div>
+      
+      <div class="impact-section">
+        <div class="impact-title">⚠️ Business Impact</div>
+        <div class="impact-text">Loss of network monitoring capabilities may result in undetected security threats and performance issues.</div>
+      </div>
+      
+      <div class="actions-row">
+        <button class="btn btn-urgent">🚨 Renew Immediately</button>
+        <button class="btn btn-contact">📧 Contact Vendor</button>
+        <button class="btn btn-details">📄 View Details</button>
+        <button class="btn btn-archive">📦 Archive</button>
+      </div>
+    </div>
+    
+    <!-- Expired Software License -->
+    <div class="expired-item">
+      <div class="expired-ribbon">⚠️ EXPIRED</div>
+      
+      <div class="expired-header-row">
+        <div class="expired-title">Zoom Business Plan</div>
+        <span class="days-overdue">⏰ 34 DAYS OVERDUE</span>
+      </div>
+      
+      <div class="expired-details">
+        <div class="detail-item">
+          <span class="detail-label">Contract Type</span>
+          <span class="detail-value">Software License</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Vendor</span>
+          <span class="detail-value">Zoom Video Communications</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Expired Date</span>
+          <span class="detail-value" style="color: #e74c3c;">2024-12-23</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Annual Cost</span>
+          <span class="detail-value">$7,200</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Licenses</span>
+          <span class="detail-value">60 users</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Impact Level</span>
+          <span class="detail-value" style="color: #f39c12;">🟠 High</span>
+        </div>
+      </div>
+      
+      <div class="impact-section">
+        <div class="impact-title">⚠️ Business Impact</div>
+        <div class="impact-text">Team communication and virtual meetings disrupted. Users downgraded to basic 40-minute meetings.</div>
+      </div>
+      
+      <div class="actions-row">
+        <button class="btn btn-urgent">🚨 Renew Immediately</button>
+        <button class="btn btn-contact">📧 Contact Vendor</button>
+        <button class="btn btn-details">📄 View Details</button>
+        <button class="btn btn-archive">📦 Archive</button>
+      </div>
+    </div>
+    
+    <!-- Old Expired Contract -->
+    <div class="expired-item">
+      <div class="expired-ribbon">⚠️ EXPIRED</div>
+      
+      <div class="expired-header-row">
+        <div class="expired-title">Backup & Disaster Recovery - Acronis</div>
+        <span class="days-overdue">⏰ 128 DAYS OVERDUE</span>
+      </div>
+      
+      <div class="expired-details">
+        <div class="detail-item">
+          <span class="detail-label">Contract Type</span>
+          <span class="detail-value">Service Contract</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Vendor</span>
+          <span class="detail-value">Acronis International</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Expired Date</span>
+          <span class="detail-value" style="color: #e74c3c;">2024-09-20</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Annual Cost</span>
+          <span class="detail-value">$18,000</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Impact Level</span>
+          <span class="detail-value" style="color: #e74c3c;">🔴 Critical</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Auto Renew</span>
+          <span class="detail-value">❌ Not Enabled</span>
+        </div>
+      </div>
+      
+      <div class="impact-section">
+        <div class="impact-title">⚠️ Business Impact</div>
+        <div class="impact-text"><strong>CRITICAL:</strong> No disaster recovery protection for 4+ months. Data loss risk is extremely high. Immediate renewal required.</div>
+      </div>
+      
+      <div class="actions-row">
+        <button class="btn btn-urgent">🚨 Emergency Renewal</button>
+        <button class="btn btn-contact">📧 Contact Vendor</button>
+        <button class="btn btn-details">📄 View Details</button>
+        <button class="btn btn-archive">📦 Archive</button>
+      </div>
+    </div>
+    
+    <!-- Recently Expired -->
+    <div class="expired-item">
+      <div class="expired-ribbon">⚠️ EXPIRED</div>
+      
+      <div class="expired-header-row">
+        <div class="expired-title">SSL Certificate - DigiCert</div>
+        <span class="days-overdue">⏰ 12 DAYS OVERDUE</span>
+      </div>
+      
+      <div class="expired-details">
+        <div class="detail-item">
+          <span class="detail-label">Contract Type</span>
+          <span class="detail-value">Service Contract</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Vendor</span>
+          <span class="detail-value">DigiCert Inc</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Expired Date</span>
+          <span class="detail-value" style="color: #e74c3c;">2025-01-15</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Annual Cost</span>
+          <span class="detail-value">$3,500</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Impact Level</span>
+          <span class="detail-value" style="color: #e74c3c;">🔴 Critical</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Domains Affected</span>
+          <span class="detail-value">5 domains</span>
+        </div>
+      </div>
+      
+      <div class="impact-section">
+        <div class="impact-title">⚠️ Business Impact</div>
+        <div class="impact-text">Websites showing security warnings. Customer trust and SEO rankings negatively impacted. Urgent renewal needed.</div>
+      </div>
+      
+      <div class="actions-row">
+        <button class="btn btn-urgent">🚨 Renew Immediately</button>
+        <button class="btn btn-contact">📧 Contact Vendor</button>
+        <button class="btn btn-details">📄 View Details</button>
+        <button class="btn btn-archive">📦 Archive</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

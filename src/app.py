@@ -762,6 +762,39 @@ def manage_dashboard():
 def contracts():
     return render_template('page.html', title='Contracts/Licenses', heading='Contracts and Licenses', description='Track contracts, licenses, and renewal dates.')
 
+@app.route('/contracts/add', methods=['GET', 'POST'])
+@login_required
+def contracts_add():
+    if request.method == 'POST':
+        # TODO: Handle contract creation
+        flash('Contract added successfully!', 'success')
+        return redirect('/contracts/list')
+    return render_template('contracts_add.html', title='Add Contract')
+
+@app.route('/contracts/list')
+@login_required
+def contracts_list():
+    # TODO: Fetch contracts from database
+    return render_template('contracts_list.html', title='All Contracts')
+
+@app.route('/contracts/renewals')
+@login_required
+def contracts_renewals():
+    # TODO: Fetch contracts expiring in 30/60/90 days
+    return render_template('contracts_renewals.html', title='Upcoming Renewals')
+
+@app.route('/contracts/expired')
+@login_required
+def contracts_expired():
+    # TODO: Fetch expired contracts
+    return render_template('contracts_expired.html', title='Expired Contracts')
+
+@app.route('/contracts/licenses')
+@login_required
+def contracts_licenses():
+    # TODO: Fetch software licenses
+    return render_template('contracts_licenses.html', title='Software Licenses')
+
 @app.route('/employees')
 @login_required
 def employees():
