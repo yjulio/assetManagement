@@ -168,7 +168,6 @@
       <div class="topbar-actions">
         <a class="btn-link" href="/assets"><i>📋</i> Asset List</a>
         <a class="btn-link" href="/add"><i>➕</i> Add Asset</a>
-        <a class="btn-link" href="#" onclick="navigateToSettings(event)"><i>⚙️</i> Setting</a>
       </div>
       <div class="search-bar">
         <form method="get" action="/" style="flex:1;display:flex;position:relative;">
@@ -210,11 +209,13 @@
       <div class="user-menu">
         {% if session.get('username') %}
           <div class="dropdown">
-            <button class="dropdown-toggle">{{ session.get('username') }} ▼</button>
+            <button class="dropdown-toggle" onclick="event.stopPropagation(); this.parentElement.classList.toggle('active');"><i>⚙️</i> Setting ▼</button>
             <div class="dropdown-menu">
               <a href="/profile">👤 My Profile</a>
               <a href="/change-profile">✏️ Change Profile</a>
               <a href="/account-details">ℹ️ Account Details</a>
+              <div class="dropdown-divider"></div>
+              <a href="#" onclick="navigateToSettings(event)">🔧 Setup/Configuration</a>
               <div class="dropdown-divider"></div>
               <a href="#" onclick="showKeyboardShortcuts(event)">⌨️ Keyboard Shortcuts</a>
               <div class="dropdown-divider"></div>
