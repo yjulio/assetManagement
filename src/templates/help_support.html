@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .help-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .help-header {
+    text-align: center;
+    padding: 40px 20px;
+    background: linear-gradient(135deg, #f9d423 0%, #4ca1af 50%, #2ecc71 100%);
+    border-radius: 12px;
+    color: white;
+    margin-bottom: 40px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  }
+  
+  .help-header h1 {
+    margin: 0 0 10px 0;
+    font-size: 2.5rem;
+  }
+  
+  .help-header p {
+    font-size: 1.1rem;
+    opacity: 0.95;
+  }
+  
+  .help-section {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  
+  .help-section:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+  }
+  
+  .help-section h2 {
+    color: #2c3e50;
+    margin-top: 0;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 3px solid #f9d423;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .help-section h3 {
+    color: #34495e;
+    margin-top: 20px;
+    margin-bottom: 10px;
+  }
+  
+  .help-section p, .help-section ul {
+    color: #555;
+    line-height: 1.8;
+  }
+  
+  .help-section ul {
+    padding-left: 20px;
+  }
+  
+  .help-section li {
+    margin-bottom: 8px;
+  }
+  
+  .contact-info {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    border-left: 4px solid #4ca1af;
+    margin: 20px 0;
+  }
+  
+  .contact-info strong {
+    color: #2c3e50;
+  }
+  
+  .developer-info {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 12px;
+    text-align: center;
+    margin-top: 30px;
+  }
+  
+  .developer-info h2 {
+    margin-top: 0;
+    border-bottom: 2px solid rgba(255,255,255,0.3);
+    padding-bottom: 15px;
+  }
+  
+  .developer-info p {
+    font-size: 1.1rem;
+    margin: 10px 0;
+  }
+  
+  .developer-info .year {
+    font-size: 2rem;
+    font-weight: bold;
+    margin: 15px 0;
+  }
+  
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin: 20px 0;
+  }
+  
+  .feature-card {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    border-left: 4px solid #2ecc71;
+  }
+  
+  .feature-card h4 {
+    margin-top: 0;
+    color: #2c3e50;
+  }
+  
+  @media screen and (max-width: 768px) {
+    .help-header h1 {
+      font-size: 1.8rem;
+    }
+    
+    .help-section {
+      padding: 20px;
+    }
+    
+    .feature-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="help-container">
+  <div class="help-header">
+    <h1>💡 Help & Support</h1>
+    <p>Asset Management System - User Guide & Information</p>
+  </div>
+  
+  <div class="help-section">
+    <h2>📚 About the System</h2>
+    <p>
+      The Asset Management System is a comprehensive solution designed for the Vanuatu Bureau of Statistics 
+      to efficiently track, manage, and monitor all organizational assets. This system provides powerful 
+      tools for asset lifecycle management, from acquisition to disposal.
+    </p>
+    
+    <h3>Key Features:</h3>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <h4>📦 Asset Tracking</h4>
+        <p>Complete asset inventory with detailed information</p>
+      </div>
+      <div class="feature-card">
+        <h4>📊 Reporting</h4>
+        <p>Generate comprehensive reports and analytics</p>
+      </div>
+      <div class="feature-card">
+        <h4>🔧 Maintenance</h4>
+        <p>Track maintenance schedules and history</p>
+      </div>
+      <div class="feature-card">
+        <h4>👥 User Management</h4>
+        <p>Role-based access control and permissions</p>
+      </div>
+      <div class="feature-card">
+        <h4>📤 Check In/Out</h4>
+        <p>Asset assignment and tracking system</p>
+      </div>
+      <div class="feature-card">
+        <h4>💼 Contracts & Leases</h4>
+        <p>Manage contracts, licenses, and leases</p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="help-section">
+    <h2>🚀 Getting Started</h2>
+    <h3>1. Dashboard Overview</h3>
+    <p>The dashboard provides a quick overview of your assets, including total count, value, and important alerts.</p>
+    
+    <h3>2. Managing Assets</h3>
+    <ul>
+      <li><strong>Add Asset:</strong> Click "Add an Asset" to register new equipment</li>
+      <li><strong>View Assets:</strong> Navigate to "List of Assets" to see all items</li>
+      <li><strong>Update Asset:</strong> Click on any asset to edit its details</li>
+      <li><strong>Check Out:</strong> Assign assets to employees or departments</li>
+      <li><strong>Check In:</strong> Return assets back to inventory</li>
+    </ul>
+    
+    <h3>3. Generating Reports</h3>
+    <p>Access various reports from the Reports menu to analyze your asset data:</p>
+    <ul>
+      <li>Inventory Reports</li>
+      <li>Depreciation Reports</li>
+      <li>Maintenance Reports</li>
+      <li>Custom Reports</li>
+    </ul>
+  </div>
+  
+  <div class="help-section">
+    <h2>📞 Contact & Support</h2>
+    <div class="contact-info">
+      <p><strong>📧 Email:</strong> minomoya626@gmail.com</p>
+      <p><strong>🏢 Organization:</strong> Vanuatu Bureau of Statistics</p>
+      <p><strong>🌐 Website:</strong> vbosasset.innovatelhubltd.com</p>
+    </div>
+    
+    <h3>Need Help?</h3>
+    <p>If you encounter any issues or need assistance:</p>
+    <ul>
+      <li>Contact your system administrator</li>
+      <li>Email support at minomoya626@gmail.com</li>
+      <li>Check the user documentation</li>
+    </ul>
+  </div>
+  
+  <div class="developer-info">
+    <h2>👨‍💻 System Developer</h2>
+    <p class="year">🎯 2025</p>
+    <p><strong>Developed by:</strong></p>
+    <p style="font-size: 1.5rem; font-weight: bold; margin: 15px 0;">Julio Yaruel</p>
+    <p style="font-size: 0.95rem; opacity: 0.9; margin-top: 20px;">
+      This Asset Management System was custom-built to meet the specific needs of 
+      the Vanuatu Bureau of Statistics, featuring modern technologies and 
+      best practices in software development.
+    </p>
+    <p style="margin-top: 20px; opacity: 0.85;">
+      © 2025 Julio Yaruel. All rights reserved.
+    </p>
+  </div>
+</div>
+
+{% endblock %}

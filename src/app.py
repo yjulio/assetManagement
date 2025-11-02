@@ -329,6 +329,12 @@ def logout():
     return redirect(url_for('index'))
 
 
+@app.route('/help-support')
+def help_support():
+    """Help and Support page"""
+    return render_template('help_support.html', title='Help & Support')
+
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
