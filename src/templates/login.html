@@ -1,22 +1,154 @@
 {% extends 'base.html' %}
 {% block content %}
-  <h2>Login</h2>
-  <form method='post'>
-    <div class="form-group">
-      <label>Username</label>
-      <input name='username' required>
-    </div>
-    <div class="form-group">
-      <label>Password</label>
-      <div style="position: relative; display: inline-block; width: 100%;">
-        <input type='password' name='password' id='password-input' required style="padding-right: 45px;">
-        <button type="button" id="toggle-password" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; font-size: 18px; padding: 5px 10px; color: #666;" title="Show/Hide Password">
-          👁️
-        </button>
+  <style>
+    .login-container {
+      max-width: 400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .login-container h2 {
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 1.8rem;
+    }
+    
+    .login-container .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .login-container label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      font-size: 0.95rem;
+    }
+    
+    .login-container input[type="text"],
+    .login-container input[name="username"],
+    .login-container input[type="password"] {
+      width: 100%;
+      padding: 12px 15px;
+      font-size: 16px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      box-sizing: border-box;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    
+    .login-container input:focus {
+      outline: none;
+      border-color: #4ca1af;
+      box-shadow: 0 0 0 3px rgba(76, 161, 175, 0.1);
+    }
+    
+    .password-wrapper {
+      position: relative;
+      width: 100%;
+    }
+    
+    .password-wrapper input {
+      padding-right: 50px !important;
+    }
+    
+    #toggle-password {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-size: 20px;
+      padding: 8px 12px;
+      color: #666;
+      transition: color 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    #toggle-password:hover,
+    #toggle-password:active {
+      color: #4ca1af;
+    }
+    
+    .login-container input[type="submit"] {
+      width: 100%;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: 600;
+      background: linear-gradient(135deg, #f9d423 0%, #4ca1af 50%, #2ecc71 100%);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .login-container input[type="submit"]:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(76, 161, 175, 0.3);
+    }
+    
+    .login-container input[type="submit"]:active {
+      transform: translateY(0);
+    }
+    
+    /* Mobile optimization */
+    @media screen and (max-width: 480px) {
+      .login-container {
+        padding: 15px;
+        max-width: 100%;
+      }
+      
+      .login-container h2 {
+        font-size: 1.5rem;
+        margin-bottom: 25px;
+      }
+      
+      .login-container input[type="text"],
+      .login-container input[name="username"],
+      .login-container input[type="password"] {
+        font-size: 16px; /* Prevents zoom on iOS */
+        padding: 14px 15px;
+      }
+      
+      .password-wrapper input {
+        padding-right: 55px !important;
+      }
+      
+      #toggle-password {
+        font-size: 22px;
+        padding: 10px 14px;
+        right: 8px;
+      }
+      
+      .login-container input[type="submit"] {
+        padding: 16px;
+        font-size: 17px;
+      }
+    }
+  </style>
+
+  <div class="login-container">
+    <h2>Login</h2>
+    <form method='post'>
+      <div class="form-group">
+        <label>Username</label>
+        <input name='username' type="text" required autocomplete="username">
       </div>
-    </div>
-    <input type='submit' value='Login'>
-  </form>
+      <div class="form-group">
+        <label>Password</label>
+        <div class="password-wrapper">
+          <input type='password' name='password' id='password-input' required autocomplete="current-password">
+          <button type="button" id="toggle-password" title="Show/Hide Password" aria-label="Toggle password visibility">
+            👁️
+          </button>
+        </div>
+      </div>
+      <input type='submit' value='Login'>
+    </form>
+  </div>
 
   <script>
     document.getElementById('toggle-password').addEventListener('click', function() {
@@ -27,10 +159,12 @@
         passwordInput.type = 'text';
         button.textContent = '🙈';
         button.title = 'Hide Password';
+        button.setAttribute('aria-label', 'Hide password');
       } else {
         passwordInput.type = 'password';
         button.textContent = '👁️';
         button.title = 'Show Password';
+        button.setAttribute('aria-label', 'Show password');
       }
     });
   </script>
