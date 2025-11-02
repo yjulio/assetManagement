@@ -321,18 +321,11 @@ def login():
     # GET
     return render_template('login.html', title='Login')
 
-
 @app.route('/logout')
 def logout():
     session.pop('username', None)
     flash('Logged out', 'info')
     return redirect(url_for('index'))
-
-
-@app.route('/help-support')
-def help_support():
-    """Help and Support page"""
-    return render_template('help_support.html', title='Help & Support')
 
 
 def allowed_file(filename):
@@ -1739,7 +1732,7 @@ def report_other():
 @app.route('/help-support')
 @login_required
 def help_support():
-    return render_template('page.html', title='Help & Support', heading='Help & Support', description='Get help with using the asset management system and contact support.')
+    return render_template('help_support.html', title='Help & Support')
 
 
 if __name__ == "__main__":
