@@ -13,11 +13,11 @@ DB_CONFIG = {
 
 # Email Configuration
 EMAIL_CONFIG = {
-    "sender": os.getenv("EMAIL_SENDER", None),
-    "password": os.getenv("EMAIL_PASSWORD", None),
-    "recipient": os.getenv("EMAIL_RECIPIENT", None),
+    "sender_email": os.getenv("EMAIL_SENDER", None),
+    "sender_password": os.getenv("EMAIL_PASSWORD", None),
     "smtp_server": os.getenv("SMTP_SERVER", "smtp.gmail.com"),
-    "port": int(os.getenv("SMTP_PORT", "587"))
+    "smtp_port": int(os.getenv("SMTP_PORT", "587")),
+    "enabled": os.getenv("EMAIL_ENABLED", "False").lower() == "true"
 }
 
 # Flask Configuration

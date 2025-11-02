@@ -426,7 +426,44 @@ def checkout():
             return redirect(url_for('checkout'))
         try:
             system.checkout_item(name, quantity, username=session.get('username'), person=person, department=department, location=location, notes=notes)
-            flash(f"Checked out {quantity} of '{name}'", 'success')
+            
+            # Send email notification to the person checking out the asset
+            try:
+                from utils.email_util import send_checkout_notification_email
+                from datetime import datetime
+                
+                if person:
+                    # Get recipient email from users table
+                    cursor = system.conn.cursor(dictionary=True)
+                    cursor.execute('SELECT email, name FROM users WHERE username = %s OR name = %s', (person, person))
+                    user_data = cursor.fetchone()
+                    cursor.close()
+                    
+                    if user_data and user_data.get('email'):
+                        checkout_details = {
+                            'department': department or 'N/A',
+                            'location': location or 'N/A',
+                            'checkout_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                            'checked_out_by': session.get('username', 'System')
+                        }
+                        
+                        send_checkout_notification_email(
+                            recipient_email=user_data['email'],
+                            recipient_name=user_data.get('name', person),
+                            item_name=name,
+                            quantity=quantity,
+                            checkout_details=checkout_details,
+                            notes=notes
+                        )
+                        flash(f"Checked out {quantity} of '{name}'. Email notification sent to {person}.", 'success')
+                    else:
+                        flash(f"Checked out {quantity} of '{name}'", 'success')
+                else:
+                    flash(f"Checked out {quantity} of '{name}'", 'success')
+            except Exception as e:
+                print(f"Email notification error: {e}")
+                flash(f"Checked out {quantity} of '{name}'", 'success')
+            
             return redirect(url_for('index'))
         except Exception as e:
             flash(str(e), 'error')
@@ -1065,7 +1102,43 @@ def assign_asset(asset_name):
         system.inventory[asset_name]['department'] = department
         system.inventory[asset_name]['location'] = location
         
-        flash(f'Asset "{asset_name}" successfully assigned to {person}', 'success')
+        # Send email notification to the person receiving the asset
+        try:
+            from utils.email_util import send_asset_assignment_email
+            from datetime import datetime
+            
+            # Get recipient email from users table
+            cursor = system.conn.cursor(dictionary=True)
+            cursor.execute('SELECT email, name FROM users WHERE username = %s OR name = %s', (person, person))
+            user_data = cursor.fetchone()
+            cursor.close()
+            
+            if user_data and user_data.get('email'):
+                asset_details = {
+                    'category': asset.get('category', 'N/A'),
+                    'brand': asset.get('brand', 'N/A'),
+                    'model': asset.get('model', 'N/A'),
+                    'serial_number': asset.get('serial_number', 'N/A'),
+                    'department': department or 'N/A',
+                    'location': location or 'N/A',
+                    'assignment_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                }
+                
+                send_asset_assignment_email(
+                    recipient_email=user_data['email'],
+                    recipient_name=user_data.get('name', person),
+                    asset_name=asset_name,
+                    asset_details=asset_details,
+                    assigned_by=session.get('username', 'System'),
+                    notes=notes
+                )
+                flash(f'Asset "{asset_name}" successfully assigned to {person}. Email notification sent.', 'success')
+            else:
+                flash(f'Asset "{asset_name}" successfully assigned to {person}. (No email address found for notification)', 'success')
+        except Exception as e:
+            print(f"Email notification error: {e}")
+            flash(f'Asset "{asset_name}" successfully assigned to {person}. (Email notification failed)', 'success')
+        
         return redirect(url_for('assets'))
     
     return render_template('assign_asset.html', asset_name=asset_name, asset=asset)
@@ -2220,6 +2293,133 @@ def export_all():
             flash(f'Export failed: {str(e)}', 'error')
     
     return render_template('export_all.html', title='Export All Data')
+
+
+# ---- Email Settings Routes ----
+@app.route('/settings/email', methods=['GET', 'POST'])
+@login_required
+@require_group('Admin')
+def email_settings():
+    if request.method == 'POST':
+        # Save email configuration to environment or database
+        email_enabled = request.form.get('email_enabled') == 'on'
+        sender_email = request.form.get('sender_email')
+        sender_password = request.form.get('sender_password')
+        smtp_server = request.form.get('smtp_server')
+        smtp_port = int(request.form.get('smtp_port', 587))
+        
+        try:
+            # Save to database email_config table
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            
+            # Check if config exists
+            cursor.execute('SELECT id FROM email_config LIMIT 1')
+            existing = cursor.fetchone()
+            
+            if existing:
+                cursor.execute('''
+                    UPDATE email_config 
+                    SET sender = %s, password = %s, smtp_server = %s, port = %s
+                    WHERE id = %s
+                ''', (sender_email, sender_password, smtp_server, smtp_port, existing[0]))
+            else:
+                cursor.execute('''
+                    INSERT INTO email_config (sender, password, smtp_server, port)
+                    VALUES (%s, %s, %s, %s)
+                ''', (sender_email, sender_password, smtp_server, smtp_port))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            # Update config in memory
+            from config import EMAIL_CONFIG
+            EMAIL_CONFIG['sender_email'] = sender_email
+            EMAIL_CONFIG['sender_password'] = sender_password
+            EMAIL_CONFIG['smtp_server'] = smtp_server
+            EMAIL_CONFIG['smtp_port'] = smtp_port
+            EMAIL_CONFIG['enabled'] = email_enabled
+            
+            flash('Email settings saved successfully!', 'success')
+            return redirect(url_for('email_settings'))
+            
+        except Exception as e:
+            flash(f'Failed to save email settings: {str(e)}', 'error')
+    
+    # Load current email configuration
+    email_config = {}
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute('SELECT * FROM email_config LIMIT 1')
+        db_config = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        
+        if db_config:
+            email_config = {
+                'sender_email': db_config.get('sender'),
+                'smtp_server': db_config.get('smtp_server', 'smtp.gmail.com'),
+                'smtp_port': db_config.get('port', 587),
+                'enabled': True
+            }
+        else:
+            from config import EMAIL_CONFIG
+            email_config = EMAIL_CONFIG
+    except Exception as e:
+        print(f"Error loading email config: {e}")
+        from config import EMAIL_CONFIG
+        email_config = EMAIL_CONFIG
+    
+    return render_template('email_settings.html', email_config=email_config)
+
+
+@app.route('/settings/email/test', methods=['POST'])
+@login_required
+@require_group('Admin')
+def test_email():
+    try:
+        from utils.email_util import send_email
+        
+        sender_email = request.form.get('sender_email')
+        sender_password = request.form.get('sender_password')
+        smtp_server = request.form.get('smtp_server')
+        smtp_port = int(request.form.get('smtp_port', 587))
+        
+        # Send test email to the sender's address
+        subject = "Test Email from Asset Management System"
+        body = """
+This is a test email from your Asset Management System.
+
+If you received this email, your email configuration is working correctly!
+
+System Information:
+- SMTP Server: {}
+- SMTP Port: {}
+- Timestamp: {}
+
+Best regards,
+Asset Management System
+""".format(smtp_server, smtp_port, datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+        
+        success = send_email(
+            sender=sender_email,
+            recipient=sender_email,
+            subject=subject,
+            body=body,
+            smtp_server=smtp_server,
+            port=smtp_port,
+            password=sender_password
+        )
+        
+        if success:
+            return jsonify({'success': True, 'message': 'Test email sent successfully'})
+        else:
+            return jsonify({'success': False, 'error': 'Failed to send email'}), 400
+            
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 if __name__ == "__main__":
