@@ -1,0 +1,254 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .release-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .release-header {
+    text-align: center;
+    padding: 30px;
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    border-radius: 12px;
+    color: white;
+    margin-bottom: 30px;
+  }
+  
+  .release-item {
+    background: white;
+    margin-bottom: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    overflow: hidden;
+  }
+  
+  .release-title {
+    padding: 20px 25px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .release-title h2 {
+    margin: 0;
+    font-size: 22px;
+  }
+  
+  .release-date {
+    font-size: 14px;
+    opacity: 0.9;
+  }
+  
+  .release-content {
+    padding: 25px;
+  }
+  
+  .release-section {
+    margin-bottom: 20px;
+  }
+  
+  .release-section h3 {
+    color: #2c3e50;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .release-section ul {
+    margin: 0;
+    padding-left: 25px;
+    color: #555;
+    line-height: 1.8;
+  }
+  
+  .badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-left: 10px;
+  }
+  
+  .badge-current {
+    background: #d4edda;
+    color: #155724;
+  }
+  
+  .badge-stable {
+    background: #cce5ff;
+    color: #004085;
+  }
+  
+  .badge-legacy {
+    background: #f8d7da;
+    color: #721c24;
+  }
+</style>
+
+<div class="release-container">
+  <div class="release-header">
+    <h1>📝 Release Notes</h1>
+    <p>Version history and changelog</p>
+  </div>
+  
+  <div class="release-item">
+    <div class="release-title">
+      <h2>Version 1.0.0 <span class="badge badge-current">CURRENT</span></h2>
+      <span class="release-date">📅 January 2025</span>
+    </div>
+    <div class="release-content">
+      <div class="release-section">
+        <h3>✨ New Features</h3>
+        <ul>
+          <li>Complete asset management system with full CRUD operations</li>
+          <li>User authentication with role-based access control (Admin, Manager, User, Viewer)</li>
+          <li>Asset check-in/check-out tracking system</li>
+          <li>Maintenance scheduling and history tracking</li>
+          <li>Depreciation calculation (straight-line and declining balance methods)</li>
+          <li>Comprehensive reporting module (Inventory, Depreciation, Maintenance, etc.)</li>
+          <li>Bulk import/export functionality (CSV, Excel)</li>
+          <li>Document and image gallery for assets</li>
+          <li>Asset assignment to employees, departments, and locations</li>
+          <li>Asset disposal tracking with multiple disposal methods</li>
+          <li>Help & Support system with user guides and documentation</li>
+          <li>Mobile-responsive design for all pages</li>
+          <li>Password show/hide toggle on login page</li>
+        </ul>
+      </div>
+      
+      <div class="release-section">
+        <h3>🎨 UI/UX Improvements</h3>
+        <ul>
+          <li>Enlarged company logo (120px) with centered layout</li>
+          <li>Reorganized sidebar menu with Setup/Configuration section</li>
+          <li>Modern gradient-based color scheme</li>
+          <li>Improved mobile responsiveness with touch-friendly controls</li>
+          <li>Enhanced forms with better validation and user feedback</li>
+          <li>Intuitive navigation with clear menu structure</li>
+        </ul>
+      </div>
+      
+      <div class="release-section">
+        <h3>🔒 Security</h3>
+        <ul>
+          <li>Password hashing with SHA-256 and salt</li>
+          <li>Session management with Flask-Login</li>
+          <li>Role-based access control with granular permissions</li>
+          <li>SQL injection prevention with parameterized queries</li>
+          <li>XSS protection with template escaping</li>
+        </ul>
+      </div>
+      
+      <div class="release-section">
+        <h3>🛠️ Technical</h3>
+        <ul>
+          <li>Built with Flask 3.1.2 framework</li>
+          <li>Python 3.13.7 runtime</li>
+          <li>MySQL 8.0+ database with optimized schema</li>
+          <li>Nginx 1.28.0 as reverse proxy</li>
+          <li>Virtual environment for dependency isolation</li>
+          <li>Git version control with GitHub integration</li>
+          <li>Automated deployment scripts</li>
+        </ul>
+      </div>
+      
+      <div class="release-section">
+        <h3>📚 Documentation</h3>
+        <ul>
+          <li>Comprehensive user guide with step-by-step instructions</li>
+          <li>Technical documentation for developers</li>
+          <li>FAQ section with common questions</li>
+          <li>Video tutorial placeholders for future content</li>
+          <li>Contact support page with email integration</li>
+          <li>System information page for diagnostics</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  
+  <div class="release-item">
+    <div class="release-title">
+      <h2>Version 0.9.0 <span class="badge badge-stable">BETA</span></h2>
+      <span class="release-date">📅 December 2024</span>
+    </div>
+    <div class="release-content">
+      <div class="release-section">
+        <h3>✨ Features Added</h3>
+        <ul>
+          <li>Core asset management functionality</li>
+          <li>Basic reporting capabilities</li>
+          <li>User authentication system</li>
+          <li>Initial database schema design</li>
+        </ul>
+      </div>
+      
+      <div class="release-section">
+        <h3>🐛 Bug Fixes</h3>
+        <ul>
+          <li>Fixed duplicate route issues in Flask application</li>
+          <li>Resolved database connection timeout problems</li>
+          <li>Corrected asset listing pagination errors</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  
+  <div class="release-item">
+    <div class="release-title">
+      <h2>Version 0.5.0 <span class="badge badge-legacy">ALPHA</span></h2>
+      <span class="release-date">📅 November 2024</span>
+    </div>
+    <div class="release-content">
+      <div class="release-section">
+        <h3>✨ Initial Development</h3>
+        <ul>
+          <li>Project initialization and setup</li>
+          <li>Basic Flask application structure</li>
+          <li>MySQL database configuration</li>
+          <li>Proof of concept for asset tracking</li>
+          <li>Initial UI templates</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  
+  <div style="margin-top: 40px; padding: 25px; background: #f8f9fa; border-radius: 8px; text-align: center;">
+    <h3 style="color: #2c3e50; margin-bottom: 15px;">🚀 Coming Soon</h3>
+    <p style="color: #7f8c8d; line-height: 1.6; margin-bottom: 20px;">
+      We're constantly working to improve the system. Here's what's planned for future releases:
+    </p>
+    <ul style="text-align: left; max-width: 600px; margin: 0 auto; color: #555; line-height: 1.8;">
+      <li>Barcode/QR code scanning for quick asset lookup</li>
+      <li>Email notifications for maintenance and check-in reminders</li>
+      <li>Advanced analytics dashboard with charts and graphs</li>
+      <li>Mobile app for iOS and Android</li>
+      <li>API for third-party integrations</li>
+      <li>Asset reservation system</li>
+      <li>Contract management module</li>
+      <li>Audit trail and compliance reporting</li>
+      <li>Multi-language support</li>
+      <li>Custom fields and forms</li>
+    </ul>
+  </div>
+  
+  <div style="text-align: center; margin-top: 30px; padding: 20px; background: #e7f3ff; border-left: 4px solid #2196F3; border-radius: 8px;">
+    <h3 style="color: #1976d2; margin-bottom: 10px;">💬 Feedback Welcome</h3>
+    <p style="color: #555; margin-bottom: 15px;">
+      Have suggestions for new features or improvements? We'd love to hear from you!
+    </p>
+    <a href="/help/contact-support" style="display: inline-block; padding: 12px 30px; background: #2196F3; color: white; text-decoration: none; border-radius: 25px; font-weight: 600;">Share Your Feedback</a>
+  </div>
+  
+  <div style="text-align: center; margin-top: 30px; color: #7f8c8d; font-size: 14px;">
+    <p>Developed by <strong style="color: #2c3e50;">Julio Yaruel</strong> • 2025</p>
+    <p>Version: 1.0.0 • Build: {{ 'January 2025' }}</p>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,287 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .sysinfo-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .sysinfo-header {
+    text-align: center;
+    padding: 30px;
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    border-radius: 12px;
+    color: white;
+    margin-bottom: 30px;
+  }
+  
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+  }
+  
+  .info-card {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  }
+  
+  .info-card h3 {
+    color: #2c3e50;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 3px solid #11998e;
+  }
+  
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid #ecf0f1;
+  }
+  
+  .info-row:last-child {
+    border-bottom: none;
+  }
+  
+  .info-label {
+    font-weight: 600;
+    color: #555;
+  }
+  
+  .info-value {
+    color: #11998e;
+    font-weight: 600;
+  }
+  
+  .status-badge {
+    display: inline-block;
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  
+  .status-online {
+    background: #d4edda;
+    color: #155724;
+  }
+  
+  .status-warning {
+    background: #fff3cd;
+    color: #856404;
+  }
+  
+  .full-width-card {
+    grid-column: 1 / -1;
+  }
+  
+  .module-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    margin-top: 15px;
+  }
+  
+  .module-item {
+    background: #f8f9fa;
+    padding: 12px;
+    border-radius: 6px;
+    text-align: center;
+    border-left: 3px solid #11998e;
+  }
+  
+  @media (max-width: 768px) {
+    .info-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="sysinfo-container">
+  <div class="sysinfo-header">
+    <h1>⚙️ System Information</h1>
+    <p>Current system status and configuration details</p>
+  </div>
+  
+  <div class="info-grid">
+    <div class="info-card">
+      <h3>🖥️ System Status</h3>
+      <div class="info-row">
+        <span class="info-label">Application Status</span>
+        <span class="status-badge status-online">● Online</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Database Status</span>
+        <span class="status-badge status-online">● Connected</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Web Server</span>
+        <span class="info-value">Nginx 1.28.0</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Uptime</span>
+        <span class="info-value">Running</span>
+      </div>
+    </div>
+    
+    <div class="info-card">
+      <h3>📦 Application Info</h3>
+      <div class="info-row">
+        <span class="info-label">Version</span>
+        <span class="info-value">1.0.0</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Release Date</span>
+        <span class="info-value">January 2025</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Framework</span>
+        <span class="info-value">Flask 3.1.2</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Python Version</span>
+        <span class="info-value">3.13.7</span>
+      </div>
+    </div>
+    
+    <div class="info-card">
+      <h3>🗄️ Database Info</h3>
+      <div class="info-row">
+        <span class="info-label">Database Type</span>
+        <span class="info-value">MySQL</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Database Name</span>
+        <span class="info-value">db_asset</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Character Set</span>
+        <span class="info-value">UTF-8</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Connection</span>
+        <span class="status-badge status-online">● Active</span>
+      </div>
+    </div>
+    
+    <div class="info-card">
+      <h3>🌐 Server Info</h3>
+      <div class="info-row">
+        <span class="info-label">Domain</span>
+        <span class="info-value">vbosasset.innovatelhubltd.com</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Server IP</span>
+        <span class="info-value">207.246.126.171</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Operating System</span>
+        <span class="info-value">Ubuntu Linux</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">SSL/TLS</span>
+        <span class="status-badge status-online">● Enabled</span>
+      </div>
+    </div>
+    
+    <div class="info-card full-width-card">
+      <h3>🔧 Installed Python Packages</h3>
+      <div class="module-list">
+        <div class="module-item">
+          <strong>Flask</strong><br>
+          <small>3.1.2</small>
+        </div>
+        <div class="module-item">
+          <strong>Werkzeug</strong><br>
+          <small>3.1.3</small>
+        </div>
+        <div class="module-item">
+          <strong>MySQL Connector</strong><br>
+          <small>9.5.0</small>
+        </div>
+        <div class="module-item">
+          <strong>Flask-Login</strong><br>
+          <small>Latest</small>
+        </div>
+        <div class="module-item">
+          <strong>Jinja2</strong><br>
+          <small>Latest</small>
+        </div>
+        <div class="module-item">
+          <strong>Pandas</strong><br>
+          <small>Latest</small>
+        </div>
+        <div class="module-item">
+          <strong>ReportLab</strong><br>
+          <small>Latest</small>
+        </div>
+        <div class="module-item">
+          <strong>Pillow</strong><br>
+          <small>Latest</small>
+        </div>
+      </div>
+    </div>
+    
+    <div class="info-card full-width-card">
+      <h3>📊 System Statistics</h3>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 15px;">
+        <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+          <div style="font-size: 36px; color: #11998e; font-weight: 700;">N/A</div>
+          <div style="color: #7f8c8d; margin-top: 5px;">Total Assets</div>
+        </div>
+        <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+          <div style="font-size: 36px; color: #11998e; font-weight: 700;">N/A</div>
+          <div style="color: #7f8c8d; margin-top: 5px;">Active Users</div>
+        </div>
+        <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+          <div style="font-size: 36px; color: #11998e; font-weight: 700;">N/A</div>
+          <div style="color: #7f8c8d; margin-top: 5px;">Checked Out</div>
+        </div>
+        <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+          <div style="font-size: 36px; color: #11998e; font-weight: 700;">N/A</div>
+          <div style="color: #7f8c8d; margin-top: 5px;">Categories</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="info-card full-width-card">
+      <h3>👨‍💻 Developer Information</h3>
+      <div class="info-row">
+        <span class="info-label">Developed By</span>
+        <span class="info-value">Julio Yaruel</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Year</span>
+        <span class="info-value">2025</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Contact Email</span>
+        <span class="info-value">minomoya626@gmail.com</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Repository</span>
+        <span class="info-value">github.com/yjulio/assetManagement</span>
+      </div>
+    </div>
+  </div>
+  
+  <div style="padding: 25px; background: #e7f3ff; border-left: 4px solid #2196F3; border-radius: 8px; margin-top: 30px;">
+    <h3 style="color: #1976d2; margin-bottom: 10px;">ℹ️ About This Page</h3>
+    <p style="color: #555; line-height: 1.6; margin: 0;">
+      This page displays current system information and configuration. Statistics marked as "N/A" require database queries 
+      to display real-time data. For detailed system logs and diagnostics, please contact your system administrator.
+    </p>
+  </div>
+  
+  <div style="text-align: center; margin-top: 30px;">
+    <a href="/help/contact-support" style="display: inline-block; padding: 12px 30px; background: #11998e; color: white; text-decoration: none; border-radius: 25px; font-weight: 600; margin-right: 10px;">📧 Contact Support</a>
+    <a href="/help/documentation" style="display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 25px; font-weight: 600;">📚 View Documentation</a>
+  </div>
+</div>
+
+{% endblock %}

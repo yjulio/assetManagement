@@ -1734,6 +1734,41 @@ def report_other():
 def help_support():
     return render_template('help_support.html', title='Help & Support')
 
+@app.route('/help/user-guide')
+@login_required
+def help_user_guide():
+    return render_template('help_user_guide.html', title='User Guide')
+
+@app.route('/help/documentation')
+@login_required
+def help_documentation():
+    return render_template('help_documentation.html', title='Documentation')
+
+@app.route('/help/faq')
+@login_required
+def help_faq():
+    return render_template('help_faq.html', title='FAQ')
+
+@app.route('/help/video-tutorials')
+@login_required
+def help_video_tutorials():
+    return render_template('help_video_tutorials.html', title='Video Tutorials')
+
+@app.route('/help/contact-support')
+@login_required
+def help_contact_support():
+    return render_template('help_contact_support.html', title='Contact Support')
+
+@app.route('/help/system-info')
+@login_required
+def help_system_info():
+    return render_template('help_system_info.html', title='System Information')
+
+@app.route('/help/release-notes')
+@login_required
+def help_release_notes():
+    return render_template('help_release_notes.html', title='Release Notes')
+
 
 if __name__ == "__main__":
     # Use configuration from config.py (supports environment variables)

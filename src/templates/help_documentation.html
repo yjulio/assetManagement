@@ -1,0 +1,413 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .docs-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .docs-header {
+    text-align: center;
+    padding: 30px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    color: white;
+    margin-bottom: 30px;
+  }
+  
+  .docs-navigation {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    margin-bottom: 30px;
+  }
+  
+  .nav-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+  }
+  
+  .nav-item {
+    padding: 15px 20px;
+    background: #f8f9fa;
+    border-left: 4px solid #667eea;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-decoration: none;
+    color: #2c3e50;
+    display: block;
+  }
+  
+  .nav-item:hover {
+    background: #e9ecef;
+    transform: translateX(5px);
+  }
+  
+  .nav-item strong {
+    display: block;
+    margin-bottom: 5px;
+    color: #667eea;
+  }
+  
+  .docs-section {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    margin-bottom: 25px;
+  }
+  
+  .docs-section h2 {
+    color: #2c3e50;
+    border-bottom: 3px solid #667eea;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+  }
+  
+  .docs-section h3 {
+    color: #495057;
+    margin-top: 25px;
+    margin-bottom: 15px;
+  }
+  
+  .docs-section p {
+    color: #555;
+    line-height: 1.8;
+    margin-bottom: 15px;
+  }
+  
+  .docs-section ul, .docs-section ol {
+    color: #555;
+    line-height: 1.8;
+    margin-bottom: 15px;
+    padding-left: 25px;
+  }
+  
+  .code-block {
+    background: #282c34;
+    color: #abb2bf;
+    padding: 20px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 15px 0;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+  }
+  
+  .info-box {
+    background: #e7f3ff;
+    border-left: 4px solid #2196F3;
+    padding: 15px 20px;
+    margin: 15px 0;
+    border-radius: 4px;
+  }
+  
+  .warning-box {
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 15px 20px;
+    margin: 15px 0;
+    border-radius: 4px;
+  }
+  
+  .table-responsive {
+    overflow-x: auto;
+    margin: 20px 0;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  table th {
+    background: #667eea;
+    color: white;
+    padding: 12px;
+    text-align: left;
+  }
+  
+  table td {
+    padding: 12px;
+    border-bottom: 1px solid #ecf0f1;
+  }
+  
+  table tr:hover {
+    background: #f8f9fa;
+  }
+</style>
+
+<div class="docs-container">
+  <div class="docs-header">
+    <h1>📚 System Documentation</h1>
+    <p>Complete technical documentation and reference guides</p>
+  </div>
+  
+  <div class="docs-navigation">
+    <h3 style="margin-bottom: 20px; color: #2c3e50;">Quick Navigation</h3>
+    <div class="nav-grid">
+      <a href="#overview" class="nav-item">
+        <strong>System Overview</strong>
+        <span style="font-size: 13px; color: #7f8c8d;">Architecture & Features</span>
+      </a>
+      <a href="#modules" class="nav-item">
+        <strong>Core Modules</strong>
+        <span style="font-size: 13px; color: #7f8c8d;">Asset, Users, Reports</span>
+      </a>
+      <a href="#database" class="nav-item">
+        <strong>Database Schema</strong>
+        <span style="font-size: 13px; color: #7f8c8d;">Tables & Relationships</span>
+      </a>
+      <a href="#api" class="nav-item">
+        <strong>API Reference</strong>
+        <span style="font-size: 13px; color: #7f8c8d;">Endpoints & Methods</span>
+      </a>
+      <a href="#security" class="nav-item">
+        <strong>Security</strong>
+        <span style="font-size: 13px; color: #7f8c8d;">Authentication & Permissions</span>
+      </a>
+      <a href="#deployment" class="nav-item">
+        <strong>Deployment</strong>
+        <span style="font-size: 13px; color: #7f8c8d;">Server Setup & Configuration</span>
+      </a>
+    </div>
+  </div>
+  
+  <div class="docs-section" id="overview">
+    <h2>System Overview</h2>
+    <p>The Asset Management System is a comprehensive web-based application built with Flask (Python) and MySQL, designed to track and manage organizational assets throughout their lifecycle.</p>
+    
+    <h3>Technology Stack</h3>
+    <ul>
+      <li><strong>Backend:</strong> Flask 3.1.2 (Python 3.13.7)</li>
+      <li><strong>Database:</strong> MySQL 8.0+</li>
+      <li><strong>Web Server:</strong> Nginx 1.28.0</li>
+      <li><strong>Frontend:</strong> HTML5, CSS3, JavaScript</li>
+      <li><strong>Authentication:</strong> Flask-Login with session management</li>
+    </ul>
+    
+    <h3>Key Features</h3>
+    <ul>
+      <li>Complete asset lifecycle management (add, update, dispose)</li>
+      <li>Check-in/Check-out tracking with employee assignment</li>
+      <li>Maintenance scheduling and history</li>
+      <li>Depreciation calculation (straight-line, declining balance)</li>
+      <li>Comprehensive reporting and analytics</li>
+      <li>Bulk import/export (CSV, Excel)</li>
+      <li>Role-based access control</li>
+      <li>Document and image management</li>
+    </ul>
+  </div>
+  
+  <div class="docs-section" id="modules">
+    <h2>Core Modules</h2>
+    
+    <h3>Asset Management Module</h3>
+    <p>Handles all asset-related operations including creation, updates, and lifecycle tracking.</p>
+    <ul>
+      <li><strong>Add Asset:</strong> Create new asset records with specifications</li>
+      <li><strong>View/Edit:</strong> Access and modify asset details</li>
+      <li><strong>Assign:</strong> Link assets to employees, departments, or locations</li>
+      <li><strong>Move:</strong> Transfer assets between locations</li>
+      <li><strong>Dispose:</strong> Mark assets as sold, donated, or scrapped</li>
+    </ul>
+    
+    <h3>User Management Module</h3>
+    <p>Controls user accounts, authentication, and permissions.</p>
+    <ul>
+      <li><strong>User Groups:</strong> Admin, Manager, User, Viewer roles</li>
+      <li><strong>Permissions:</strong> Granular control over module access</li>
+      <li><strong>Authentication:</strong> Secure login with password hashing</li>
+    </ul>
+    
+    <h3>Reporting Module</h3>
+    <p>Generate various reports for analysis and compliance.</p>
+    <ul>
+      <li>Inventory reports by category, location, status</li>
+      <li>Depreciation schedules and valuations</li>
+      <li>Maintenance history and upcoming schedules</li>
+      <li>Check-in/out activity logs</li>
+      <li>Custom reports with filters</li>
+    </ul>
+  </div>
+  
+  <div class="docs-section" id="database">
+    <h2>Database Schema</h2>
+    
+    <h3>Key Tables</h3>
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Table Name</th>
+            <th>Description</th>
+            <th>Key Fields</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>assets</code></td>
+            <td>Main asset records</td>
+            <td>id, name, category, serial_number, purchase_date, cost</td>
+          </tr>
+          <tr>
+            <td><code>users</code></td>
+            <td>User accounts</td>
+            <td>id, username, email, password_hash, group_id</td>
+          </tr>
+          <tr>
+            <td><code>asset_transactions</code></td>
+            <td>Check-in/out history</td>
+            <td>id, asset_id, user_id, action, timestamp</td>
+          </tr>
+          <tr>
+            <td><code>maintenance</code></td>
+            <td>Maintenance records</td>
+            <td>id, asset_id, type, cost, date, next_date</td>
+          </tr>
+          <tr>
+            <td><code>categories</code></td>
+            <td>Asset categories</td>
+            <td>id, name, depreciation_rate, useful_life</td>
+          </tr>
+          <tr>
+            <td><code>locations</code></td>
+            <td>Physical locations</td>
+            <td>id, name, building, floor, department</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+    <div class="info-box">
+      <strong>📝 Note:</strong> Full database schema available in <code>/src/db/schema.sql</code>
+    </div>
+  </div>
+  
+  <div class="docs-section" id="api">
+    <h2>API Reference</h2>
+    
+    <h3>Authentication Endpoints</h3>
+    <div class="code-block">
+POST /login
+Parameters: username, password
+Returns: Session cookie, redirect to dashboard
+
+POST /logout
+Returns: Redirect to login page
+    </div>
+    
+    <h3>Asset Endpoints</h3>
+    <div class="code-block">
+GET  /assets/lists           # List all assets
+POST /assets/add             # Create new asset
+GET  /assets/view/&lt;id&gt;       # View asset details
+POST /assets/edit/&lt;id&gt;       # Update asset
+POST /assets/dispose/&lt;id&gt;    # Dispose asset
+    </div>
+    
+    <h3>Transaction Endpoints</h3>
+    <div class="code-block">
+POST /assets/checkout        # Check out asset
+POST /assets/checkin         # Check in asset
+GET  /assets/assign          # Assign asset to employee
+    </div>
+    
+    <div class="warning-box">
+      <strong>⚠️ Important:</strong> All endpoints require authentication. Use <code>@login_required</code> decorator.
+    </div>
+  </div>
+  
+  <div class="docs-section" id="security">
+    <h2>Security & Authentication</h2>
+    
+    <h3>Password Security</h3>
+    <p>Passwords are hashed using Werkzeug's <code>generate_password_hash</code> with SHA-256 and salt.</p>
+    <div class="code-block">
+from werkzeug.security import generate_password_hash, check_password_hash
+
+# Hash password
+hashed = generate_password_hash(password, method='pbkdf2:sha256')
+
+# Verify password
+is_valid = check_password_hash(stored_hash, provided_password)
+    </div>
+    
+    <h3>Session Management</h3>
+    <p>Flask-Login manages user sessions with secure cookies and timeout.</p>
+    
+    <h3>Role-Based Access Control</h3>
+    <ul>
+      <li><strong>Admin:</strong> Full system access, user management</li>
+      <li><strong>Manager:</strong> Asset management, reports, no user management</li>
+      <li><strong>User:</strong> View assets, check-in/out, limited reports</li>
+      <li><strong>Viewer:</strong> Read-only access</li>
+    </ul>
+  </div>
+  
+  <div class="docs-section" id="deployment">
+    <h2>Deployment Guide</h2>
+    
+    <h3>Server Requirements</h3>
+    <ul>
+      <li>Ubuntu 20.04+ or equivalent Linux distribution</li>
+      <li>Python 3.13.7+</li>
+      <li>MySQL 8.0+</li>
+      <li>Nginx 1.28.0+</li>
+      <li>4GB RAM minimum (8GB recommended)</li>
+      <li>20GB disk space</li>
+    </ul>
+    
+    <h3>Installation Steps</h3>
+    <div class="code-block">
+# Clone repository
+git clone https://github.com/yjulio/assetManagement.git
+cd assetManagement
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Configure database
+mysql -u root -p < sql/create_database.sql
+
+# Run application
+python src/app.py
+    </div>
+    
+    <h3>Nginx Configuration</h3>
+    <p>Configure Nginx as reverse proxy. Sample configuration in <code>nginx_asset_management.conf</code>.</p>
+    
+    <div class="info-box">
+      <strong>📖 More Information:</strong> See <code>DEPLOYMENT.md</code> for detailed deployment instructions.
+    </div>
+  </div>
+  
+  <div style="text-align: center; margin-top: 40px; padding: 30px; background: #f8f9fa; border-radius: 8px;">
+    <h3 style="color: #2c3e50; margin-bottom: 15px;">Need Additional Documentation?</h3>
+    <p style="color: #7f8c8d; margin-bottom: 20px;">Contact the development team or submit a documentation request</p>
+    <a href="/help/contact-support" style="display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 25px; font-weight: 600;">Contact Support</a>
+  </div>
+</div>
+
+<script>
+// Smooth scrolling for navigation links
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+  anchor.addEventListener('click', function (e) {
+    e.preventDefault();
+    const target = document.querySelector(this.getAttribute('href'));
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+});
+</script>
+
+{% endblock %}

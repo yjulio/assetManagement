@@ -1,0 +1,264 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .support-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .support-header {
+    text-align: center;
+    padding: 30px;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    border-radius: 12px;
+    color: white;
+    margin-bottom: 30px;
+  }
+  
+  .support-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+  }
+  
+  .support-card {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    text-align: center;
+    transition: transform 0.3s;
+  }
+  
+  .support-card:hover {
+    transform: translateY(-5px);
+  }
+  
+  .support-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+  }
+  
+  .support-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 10px;
+  }
+  
+  .support-description {
+    color: #7f8c8d;
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 15px;
+  }
+  
+  .support-action {
+    color: #f5576c;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  
+  .contact-form {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  }
+  
+  .form-group {
+    margin-bottom: 20px;
+  }
+  
+  .form-group label {
+    display: block;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 8px;
+  }
+  
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ecf0f1;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.3s;
+  }
+  
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: #f5576c;
+  }
+  
+  .form-group textarea {
+    resize: vertical;
+    min-height: 150px;
+  }
+  
+  .submit-btn {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    padding: 15px 40px;
+    border: none;
+    border-radius: 25px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.3s;
+  }
+  
+  .submit-btn:hover {
+    transform: scale(1.05);
+  }
+  
+  @media (max-width: 768px) {
+    .support-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="support-container">
+  <div class="support-header">
+    <h1>💬 Contact Support</h1>
+    <p>We're here to help! Get in touch with our support team</p>
+  </div>
+  
+  <div class="support-grid">
+    <div class="support-card">
+      <div class="support-icon">📧</div>
+      <div class="support-title">Email Support</div>
+      <div class="support-description">
+        Send us an email and we'll respond within 24 hours
+      </div>
+      <a href="mailto:minomoya626@gmail.com" class="support-action">minomoya626@gmail.com</a>
+    </div>
+    
+    <div class="support-card">
+      <div class="support-icon">📚</div>
+      <div class="support-title">Documentation</div>
+      <div class="support-description">
+        Browse our comprehensive documentation and guides
+      </div>
+      <a href="/help/documentation" class="support-action">View Documentation →</a>
+    </div>
+    
+    <div class="support-card">
+      <div class="support-icon">❓</div>
+      <div class="support-title">FAQ</div>
+      <div class="support-description">
+        Find answers to frequently asked questions
+      </div>
+      <a href="/help/faq" class="support-action">Browse FAQ →</a>
+    </div>
+  </div>
+  
+  <div class="contact-form">
+    <h2 style="text-align: center; color: #2c3e50; margin-bottom: 30px;">Submit a Support Request</h2>
+    
+    <form id="supportForm" onsubmit="handleSubmit(event)">
+      <div class="form-group">
+        <label for="name">Your Name *</label>
+        <input type="text" id="name" name="name" required placeholder="Enter your full name">
+      </div>
+      
+      <div class="form-group">
+        <label for="email">Email Address *</label>
+        <input type="email" id="email" name="email" required placeholder="your.email@example.com">
+      </div>
+      
+      <div class="form-group">
+        <label for="category">Issue Category *</label>
+        <select id="category" name="category" required>
+          <option value="">Select a category</option>
+          <option value="technical">Technical Issue</option>
+          <option value="account">Account Access</option>
+          <option value="asset">Asset Management</option>
+          <option value="reporting">Reports & Analytics</option>
+          <option value="import">Import/Export Data</option>
+          <option value="maintenance">Maintenance Tracking</option>
+          <option value="feature">Feature Request</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="priority">Priority *</label>
+        <select id="priority" name="priority" required>
+          <option value="">Select priority</option>
+          <option value="low">Low - General inquiry</option>
+          <option value="medium">Medium - Affects some work</option>
+          <option value="high">High - Affects critical operations</option>
+          <option value="urgent">Urgent - System down</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="subject">Subject *</label>
+        <input type="text" id="subject" name="subject" required placeholder="Brief description of your issue">
+      </div>
+      
+      <div class="form-group">
+        <label for="message">Detailed Description *</label>
+        <textarea id="message" name="message" required placeholder="Please provide as much detail as possible about your issue or question..."></textarea>
+      </div>
+      
+      <div style="text-align: center;">
+        <button type="submit" class="submit-btn">📤 Submit Request</button>
+      </div>
+    </form>
+  </div>
+  
+  <div style="margin-top: 40px; padding: 25px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 8px;">
+    <h3 style="color: #856404; margin-bottom: 10px;">💡 Before Submitting:</h3>
+    <ul style="color: #856404; line-height: 1.8;">
+      <li>Check the <a href="/help/faq" style="color: #856404; font-weight: 600;">FAQ</a> for quick answers</li>
+      <li>Review the <a href="/help/user-guide" style="color: #856404; font-weight: 600;">User Guide</a> for step-by-step instructions</li>
+      <li>Watch <a href="/help/video-tutorials" style="color: #856404; font-weight: 600;">Video Tutorials</a> for visual guidance</li>
+      <li>Include screenshots or error messages when reporting issues</li>
+      <li>Provide your browser version and operating system for technical problems</li>
+    </ul>
+  </div>
+  
+  <div style="text-align: center; margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+    <h3 style="color: #2c3e50;">Support Hours</h3>
+    <p style="color: #7f8c8d;">Monday - Friday: 8:00 AM - 5:00 PM (Local Time)</p>
+    <p style="color: #7f8c8d; font-size: 12px; margin-top: 10px;">We aim to respond to all inquiries within 24 hours during business days</p>
+  </div>
+</div>
+
+<script>
+function handleSubmit(event) {
+  event.preventDefault();
+  
+  const form = event.target;
+  const formData = new FormData(form);
+  
+  // Create email body
+  let emailBody = `Support Request from Asset Management System\n\n`;
+  emailBody += `Name: ${formData.get('name')}\n`;
+  emailBody += `Email: ${formData.get('email')}\n`;
+  emailBody += `Category: ${formData.get('category')}\n`;
+  emailBody += `Priority: ${formData.get('priority')}\n`;
+  emailBody += `Subject: ${formData.get('subject')}\n\n`;
+  emailBody += `Description:\n${formData.get('message')}`;
+  
+  // Create mailto link
+  const mailtoLink = `mailto:minomoya626@gmail.com?subject=${encodeURIComponent(formData.get('subject'))}&body=${encodeURIComponent(emailBody)}`;
+  
+  // Open email client
+  window.location.href = mailtoLink;
+  
+  // Show confirmation
+  alert('Your email client will open. If it doesn\'t, please email us directly at minomoya626@gmail.com');
+}
+</script>
+
+{% endblock %}

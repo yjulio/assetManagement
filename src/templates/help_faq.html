@@ -1,0 +1,263 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .faq-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .faq-header {
+    text-align: center;
+    padding: 30px;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    border-radius: 12px;
+    color: white;
+    margin-bottom: 30px;
+  }
+  
+  .faq-item {
+    background: white;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+    overflow: hidden;
+  }
+  
+  .faq-question {
+    padding: 20px;
+    cursor: pointer;
+    background: white;
+    border-left: 4px solid #f5576c;
+    font-weight: 600;
+    color: #2c3e50;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.3s;
+  }
+  
+  .faq-question:hover {
+    background: #f8f9fa;
+  }
+  
+  .faq-answer {
+    padding: 0 20px;
+    max-height: 0;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    color: #555;
+    line-height: 1.6;
+  }
+  
+  .faq-answer.active {
+    padding: 20px;
+    max-height: 500px;
+  }
+  
+  .faq-icon {
+    font-size: 20px;
+    transition: transform 0.3s;
+  }
+  
+  .faq-icon.active {
+    transform: rotate(180deg);
+  }
+</style>
+
+<div class="faq-container">
+  <div class="faq-header">
+    <h1>❓ Frequently Asked Questions</h1>
+    <p>Quick answers to common questions</p>
+  </div>
+  
+  <div class="faq-item">
+    <div class="faq-question" onclick="toggleFaq(this)">
+      <span>How do I add a new asset to the system?</span>
+      <span class="faq-icon">▼</span>
+    </div>
+    <div class="faq-answer">
+      <p>To add a new asset:</p>
+      <ol>
+        <li>Click on <strong>Assets → Add an Asset</strong> in the sidebar</li>
+        <li>Fill in the required fields (name, category, serial number, etc.)</li>
+        <li>Upload images or documents if needed</li>
+        <li>Click <strong>Submit</strong> to save</li>
+      </ol>
+      <p>The asset will appear in your inventory immediately.</p>
+    </div>
+  </div>
+  
+  <div class="faq-item">
+    <div class="faq-question" onclick="toggleFaq(this)">
+      <span>How do I check out an asset to an employee?</span>
+      <span class="faq-icon">▼</span>
+    </div>
+    <div class="faq-answer">
+      <p>Navigate to <strong>Assets → Check Out</strong>, select the asset, choose the employee, set the expected return date, and confirm. The system will track who has the asset and when it's due back.</p>
+    </div>
+  </div>
+  
+  <div class="faq-item">
+    <div class="faq-question" onclick="toggleFaq(this)">
+      <span>Can I import multiple assets at once?</span>
+      <span class="faq-icon">▼</span>
+    </div>
+    <div class="faq-answer">
+      <p>Yes! Go to <strong>Tools → Import Data</strong>, download the CSV template, fill it with your asset data, and upload it. The system will import all assets in bulk.</p>
+    </div>
+  </div>
+  
+  <div class="faq-item">
+    <div class="faq-question" onclick="toggleFaq(this)">
+      <span>How do I generate reports?</span>
+      <span class="faq-icon">▼</span>
+    </div>
+    <div class="faq-answer">
+      <p>Click on <strong>Reports</strong> in the sidebar and choose the type of report you need (Inventory, Depreciation, Maintenance, etc.). Set your filters and date range, then click <strong>Generate Report</strong>. You can export the report to PDF, Excel, or CSV.</p>
+    </div>
+  </div>
+  
+  <div class="faq-item">
+    <div class="faq-question" onclick="toggleFaq(this)">
+      <span>What is asset depreciation and how is it calculated?</span>
+      <span class="faq-icon">▼</span>
+    </div>
+    <div class="faq-answer">
+      <p>Asset depreciation is the decrease in asset value over time. The system supports multiple methods:</p>
+      <ul>
+        <li><strong>Straight-line:</strong> Equal depreciation each year</li>
+        <li><strong>Declining balance:</strong> Accelerated depreciation</li>
+      </ul>
+      <p>You can set the depreciation method, useful life, and salvage value for each asset.</p>
+    </div>
+  </div>
+  
+  <div class="faq-item">
+    <div class="faq-question" onclick="toggleFaq(this)">
+      <span>How do I schedule maintenance for an asset?</span>
+      <span class="faq-icon">▼</span>
+    </div>
+    <div class="faq-answer">
+      <p>Go to <strong>Assets → Maintenance</strong>, select the asset, enter maintenance details (type, cost, vendor), and set the next maintenance date. The system will track maintenance history and send reminders.</p>
+    </div>
+  </div>
+  
+  <div class="faq-item">
+    <div class="faq-question" onclick="toggleFaq(this)">
+      <span>Can I track asset locations?</span>
+      <span class="faq-icon">▼</span>
+    </div>
+    <div class="faq-answer">
+      <p>Yes! Set up locations in <strong>Setup/Configuration → Locations</strong>, then assign assets to specific locations. You can also move assets between locations using <strong>Assets → Move</strong>.</p>
+    </div>
+  </div>
+  
+  <div class="faq-item">
+    <div class="faq-question" onclick="toggleFaq(this)">
+      <span>How do I dispose of an asset?</span>
+      <span class="faq-icon">▼</span>
+    </div>
+    <div class="faq-answer">
+      <p>Navigate to <strong>Assets → Dispose</strong>, select the asset, choose disposal method (sold, donated, scrapped), enter details and reason, then confirm. The asset will be marked as disposed but remains in records for audit purposes.</p>
+    </div>
+  </div>
+  
+  <div class="faq-item">
+    <div class="faq-question" onclick="toggleFaq(this)">
+      <span>What user roles and permissions are available?</span>
+      <span class="faq-icon">▼</span>
+    </div>
+    <div class="faq-answer">
+      <p>The system supports multiple user groups with different permissions:</p>
+      <ul>
+        <li><strong>Admin:</strong> Full access to all features</li>
+        <li><strong>Manager:</strong> Can manage assets and generate reports</li>
+        <li><strong>User:</strong> Can view assets and check in/out</li>
+        <li><strong>Viewer:</strong> Read-only access</li>
+      </ul>
+      <p>Configure user groups in <strong>Setup/Configuration → Groups</strong>.</p>
+    </div>
+  </div>
+  
+  <div class="faq-item">
+    <div class="faq-question" onclick="toggleFaq(this)">
+      <span>How do I backup my data?</span>
+      <span class="faq-icon">▼</span>
+    </div>
+    <div class="faq-answer">
+      <p>Use <strong>Tools → Export Data</strong> to export all your data to CSV or Excel. For database backups, contact your system administrator. Regular backups are recommended to prevent data loss.</p>
+    </div>
+  </div>
+  
+  <div class="faq-item">
+    <div class="faq-question" onclick="toggleFaq(this)">
+      <span>Can I customize the system for my organization?</span>
+      <span class="faq-icon">▼</span>
+    </div>
+    <div class="faq-answer">
+      <p>Yes! You can customize:</p>
+      <ul>
+        <li>Company information and logo</li>
+        <li>Asset categories and subcategories</li>
+        <li>Custom fields on forms</li>
+        <li>Departments and locations</li>
+        <li>Email notifications</li>
+      </ul>
+      <p>Access these options in <strong>Setup/Configuration</strong>.</p>
+    </div>
+  </div>
+  
+  <div class="faq-item">
+    <div class="faq-question" onclick="toggleFaq(this)">
+      <span>What browsers are supported?</span>
+      <span class="faq-icon">▼</span>
+    </div>
+    <div class="faq-answer">
+      <p>The system works best on modern browsers:</p>
+      <ul>
+        <li>Google Chrome (recommended)</li>
+        <li>Mozilla Firefox</li>
+        <li>Microsoft Edge</li>
+        <li>Safari</li>
+      </ul>
+      <p>Make sure JavaScript is enabled for full functionality.</p>
+    </div>
+  </div>
+  
+  <div class="faq-item">
+    <div class="faq-question" onclick="toggleFaq(this)">
+      <span>How do I reset my password?</span>
+      <span class="faq-icon">▼</span>
+    </div>
+    <div class="faq-answer">
+      <p>Contact your system administrator to reset your password. For security reasons, only administrators can reset user passwords.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleFaq(element) {
+  const answer = element.nextElementSibling;
+  const icon = element.querySelector('.faq-icon');
+  
+  // Close all other FAQs
+  document.querySelectorAll('.faq-answer').forEach(item => {
+    if (item !== answer) {
+      item.classList.remove('active');
+    }
+  });
+  
+  document.querySelectorAll('.faq-icon').forEach(item => {
+    if (item !== icon) {
+      item.classList.remove('active');
+    }
+  });
+  
+  // Toggle current FAQ
+  answer.classList.toggle('active');
+  icon.classList.toggle('active');
+}
+</script>
+
+{% endblock %}

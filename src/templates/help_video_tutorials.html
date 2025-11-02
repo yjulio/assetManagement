@@ -1,0 +1,275 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .tutorials-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .tutorials-header {
+    text-align: center;
+    padding: 30px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    color: white;
+    margin-bottom: 30px;
+  }
+  
+  .video-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 25px;
+    margin-bottom: 40px;
+  }
+  
+  .video-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    overflow: hidden;
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+  
+  .video-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+  }
+  
+  .video-thumbnail {
+    width: 100%;
+    height: 200px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 60px;
+    color: white;
+    cursor: pointer;
+  }
+  
+  .video-info {
+    padding: 20px;
+  }
+  
+  .video-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 10px;
+  }
+  
+  .video-description {
+    color: #7f8c8d;
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 15px;
+  }
+  
+  .video-duration {
+    display: inline-block;
+    background: #ecf0f1;
+    padding: 5px 12px;
+    border-radius: 15px;
+    font-size: 12px;
+    color: #555;
+  }
+  
+  .category-header {
+    font-size: 24px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 30px 0 20px 0;
+    padding-left: 15px;
+    border-left: 4px solid #667eea;
+  }
+  
+  @media (max-width: 768px) {
+    .video-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="tutorials-container">
+  <div class="tutorials-header">
+    <h1>🎥 Video Tutorials</h1>
+    <p>Watch step-by-step guides to master the system</p>
+  </div>
+  
+  <h2 class="category-header">Getting Started</h2>
+  <div class="video-grid">
+    <div class="video-card">
+      <div class="video-thumbnail" onclick="alert('Video player will be integrated here')">
+        ▶️
+      </div>
+      <div class="video-info">
+        <div class="video-title">System Overview & Navigation</div>
+        <div class="video-description">
+          Learn how to navigate the asset management system, understand the dashboard, and access key features.
+        </div>
+        <span class="video-duration">⏱️ 8 minutes</span>
+      </div>
+    </div>
+    
+    <div class="video-card">
+      <div class="video-thumbnail" onclick="alert('Video player will be integrated here')">
+        ▶️
+      </div>
+      <div class="video-info">
+        <div class="video-title">Creating Your First Asset</div>
+        <div class="video-description">
+          Step-by-step guide to adding your first asset, including categories, specifications, and documentation.
+        </div>
+        <span class="video-duration">⏱️ 5 minutes</span>
+      </div>
+    </div>
+    
+    <div class="video-card">
+      <div class="video-thumbnail" onclick="alert('Video player will be integrated here')">
+        ▶️
+      </div>
+      <div class="video-info">
+        <div class="video-title">User Roles & Permissions</div>
+        <div class="video-description">
+          Understand different user roles, how to create users, and manage permissions for your team.
+        </div>
+        <span class="video-duration">⏱️ 6 minutes</span>
+      </div>
+    </div>
+  </div>
+  
+  <h2 class="category-header">Asset Management</h2>
+  <div class="video-grid">
+    <div class="video-card">
+      <div class="video-thumbnail" onclick="alert('Video player will be integrated here')">
+        ▶️
+      </div>
+      <div class="video-info">
+        <div class="video-title">Check In & Check Out Process</div>
+        <div class="video-description">
+          Learn how to check assets in and out, assign them to employees, and track asset usage.
+        </div>
+        <span class="video-duration">⏱️ 7 minutes</span>
+      </div>
+    </div>
+    
+    <div class="video-card">
+      <div class="video-thumbnail" onclick="alert('Video player will be integrated here')">
+        ▶️
+      </div>
+      <div class="video-info">
+        <div class="video-title">Asset Maintenance & Tracking</div>
+        <div class="video-description">
+          Schedule maintenance, track service history, and manage vendor relationships for your assets.
+        </div>
+        <span class="video-duration">⏱️ 9 minutes</span>
+      </div>
+    </div>
+    
+    <div class="video-card">
+      <div class="video-thumbnail" onclick="alert('Video player will be integrated here')">
+        ▶️
+      </div>
+      <div class="video-info">
+        <div class="video-title">Asset Disposal & Lifecycle</div>
+        <div class="video-description">
+          Complete guide to asset disposal, including documentation, approval workflows, and compliance.
+        </div>
+        <span class="video-duration">⏱️ 6 minutes</span>
+      </div>
+    </div>
+  </div>
+  
+  <h2 class="category-header">Advanced Features</h2>
+  <div class="video-grid">
+    <div class="video-card">
+      <div class="video-thumbnail" onclick="alert('Video player will be integrated here')">
+        ▶️
+      </div>
+      <div class="video-info">
+        <div class="video-title">Bulk Import & Export</div>
+        <div class="video-description">
+          Import hundreds of assets at once using CSV files, and export data for reporting and backup.
+        </div>
+        <span class="video-duration">⏱️ 10 minutes</span>
+      </div>
+    </div>
+    
+    <div class="video-card">
+      <div class="video-thumbnail" onclick="alert('Video player will be integrated here')">
+        ▶️
+      </div>
+      <div class="video-info">
+        <div class="video-title">Custom Reports & Analytics</div>
+        <div class="video-description">
+          Create custom reports, analyze asset utilization, and generate insights for better decision-making.
+        </div>
+        <span class="video-duration">⏱️ 12 minutes</span>
+      </div>
+    </div>
+    
+    <div class="video-card">
+      <div class="video-thumbnail" onclick="alert('Video player will be integrated here')">
+        ▶️
+      </div>
+      <div class="video-info">
+        <div class="video-title">Depreciation Calculation</div>
+        <div class="video-description">
+          Set up depreciation methods, calculate asset values, and generate financial reports.
+        </div>
+        <span class="video-duration">⏱️ 8 minutes</span>
+      </div>
+    </div>
+  </div>
+  
+  <h2 class="category-header">Configuration & Customization</h2>
+  <div class="video-grid">
+    <div class="video-card">
+      <div class="video-thumbnail" onclick="alert('Video player will be integrated here')">
+        ▶️
+      </div>
+      <div class="video-info">
+        <div class="video-title">System Configuration</div>
+        <div class="video-description">
+          Configure company settings, departments, locations, and customize the system for your organization.
+        </div>
+        <span class="video-duration">⏱️ 11 minutes</span>
+      </div>
+    </div>
+    
+    <div class="video-card">
+      <div class="video-thumbnail" onclick="alert('Video player will be integrated here')">
+        ▶️
+      </div>
+      <div class="video-info">
+        <div class="video-title">Email Notifications & Alerts</div>
+        <div class="video-description">
+          Set up automated email notifications for maintenance, check-in reminders, and approval workflows.
+        </div>
+        <span class="video-duration">⏱️ 7 minutes</span>
+      </div>
+    </div>
+    
+    <div class="video-card">
+      <div class="video-thumbnail" onclick="alert('Video player will be integrated here')">
+        ▶️
+      </div>
+      <div class="video-info">
+        <div class="video-title">Backup & Data Security</div>
+        <div class="video-description">
+          Learn best practices for data backup, security settings, and disaster recovery procedures.
+        </div>
+        <span class="video-duration">⏱️ 9 minutes</span>
+      </div>
+    </div>
+  </div>
+  
+  <div style="text-align: center; margin-top: 40px; padding: 30px; background: #f8f9fa; border-radius: 8px;">
+    <h3 style="color: #2c3e50; margin-bottom: 10px;">Need More Help?</h3>
+    <p style="color: #7f8c8d; margin-bottom: 20px;">Can't find what you're looking for? Contact our support team.</p>
+    <a href="/help/contact-support" style="display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 25px; font-weight: 600;">Contact Support</a>
+  </div>
+</div>
+
+{% endblock %}

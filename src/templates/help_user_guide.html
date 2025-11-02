@@ -1,0 +1,254 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .guide-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .guide-header {
+    text-align: center;
+    padding: 30px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    color: white;
+    margin-bottom: 30px;
+  }
+  
+  .guide-section {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  
+  .guide-section h2 {
+    color: #2c3e50;
+    border-bottom: 3px solid #667eea;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+  }
+  
+  .guide-section h3 {
+    color: #34495e;
+    margin-top: 20px;
+  }
+  
+  .step-box {
+    background: #f8f9fa;
+    padding: 15px;
+    border-left: 4px solid #667eea;
+    margin: 15px 0;
+    border-radius: 5px;
+  }
+  
+  .step-number {
+    display: inline-block;
+    background: #667eea;
+    color: white;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 30px;
+    margin-right: 10px;
+    font-weight: bold;
+  }
+</style>
+
+<div class="guide-container">
+  <div class="guide-header">
+    <h1>📖 User Guide</h1>
+    <p>Complete guide to using the Asset Management System</p>
+  </div>
+  
+  <div class="guide-section">
+    <h2>Getting Started</h2>
+    
+    <div class="step-box">
+      <span class="step-number">1</span>
+      <strong>Login to the System</strong>
+      <p>Use your credentials (username and password) to access the system. Contact your administrator if you don't have login credentials.</p>
+    </div>
+    
+    <div class="step-box">
+      <span class="step-number">2</span>
+      <strong>Navigate the Dashboard</strong>
+      <p>After login, you'll see the dashboard with key metrics: total assets, checked out items, maintenance alerts, and recent activities.</p>
+    </div>
+    
+    <div class="step-box">
+      <span class="step-number">3</span>
+      <strong>Explore the Sidebar Menu</strong>
+      <p>Use the left sidebar to navigate different sections: Assets, Reports, Tools, Lists, Setup/Configuration, and Help & Support.</p>
+    </div>
+  </div>
+  
+  <div class="guide-section">
+    <h2>Managing Assets</h2>
+    
+    <h3>Adding a New Asset</h3>
+    <ul>
+      <li>Click <strong>Assets → Add an Asset</strong> in the sidebar</li>
+      <li>Fill in asset details: name, category, serial number, purchase date, price, etc.</li>
+      <li>Upload images or documents if needed</li>
+      <li>Click <strong>Submit</strong> to save the asset</li>
+    </ul>
+    
+    <h3>Viewing Assets</h3>
+    <ul>
+      <li>Go to <strong>Assets → List of Assets</strong></li>
+      <li>Use filters to search by name, category, location, or status</li>
+      <li>Click on any asset to view full details</li>
+      <li>Export the list to CSV or Excel for reporting</li>
+    </ul>
+    
+    <h3>Updating Asset Quantity</h3>
+    <ul>
+      <li>Navigate to <strong>Assets → Update Quantity</strong></li>
+      <li>Search for the asset</li>
+      <li>Enter new quantity and reason for change</li>
+      <li>Save changes</li>
+    </ul>
+    
+    <h3>Editing Asset Information</h3>
+    <ul>
+      <li>Go to the asset details page</li>
+      <li>Click <strong>Edit</strong> button</li>
+      <li>Modify the required fields</li>
+      <li>Save your changes</li>
+    </ul>
+  </div>
+  
+  <div class="guide-section">
+    <h2>Check In / Check Out</h2>
+    
+    <h3>Checking Out Assets</h3>
+    <ul>
+      <li>Go to <strong>Assets → Check Out</strong></li>
+      <li>Select the asset to assign</li>
+      <li>Choose the employee or department</li>
+      <li>Set expected return date</li>
+      <li>Add notes if needed</li>
+      <li>Confirm check out</li>
+    </ul>
+    
+    <h3>Checking In Assets</h3>
+    <ul>
+      <li>Navigate to <strong>Assets → Check In</strong></li>
+      <li>Select the asset being returned</li>
+      <li>Verify condition and note any damages</li>
+      <li>Complete the check-in process</li>
+    </ul>
+  </div>
+  
+  <div class="guide-section">
+    <h2>Maintenance Management</h2>
+    
+    <ul>
+      <li>Go to <strong>Assets → Maintenance</strong></li>
+      <li>Select asset requiring maintenance</li>
+      <li>Choose maintenance type (repair, service, inspection)</li>
+      <li>Enter maintenance details and cost</li>
+      <li>Set next maintenance date</li>
+      <li>Upload receipts or documents</li>
+      <li>Save maintenance record</li>
+    </ul>
+  </div>
+  
+  <div class="guide-section">
+    <h2>Generating Reports</h2>
+    
+    <h3>Available Report Types</h3>
+    <ul>
+      <li><strong>Inventory Report:</strong> Complete list of all assets</li>
+      <li><strong>Asset Report:</strong> Detailed asset information</li>
+      <li><strong>Depreciation Report:</strong> Asset value over time</li>
+      <li><strong>Maintenance Report:</strong> Maintenance history and schedules</li>
+      <li><strong>Check-out Report:</strong> Currently assigned assets</li>
+      <li><strong>Custom Report:</strong> Build your own report</li>
+    </ul>
+    
+    <h3>Steps to Generate Reports</h3>
+    <div class="step-box">
+      <span class="step-number">1</span>
+      Go to <strong>Reports</strong> menu and select report type
+    </div>
+    <div class="step-box">
+      <span class="step-number">2</span>
+      Set date range and filters (optional)
+    </div>
+    <div class="step-box">
+      <span class="step-number">3</span>
+      Click <strong>Generate Report</strong>
+    </div>
+    <div class="step-box">
+      <span class="step-number">4</span>
+      Export to PDF, Excel, or CSV format
+    </div>
+  </div>
+  
+  <div class="guide-section">
+    <h2>Import / Export Data</h2>
+    
+    <h3>Importing Assets</h3>
+    <ul>
+      <li>Download the CSV template from <strong>Tools → Import Data</strong></li>
+      <li>Fill in asset information in the template</li>
+      <li>Upload the completed CSV file</li>
+      <li>Review and confirm the import</li>
+    </ul>
+    
+    <h3>Exporting Data</h3>
+    <ul>
+      <li>Go to <strong>Tools → Export Data</strong></li>
+      <li>Select data type (assets, maintenance, etc.)</li>
+      <li>Choose export format (CSV, Excel, PDF)</li>
+      <li>Download the exported file</li>
+    </ul>
+  </div>
+  
+  <div class="guide-section">
+    <h2>System Configuration</h2>
+    
+    <h3>User Management</h3>
+    <ul>
+      <li>Navigate to <strong>Setup/Configuration → Users</strong></li>
+      <li>Add, edit, or delete user accounts</li>
+      <li>Assign user groups and permissions</li>
+    </ul>
+    
+    <h3>Company Settings</h3>
+    <ul>
+      <li>Go to <strong>Setup/Configuration → Company Info</strong></li>
+      <li>Update organization details</li>
+      <li>Set logo and branding</li>
+    </ul>
+    
+    <h3>Categories & Locations</h3>
+    <ul>
+      <li>Manage asset categories for organization</li>
+      <li>Add office locations and departments</li>
+      <li>Set up custom fields for assets</li>
+    </ul>
+  </div>
+  
+  <div class="guide-section">
+    <h2>Tips & Best Practices</h2>
+    
+    <ul>
+      <li>✅ Regularly update asset information</li>
+      <li>✅ Perform periodic inventory audits</li>
+      <li>✅ Schedule preventive maintenance</li>
+      <li>✅ Use consistent naming conventions</li>
+      <li>✅ Tag assets with unique identifiers</li>
+      <li>✅ Backup data regularly</li>
+      <li>✅ Train staff on system usage</li>
+      <li>✅ Review reports monthly</li>
+    </ul>
+  </div>
+</div>
+
+{% endblock %}
