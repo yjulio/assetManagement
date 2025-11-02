@@ -8,7 +8,6 @@
 from flask import Flask, request, redirect, url_for, flash, session, render_template
 from AssetManagement import InventorySystem
 from config import FLASK_CONFIG, DB_CONFIG
-from translations import TRANSLATIONS, get_translation
 import html
 import os
 from datetime import datetime, date
@@ -54,24 +53,6 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.secret_key = FLASK_CONFIG.get('secret_key', 'change_this_to_a_random_secret')
 system = InventorySystem()
-
-# Language support
-@app.context_processor
-def inject_language():
-    """Make language and translations available to all templates"""
-    lang = session.get('lang', 'en')
-    return {
-        'lang': lang,
-        'translations': TRANSLATIONS.get(lang, TRANSLATIONS['en']),
-        't': lambda key: get_translation(key, lang)
-    }
-
-@app.route('/set_language/<lang>')
-def set_language(lang):
-    """Set user's preferred language"""
-    if lang in TRANSLATIONS:
-        session['lang'] = lang
-    return redirect(request.referrer or url_for('index'))
 
 def calculate_depreciation(purchase_price, purchase_date_str, salvage_value, useful_life_years, method='straight_line'):
     """Calculate current asset value based on depreciation"""
