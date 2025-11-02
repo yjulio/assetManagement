@@ -1,23 +1,366 @@
 {% extends 'base.html' %}
 {% block content %}
-  <div class="upload-form">
-    <h2>Import Items from Excel or CSV</h2>
-    <p>Upload a file to import multiple items at once. The file should be in CSV or Excel format with the following columns:</p>
-    <ul>
-      <li>name (required)</li>
-      <li>quantity (optional, default: 0)</li>
-      <li>price (optional, default: 0.0)</li>
-      <li>description (optional)</li>
-      <li>low_stock_threshold (optional, default: 5)</li>
-      <li>category (optional, default: Uncategorized)</li>
-      <li>supplier (optional, default: Unknown)</li>
-    </ul>
-    <div class="file-input-wrapper">
-      <form method='post' enctype='multipart/form-data'>
-        <input type='file' name='file' accept='.csv,.xlsx,.xls' required>
-        <input type='submit' value='Upload and Import'>
+<style>
+  .import-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .import-header {
+    text-align: center;
+    padding: 30px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    color: white;
+    margin-bottom: 30px;
+  }
+  
+  .import-card {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+  }
+  
+  .template-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin: 30px 0;
+  }
+  
+  .template-card {
+    background: #f8f9fa;
+    padding: 25px;
+    border-radius: 10px;
+    text-align: center;
+    border: 2px solid #667eea;
+    transition: all 0.3s;
+  }
+  
+  .template-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(102, 126, 234, 0.3);
+  }
+  
+  .template-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+  }
+  
+  .template-card h3 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+  }
+  
+  .template-card p {
+    color: #7f8c8d;
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+  
+  .download-btn {
+    display: inline-block;
+    padding: 12px 25px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    text-decoration: none;
+    border-radius: 25px;
+    font-weight: 600;
+    transition: transform 0.3s;
+  }
+  
+  .download-btn:hover {
+    transform: scale(1.05);
+  }
+  
+  .upload-section {
+    background: #f8f9fa;
+    padding: 30px;
+    border-radius: 10px;
+    margin: 20px 0;
+  }
+  
+  .file-input-wrapper {
+    margin: 20px 0;
+  }
+  
+  .file-input-wrapper input[type="file"] {
+    width: 100%;
+    padding: 15px;
+    border: 2px dashed #667eea;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  
+  .file-input-wrapper input[type="submit"] {
+    width: 100%;
+    padding: 15px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 25px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 15px;
+    transition: transform 0.3s;
+  }
+  
+  .file-input-wrapper input[type="submit"]:hover {
+    transform: scale(1.02);
+  }
+  
+  .info-box {
+    background: #e7f3ff;
+    border-left: 4px solid #2196F3;
+    padding: 20px;
+    margin: 20px 0;
+    border-radius: 4px;
+  }
+  
+  .info-box h4 {
+    color: #1976d2;
+    margin-bottom: 10px;
+  }
+  
+  .info-box ul {
+    margin: 10px 0;
+    padding-left: 20px;
+  }
+  
+  .info-box li {
+    color: #555;
+    line-height: 1.8;
+  }
+  
+  .field-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+  }
+  
+  .field-table th {
+    background: #667eea;
+    color: white;
+    padding: 12px;
+    text-align: left;
+  }
+  
+  .field-table td {
+    padding: 12px;
+    border-bottom: 1px solid #ecf0f1;
+  }
+  
+  .field-table tr:hover {
+    background: #f8f9fa;
+  }
+  
+  .required {
+    color: #e74c3c;
+    font-weight: bold;
+  }
+</style>
+
+<div class="import-container">
+  <div class="import-header">
+    <h1>📥 Import Assets from CSV or Excel</h1>
+    <p>Bulk import your assets using our template files</p>
+  </div>
+  
+  <div class="import-card">
+    <h2 style="color: #2c3e50; margin-bottom: 20px;">📋 Download Import Templates</h2>
+    <p style="color: #7f8c8d; margin-bottom: 30px;">
+      Choose a template format to get started. Both templates include sample data and detailed instructions.
+    </p>
+    
+    <div class="template-section">
+      <div class="template-card">
+        <div class="template-icon">📄</div>
+        <h3>CSV Template</h3>
+        <p>Simple CSV format compatible with Excel, Google Sheets, and any text editor</p>
+        <a href="/static/asset_import_template.csv" class="download-btn" download>
+          📥 Download CSV Template
+        </a>
+      </div>
+      
+      <div class="template-card">
+        <div class="template-icon">📊</div>
+        <h3>Excel Template</h3>
+        <p>Professional Excel template with instructions, sample data, and formatted sheets</p>
+        <a href="/static/asset_import_template.xlsx" class="download-btn" download>
+          📥 Download Excel Template
+        </a>
+      </div>
+    </div>
+  </div>
+  
+  <div class="import-card">
+    <h2 style="color: #2c3e50; margin-bottom: 20px;">📤 Upload Your Import File</h2>
+    
+    <div class="upload-section">
+      <form method="post" enctype="multipart/form-data">
+        <div class="file-input-wrapper">
+          <input type="file" name="file" accept=".csv,.xlsx,.xls" required>
+          <input type="submit" value="📤 Upload and Import Assets">
+        </div>
       </form>
     </div>
-    <a href='/static/template.csv' class='template-link'>Download Template CSV</a>
+    
+    <div class="info-box">
+      <h4>💡 Before You Import:</h4>
+      <ul>
+        <li>Download and review the template file</li>
+        <li>Fill in your asset data following the format</li>
+        <li>Ensure all required fields are completed</li>
+        <li>Remove sample data before importing</li>
+        <li>Keep a backup of your import file</li>
+      </ul>
+    </div>
   </div>
+  
+  <div class="import-card">
+    <h2 style="color: #2c3e50; margin-bottom: 20px;">📋 Field Specifications</h2>
+    
+    <table class="field-table">
+      <thead>
+        <tr>
+          <th>Field Name</th>
+          <th>Required</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Example</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>name</strong></td>
+          <td class="required">YES</td>
+          <td>Text</td>
+          <td>Unique asset name/identifier</td>
+          <td>Dell Latitude 5520</td>
+        </tr>
+        <tr>
+          <td><strong>quantity</strong></td>
+          <td class="required">YES</td>
+          <td>Integer</td>
+          <td>Number of items</td>
+          <td>15</td>
+        </tr>
+        <tr>
+          <td><strong>price</strong></td>
+          <td class="required">YES</td>
+          <td>Decimal</td>
+          <td>Cost per unit</td>
+          <td>1250.00</td>
+        </tr>
+        <tr>
+          <td><strong>description</strong></td>
+          <td>No</td>
+          <td>Text</td>
+          <td>Detailed description</td>
+          <td>15.6 inch business laptop</td>
+        </tr>
+        <tr>
+          <td><strong>low_stock_threshold</strong></td>
+          <td>No</td>
+          <td>Integer</td>
+          <td>Alert threshold (default: 5)</td>
+          <td>3</td>
+        </tr>
+        <tr>
+          <td><strong>category</strong></td>
+          <td>No</td>
+          <td>Text</td>
+          <td>Asset category</td>
+          <td>Electronics</td>
+        </tr>
+        <tr>
+          <td><strong>supplier</strong></td>
+          <td>No</td>
+          <td>Text</td>
+          <td>Supplier/vendor name</td>
+          <td>Tech Suppliers Inc</td>
+        </tr>
+        <tr>
+          <td><strong>department</strong></td>
+          <td>No</td>
+          <td>Text</td>
+          <td>Department assignment</td>
+          <td>IT Department</td>
+        </tr>
+        <tr>
+          <td><strong>location</strong></td>
+          <td>No</td>
+          <td>Text</td>
+          <td>Physical location</td>
+          <td>Building A - Floor 3</td>
+        </tr>
+        <tr>
+          <td><strong>model</strong></td>
+          <td>No</td>
+          <td>Text</td>
+          <td>Model number</td>
+          <td>Latitude 5520</td>
+        </tr>
+        <tr>
+          <td><strong>brand</strong></td>
+          <td>No</td>
+          <td>Text</td>
+          <td>Brand/manufacturer</td>
+          <td>Dell</td>
+        </tr>
+        <tr>
+          <td><strong>serial_number</strong></td>
+          <td>No</td>
+          <td>Text</td>
+          <td>Serial number</td>
+          <td>DL5520-2024-001</td>
+        </tr>
+        <tr>
+          <td><strong>purchase_date</strong></td>
+          <td>No</td>
+          <td>Date</td>
+          <td>Format: YYYY-MM-DD</td>
+          <td>2024-01-15</td>
+        </tr>
+        <tr>
+          <td><strong>depreciation_method</strong></td>
+          <td>No</td>
+          <td>Text</td>
+          <td>straight_line or declining_balance</td>
+          <td>straight_line</td>
+        </tr>
+        <tr>
+          <td><strong>useful_life_years</strong></td>
+          <td>No</td>
+          <td>Integer</td>
+          <td>Years of useful life</td>
+          <td>5</td>
+        </tr>
+        <tr>
+          <td><strong>salvage_value</strong></td>
+          <td>No</td>
+          <td>Decimal</td>
+          <td>Residual value</td>
+          <td>200.00</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  
+  <div style="text-align: center; margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+    <h3 style="color: #2c3e50;">Need Help?</h3>
+    <p style="color: #7f8c8d; margin: 15px 0;">
+      Check our documentation or contact support if you have questions about importing data
+    </p>
+    <a href="/help/user-guide" style="display: inline-block; padding: 12px 25px; background: #667eea; color: white; text-decoration: none; border-radius: 25px; font-weight: 600; margin-right: 10px;">📚 User Guide</a>
+    <a href="/help/contact-support" style="display: inline-block; padding: 12px 25px; background: #f5576c; color: white; text-decoration: none; border-radius: 25px; font-weight: 600;">💬 Contact Support</a>
+  </div>
+</div>
+
 {% endblock %}
