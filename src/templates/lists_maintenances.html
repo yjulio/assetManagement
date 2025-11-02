@@ -24,7 +24,7 @@
         <td>{{ maintenance.type }}</td>
         <td>{{ maintenance.date }}</td>
         <td>{{ maintenance.status }}</td>
-        <td>${{ "%.2f"|format(maintenance.cost) }}</td>
+        <td>VT {{ "%.2f"|format(maintenance.cost) }}</td>
         <td>{{ maintenance.notes }}</td>
       </tr>
       {% endfor %}
