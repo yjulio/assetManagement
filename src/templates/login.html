@@ -4,12 +4,34 @@
   <form method='post'>
     <div class="form-group">
       <label>Username</label>
-      <input name='username'>
+      <input name='username' required>
     </div>
     <div class="form-group">
       <label>Password</label>
-      <input type='password' name='password'>
+      <div style="position: relative; display: inline-block; width: 100%;">
+        <input type='password' name='password' id='password-input' required style="padding-right: 45px;">
+        <button type="button" id="toggle-password" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; font-size: 18px; padding: 5px 10px; color: #666;" title="Show/Hide Password">
+          👁️
+        </button>
+      </div>
     </div>
     <input type='submit' value='Login'>
   </form>
+
+  <script>
+    document.getElementById('toggle-password').addEventListener('click', function() {
+      const passwordInput = document.getElementById('password-input');
+      const button = this;
+      
+      if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        button.textContent = '🙈';
+        button.title = 'Hide Password';
+      } else {
+        passwordInput.type = 'password';
+        button.textContent = '👁️';
+        button.title = 'Show Password';
+      }
+    });
+  </script>
 {% endblock %}
