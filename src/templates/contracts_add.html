@@ -87,6 +87,93 @@
     margin: 20px 0;
     border-radius: 4px;
   }
+  
+  .file-upload-section {
+    background: #f8f9fa;
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 20px;
+    transition: all 0.3s;
+  }
+  
+  .file-upload-section:hover {
+    border-color: #667eea;
+    background: #f0f4ff;
+  }
+  
+  .file-upload-section.drag-over {
+    border-color: #667eea;
+    background: #e7f3ff;
+  }
+  
+  .file-label {
+    display: inline-block;
+    padding: 12px 30px;
+    background: #667eea;
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.3s;
+  }
+  
+  .file-label:hover {
+    background: #764ba2;
+  }
+  
+  .file-input {
+    display: none;
+  }
+  
+  .file-info {
+    margin-top: 15px;
+    font-size: 14px;
+    color: #7f8c8d;
+  }
+  
+  .uploaded-files {
+    margin-top: 15px;
+  }
+  
+  .file-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 15px;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    margin-top: 8px;
+  }
+  
+  .file-item-name {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    color: #2c3e50;
+  }
+  
+  .file-item-size {
+    color: #7f8c8d;
+    font-size: 13px;
+  }
+  
+  .remove-file-btn {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 5px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+  
+  .remove-file-btn:hover {
+    background: #c0392b;
+  }
 </style>
 
 <div class="contract-container">
@@ -96,7 +183,7 @@
   </div>
   
   <div class="contract-card">
-    <form method="POST" action="/contracts/add">
+    <form method="POST" action="/contracts/add" enctype="multipart/form-data">
       <div class="form-row">
         <div class="form-group">
           <label for="contract_name">Contract Name *</label>
@@ -172,6 +259,21 @@
         <textarea id="description" name="description" placeholder="Additional details about this contract..."></textarea>
       </div>
       
+      <!-- File Upload Section -->
+      <div class="file-upload-section" id="fileUploadSection">
+        <div>
+          <label for="contract_files" class="file-label">
+            📎 Attach Contract Documents
+          </label>
+          <input type="file" id="contract_files" name="contract_files" class="file-input" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xlsx,.xls">
+        </div>
+        <div class="file-info">
+          <p style="margin: 10px 0 5px 0;">Supported formats: PDF, Word, Excel, Images</p>
+          <p style="margin: 5px 0;">Maximum file size: 10MB per file</p>
+        </div>
+        <div class="uploaded-files" id="uploadedFiles"></div>
+      </div>
+      
       <div class="info-box">
         <strong>💡 Reminder:</strong> You will receive notifications 30 days before the contract expiration date.
       </div>
@@ -182,5 +284,90 @@
     </form>
   </div>
 </div>
+
+<script>
+  // File upload functionality
+  const fileInput = document.getElementById('contract_files');
+  const uploadedFilesDiv = document.getElementById('uploadedFiles');
+  const fileUploadSection = document.getElementById('fileUploadSection');
+  
+  // Handle file selection
+  fileInput.addEventListener('change', function(e) {
+    displayFiles(e.target.files);
+  });
+  
+  // Drag and drop functionality
+  fileUploadSection.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    fileUploadSection.classList.add('drag-over');
+  });
+  
+  fileUploadSection.addEventListener('dragleave', function(e) {
+    e.preventDefault();
+    fileUploadSection.classList.remove('drag-over');
+  });
+  
+  fileUploadSection.addEventListener('drop', function(e) {
+    e.preventDefault();
+    fileUploadSection.classList.remove('drag-over');
+    
+    const dt = new DataTransfer();
+    const existingFiles = fileInput.files;
+    
+    // Add existing files
+    for (let i = 0; i < existingFiles.length; i++) {
+      dt.items.add(existingFiles[i]);
+    }
+    
+    // Add new files
+    for (let i = 0; i < e.dataTransfer.files.length; i++) {
+      dt.items.add(e.dataTransfer.files[i]);
+    }
+    
+    fileInput.files = dt.files;
+    displayFiles(fileInput.files);
+  });
+  
+  function displayFiles(files) {
+    uploadedFilesDiv.innerHTML = '';
+    
+    if (files.length === 0) {
+      return;
+    }
+    
+    Array.from(files).forEach((file, index) => {
+      const fileItem = document.createElement('div');
+      fileItem.className = 'file-item';
+      
+      const fileSize = (file.size / 1024).toFixed(2);
+      const sizeUnit = fileSize > 1024 ? ((file.size / 1024 / 1024).toFixed(2) + ' MB') : (fileSize + ' KB');
+      
+      fileItem.innerHTML = `
+        <div class="file-item-name">
+          <span>📄</span>
+          <span>${file.name}</span>
+          <span class="file-item-size">(${sizeUnit})</span>
+        </div>
+        <button type="button" class="remove-file-btn" onclick="removeFile(${index})">✕ Remove</button>
+      `;
+      
+      uploadedFilesDiv.appendChild(fileItem);
+    });
+  }
+  
+  function removeFile(index) {
+    const dt = new DataTransfer();
+    const files = fileInput.files;
+    
+    for (let i = 0; i < files.length; i++) {
+      if (i !== index) {
+        dt.items.add(files[i]);
+      }
+    }
+    
+    fileInput.files = dt.files;
+    displayFiles(fileInput.files);
+  }
+</script>
 
 {% endblock %}

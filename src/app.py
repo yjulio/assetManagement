@@ -766,10 +766,81 @@ def contracts():
 @login_required
 def contracts_add():
     if request.method == 'POST':
-        # TODO: Handle contract creation
-        flash('Contract added successfully!', 'success')
+        # Handle contract creation
+        contract_name = request.form.get('contract_name')
+        contract_type = request.form.get('contract_type')
+        vendor = request.form.get('vendor')
+        contract_number = request.form.get('contract_number')
+        start_date = request.form.get('start_date')
+        end_date = request.form.get('end_date')
+        cost = request.form.get('cost')
+        license_count = request.form.get('license_count')
+        auto_renew = request.form.get('auto_renew')
+        contact_person = request.form.get('contact_person')
+        description = request.form.get('description')
+        
+        # Handle file uploads
+        uploaded_files = []
+        if 'contract_files' in request.files:
+            files = request.files.getlist('contract_files')
+            upload_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'contracts')
+            os.makedirs(upload_folder, exist_ok=True)
+            
+            for file in files:
+                if file and file.filename:
+                    # Secure the filename
+                    from werkzeug.utils import secure_filename
+                    filename = secure_filename(file.filename)
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    unique_filename = f"{timestamp}_{filename}"
+                    filepath = os.path.join(upload_folder, unique_filename)
+                    file.save(filepath)
+                    uploaded_files.append(unique_filename)
+        
+        # TODO: Save contract data to database
+        
+        flash(f'Contract "{contract_name}" added successfully! {len(uploaded_files)} file(s) uploaded.', 'success')
         return redirect('/contracts/list')
     return render_template('contracts_add.html', title='Add Contract')
+
+@app.route('/contracts/upload', methods=['POST'])
+@login_required
+def contracts_upload():
+    """Handle bulk contract file uploads"""
+    try:
+        if 'contract_files' not in request.files:
+            return jsonify({'error': 'No files provided'}), 400
+        
+        files = request.files.getlist('contract_files')
+        upload_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'contracts')
+        os.makedirs(upload_folder, exist_ok=True)
+        
+        uploaded_files = []
+        for file in files:
+            if file and file.filename:
+                from werkzeug.utils import secure_filename
+                filename = secure_filename(file.filename)
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                unique_filename = f"{timestamp}_{filename}"
+                filepath = os.path.join(upload_folder, unique_filename)
+                file.save(filepath)
+                uploaded_files.append({
+                    'original_name': file.filename,
+                    'saved_name': unique_filename,
+                    'path': filepath
+                })
+        
+        # TODO: Parse contract files and extract information
+        # TODO: Save to database
+        
+        return jsonify({
+            'success': True,
+            'message': f'{len(uploaded_files)} file(s) uploaded successfully',
+            'files': uploaded_files
+        }), 200
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/contracts/list')
 @login_required
