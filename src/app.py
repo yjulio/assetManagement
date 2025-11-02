@@ -1769,6 +1769,353 @@ def help_system_info():
 def help_release_notes():
     return render_template('help_release_notes.html', title='Release Notes')
 
+# Export Routes
+@app.route('/export/assets', methods=['GET', 'POST'])
+@login_required
+def export_assets():
+    if request.method == 'POST':
+        format_type = request.form.get('format')
+        filter_type = request.form.get('filter', 'all')
+        fields = request.form.getlist('fields')
+        
+        if not fields:
+            fields = ['id', 'name', 'category', 'serial_number', 'status', 'location', 'cost', 'purchase_date']
+        
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            
+            # Build query based on filter
+            query = "SELECT * FROM assets"
+            if filter_type != 'all':
+                query += f" WHERE status = %s"
+                cursor.execute(query, (filter_type,))
+            else:
+                cursor.execute(query)
+            
+            assets = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            
+            # Filter fields
+            filtered_assets = []
+            for asset in assets:
+                filtered_asset = {field: asset.get(field) for field in fields if field in asset}
+                filtered_assets.append(filtered_asset)
+            
+            # Generate export file
+            if format_type == 'csv':
+                import csv
+                from io import StringIO
+                from flask import make_response
+                
+                si = StringIO()
+                if filtered_assets:
+                    writer = csv.DictWriter(si, fieldnames=fields)
+                    writer.writeheader()
+                    writer.writerows(filtered_assets)
+                
+                output = make_response(si.getvalue())
+                output.headers["Content-Disposition"] = f"attachment; filename=assets_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+                output.headers["Content-type"] = "text/csv"
+                return output
+            
+            elif format_type == 'excel' and HAVE_PANDAS:
+                from flask import make_response
+                from io import BytesIO
+                
+                df = pd.DataFrame(filtered_assets)
+                output = BytesIO()
+                with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                    df.to_excel(writer, index=False, sheet_name='Assets')
+                output.seek(0)
+                
+                response = make_response(output.read())
+                response.headers["Content-Disposition"] = f"attachment; filename=assets_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+                response.headers["Content-type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                return response
+            else:
+                flash('Export format not supported or pandas not installed', 'error')
+                
+        except Exception as e:
+            flash(f'Export failed: {str(e)}', 'error')
+    
+    return render_template('export_assets.html', title='Export Assets')
+
+@app.route('/export/users', methods=['GET', 'POST'])
+@login_required
+@require_group('Admin')
+def export_users():
+    if request.method == 'POST':
+        format_type = request.form.get('format')
+        filter_type = request.form.get('filter', 'all')
+        
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            
+            # Build query based on filter (exclude password field)
+            query = "SELECT id, username, email, group_id, created_at FROM users"
+            if filter_type != 'all':
+                # Add filter logic here based on requirements
+                pass
+            
+            cursor.execute(query)
+            users = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            
+            # Generate export file
+            if format_type == 'csv':
+                import csv
+                from io import StringIO
+                from flask import make_response
+                
+                si = StringIO()
+                if users:
+                    fieldnames = ['id', 'username', 'email', 'group_id', 'created_at']
+                    writer = csv.DictWriter(si, fieldnames=fieldnames)
+                    writer.writeheader()
+                    writer.writerows(users)
+                
+                output = make_response(si.getvalue())
+                output.headers["Content-Disposition"] = f"attachment; filename=users_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+                output.headers["Content-type"] = "text/csv"
+                return output
+            
+            elif format_type == 'excel' and HAVE_PANDAS:
+                from flask import make_response
+                from io import BytesIO
+                
+                df = pd.DataFrame(users)
+                output = BytesIO()
+                with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                    df.to_excel(writer, index=False, sheet_name='Users')
+                output.seek(0)
+                
+                response = make_response(output.read())
+                response.headers["Content-Disposition"] = f"attachment; filename=users_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+                response.headers["Content-type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                return response
+                
+        except Exception as e:
+            flash(f'Export failed: {str(e)}', 'error')
+    
+    return render_template('export_users.html', title='Export Users')
+
+@app.route('/export/maintenance', methods=['GET', 'POST'])
+@login_required
+def export_maintenance():
+    if request.method == 'POST':
+        format_type = request.form.get('format')
+        filter_type = request.form.get('filter', 'all')
+        date_from = request.form.get('date_from')
+        date_to = request.form.get('date_to')
+        
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            
+            query = "SELECT * FROM maintenance WHERE 1=1"
+            params = []
+            
+            if date_from:
+                query += " AND date >= %s"
+                params.append(date_from)
+            if date_to:
+                query += " AND date <= %s"
+                params.append(date_to)
+            
+            cursor.execute(query, params) if params else cursor.execute(query)
+            maintenance = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            
+            # Generate export file
+            if format_type == 'csv':
+                import csv
+                from io import StringIO
+                from flask import make_response
+                
+                si = StringIO()
+                if maintenance:
+                    fieldnames = maintenance[0].keys()
+                    writer = csv.DictWriter(si, fieldnames=fieldnames)
+                    writer.writeheader()
+                    writer.writerows(maintenance)
+                
+                output = make_response(si.getvalue())
+                output.headers["Content-Disposition"] = f"attachment; filename=maintenance_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+                output.headers["Content-type"] = "text/csv"
+                return output
+            
+            elif format_type == 'excel' and HAVE_PANDAS:
+                from flask import make_response
+                from io import BytesIO
+                
+                df = pd.DataFrame(maintenance)
+                output = BytesIO()
+                with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                    df.to_excel(writer, index=False, sheet_name='Maintenance')
+                output.seek(0)
+                
+                response = make_response(output.read())
+                response.headers["Content-Disposition"] = f"attachment; filename=maintenance_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+                response.headers["Content-type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                return response
+                
+        except Exception as e:
+            flash(f'Export failed: {str(e)}', 'error')
+    
+    return render_template('export_maintenance.html', title='Export Maintenance')
+
+@app.route('/export/transactions', methods=['GET', 'POST'])
+@login_required
+def export_transactions():
+    if request.method == 'POST':
+        format_type = request.form.get('format')
+        transaction_type = request.form.get('transaction_type', 'all')
+        date_from = request.form.get('date_from')
+        date_to = request.form.get('date_to')
+        
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            
+            query = "SELECT * FROM asset_transactions WHERE 1=1"
+            params = []
+            
+            if transaction_type != 'all':
+                query += " AND action = %s"
+                params.append(transaction_type)
+            if date_from:
+                query += " AND timestamp >= %s"
+                params.append(date_from)
+            if date_to:
+                query += " AND timestamp <= %s"
+                params.append(date_to)
+            
+            query += " ORDER BY timestamp DESC"
+            
+            cursor.execute(query, params) if params else cursor.execute(query)
+            transactions = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            
+            # Generate export file
+            if format_type == 'csv':
+                import csv
+                from io import StringIO
+                from flask import make_response
+                
+                si = StringIO()
+                if transactions:
+                    fieldnames = transactions[0].keys()
+                    writer = csv.DictWriter(si, fieldnames=fieldnames)
+                    writer.writeheader()
+                    writer.writerows(transactions)
+                
+                output = make_response(si.getvalue())
+                output.headers["Content-Disposition"] = f"attachment; filename=transactions_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+                output.headers["Content-type"] = "text/csv"
+                return output
+            
+            elif format_type == 'excel' and HAVE_PANDAS:
+                from flask import make_response
+                from io import BytesIO
+                
+                df = pd.DataFrame(transactions)
+                output = BytesIO()
+                with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                    df.to_excel(writer, index=False, sheet_name='Transactions')
+                output.seek(0)
+                
+                response = make_response(output.read())
+                response.headers["Content-Disposition"] = f"attachment; filename=transactions_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+                response.headers["Content-type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                return response
+                
+        except Exception as e:
+            flash(f'Export failed: {str(e)}', 'error')
+    
+    return render_template('export_transactions.html', title='Export Transactions')
+
+@app.route('/export/all', methods=['GET', 'POST'])
+@login_required
+@require_group('Admin')
+def export_all():
+    if request.method == 'POST':
+        format_type = request.form.get('format')
+        
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            
+            tables = ['assets', 'users', 'asset_transactions', 'maintenance', 'categories', 
+                     'locations', 'suppliers', 'employees', 'customers', 'groups']
+            
+            all_data = {}
+            for table in tables:
+                try:
+                    if table == 'users':
+                        # Exclude passwords
+                        cursor.execute(f"SELECT id, username, email, group_id, created_at FROM {table}")
+                    else:
+                        cursor.execute(f"SELECT * FROM {table}")
+                    all_data[table] = cursor.fetchall()
+                except Exception:
+                    # Table might not exist, skip it
+                    pass
+            
+            cursor.close()
+            conn.close()
+            
+            # Generate export file
+            if format_type == 'excel' and HAVE_PANDAS:
+                from flask import make_response
+                from io import BytesIO
+                
+                output = BytesIO()
+                with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                    for table_name, data in all_data.items():
+                        if data:
+                            df = pd.DataFrame(data)
+                            df.to_excel(writer, index=False, sheet_name=table_name[:31])  # Excel sheet name limit
+                output.seek(0)
+                
+                response = make_response(output.read())
+                response.headers["Content-Disposition"] = f"attachment; filename=full_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+                response.headers["Content-type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                return response
+            
+            elif format_type == 'csv':
+                import csv
+                import zipfile
+                from io import BytesIO, StringIO
+                from flask import make_response
+                
+                zip_buffer = BytesIO()
+                with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                    for table_name, data in all_data.items():
+                        if data:
+                            si = StringIO()
+                            fieldnames = data[0].keys()
+                            writer = csv.DictWriter(si, fieldnames=fieldnames)
+                            writer.writeheader()
+                            writer.writerows(data)
+                            zip_file.writestr(f"{table_name}.csv", si.getvalue())
+                
+                zip_buffer.seek(0)
+                response = make_response(zip_buffer.read())
+                response.headers["Content-Disposition"] = f"attachment; filename=full_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
+                response.headers["Content-type"] = "application/zip"
+                return response
+                
+        except Exception as e:
+            flash(f'Export failed: {str(e)}', 'error')
+    
+    return render_template('export_all.html', title='Export All Data')
+
 
 if __name__ == "__main__":
     # Use configuration from config.py (supports environment variables)

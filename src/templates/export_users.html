@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .export-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .export-header {
+    text-align: center;
+    padding: 30px;
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    border-radius: 12px;
+    color: white;
+    margin-bottom: 30px;
+  }
+  
+  .export-card {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+  }
+  
+  .form-group {
+    margin-bottom: 20px;
+  }
+  
+  .form-group label {
+    display: block;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 8px;
+  }
+  
+  .form-group select {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ecf0f1;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+  
+  .form-group select:focus {
+    outline: none;
+    border-color: #11998e;
+  }
+  
+  .export-btn {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    color: white;
+    padding: 15px 40px;
+    border: none;
+    border-radius: 25px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    transition: transform 0.3s;
+  }
+  
+  .export-btn:hover {
+    transform: scale(1.02);
+  }
+  
+  .info-box {
+    background: #e7f3ff;
+    border-left: 4px solid #2196F3;
+    padding: 15px 20px;
+    margin: 20px 0;
+    border-radius: 4px;
+  }
+</style>
+
+<div class="export-container">
+  <div class="export-header">
+    <h1>👤 Export Users</h1>
+    <p>Export user account data to CSV or Excel format</p>
+  </div>
+  
+  <div class="export-card">
+    <form method="POST" action="/export/users">
+      <div class="form-group">
+        <label for="format">Export Format *</label>
+        <select id="format" name="format" required>
+          <option value="">Select format</option>
+          <option value="csv">CSV (Comma Separated Values)</option>
+          <option value="excel">Excel (.xlsx)</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="filter">Filter Users</label>
+        <select id="filter" name="filter">
+          <option value="all">All Users</option>
+          <option value="active">Active Only</option>
+          <option value="inactive">Inactive Only</option>
+          <option value="admin">Administrators</option>
+          <option value="manager">Managers</option>
+          <option value="user">Regular Users</option>
+        </select>
+      </div>
+      
+      <div class="info-box">
+        <strong>ℹ️ Note:</strong> Passwords are never included in exports for security reasons. 
+        The export will contain username, email, group, and status information.
+      </div>
+      
+      <button type="submit" class="export-btn">
+        📤 Export Users
+      </button>
+    </form>
+  </div>
+  
+  <div style="text-align: center; margin-top: 20px; color: #7f8c8d;">
+    <p>Need help? <a href="/help/user-guide" style="color: #11998e; font-weight: 600;">View User Guide</a></p>
+  </div>
+</div>
+
+{% endblock %}

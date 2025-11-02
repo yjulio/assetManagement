@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .export-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .export-header {
+    text-align: center;
+    padding: 30px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    color: white;
+    margin-bottom: 30px;
+  }
+  
+  .export-card {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+  }
+  
+  .form-group {
+    margin-bottom: 20px;
+  }
+  
+  .form-group label {
+    display: block;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 8px;
+  }
+  
+  .form-group select,
+  .form-group input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ecf0f1;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+  
+  .form-group select:focus,
+  .form-group input:focus {
+    outline: none;
+    border-color: #667eea;
+  }
+  
+  .export-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px 40px;
+    border: none;
+    border-radius: 25px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    transition: transform 0.3s;
+  }
+  
+  .export-btn:hover {
+    transform: scale(1.02);
+  }
+  
+  .info-box {
+    background: #e7f3ff;
+    border-left: 4px solid #2196F3;
+    padding: 15px 20px;
+    margin: 20px 0;
+    border-radius: 4px;
+  }
+  
+  .checkbox-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin: 15px 0;
+  }
+  
+  .checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .checkbox-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+  }
+</style>
+
+<div class="export-container">
+  <div class="export-header">
+    <h1>📦 Export Assets</h1>
+    <p>Export asset data to CSV or Excel format</p>
+  </div>
+  
+  <div class="export-card">
+    <form method="POST" action="/export/assets">
+      <div class="form-group">
+        <label for="format">Export Format *</label>
+        <select id="format" name="format" required>
+          <option value="">Select format</option>
+          <option value="csv">CSV (Comma Separated Values)</option>
+          <option value="excel">Excel (.xlsx)</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="filter">Filter Assets</label>
+        <select id="filter" name="filter">
+          <option value="all">All Assets</option>
+          <option value="available">Available Only</option>
+          <option value="checked_out">Checked Out</option>
+          <option value="maintenance">Under Maintenance</option>
+          <option value="disposed">Disposed</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label>Select Fields to Export</label>
+        <div class="checkbox-group">
+          <div class="checkbox-item">
+            <input type="checkbox" id="field_id" name="fields" value="id" checked>
+            <label for="field_id">Asset ID</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="field_name" name="fields" value="name" checked>
+            <label for="field_name">Asset Name</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="field_category" name="fields" value="category" checked>
+            <label for="field_category">Category</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="field_serial" name="fields" value="serial_number" checked>
+            <label for="field_serial">Serial Number</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="field_status" name="fields" value="status" checked>
+            <label for="field_status">Status</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="field_location" name="fields" value="location" checked>
+            <label for="field_location">Location</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="field_cost" name="fields" value="cost" checked>
+            <label for="field_cost">Cost</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="field_purchase_date" name="fields" value="purchase_date" checked>
+            <label for="field_purchase_date">Purchase Date</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="field_assigned_to" name="fields" value="assigned_to">
+            <label for="field_assigned_to">Assigned To</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="field_supplier" name="fields" value="supplier">
+            <label for="field_supplier">Supplier</label>
+          </div>
+        </div>
+      </div>
+      
+      <div class="info-box">
+        <strong>ℹ️ Note:</strong> The export will include all selected fields for the filtered assets. 
+        Large exports may take a few moments to process.
+      </div>
+      
+      <button type="submit" class="export-btn">
+        📤 Export Assets
+      </button>
+    </form>
+  </div>
+  
+  <div style="text-align: center; margin-top: 20px; color: #7f8c8d;">
+    <p>Need help? <a href="/help/user-guide" style="color: #667eea; font-weight: 600;">View User Guide</a></p>
+  </div>
+</div>
+
+{% endblock %}

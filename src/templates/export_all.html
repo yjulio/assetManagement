@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .export-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .export-header {
+    text-align: center;
+    padding: 30px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    color: white;
+    margin-bottom: 30px;
+  }
+  
+  .export-card {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+  }
+  
+  .form-group {
+    margin-bottom: 20px;
+  }
+  
+  .form-group label {
+    display: block;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 8px;
+  }
+  
+  .form-group select {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ecf0f1;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+  
+  .form-group select:focus {
+    outline: none;
+    border-color: #667eea;
+  }
+  
+  .export-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px 40px;
+    border: none;
+    border-radius: 25px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    transition: transform 0.3s;
+  }
+  
+  .export-btn:hover {
+    transform: scale(1.02);
+  }
+  
+  .warning-box {
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 15px 20px;
+    margin: 20px 0;
+    border-radius: 4px;
+  }
+  
+  .data-list {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 20px 0;
+  }
+  
+  .data-list h3 {
+    color: #2c3e50;
+    margin-bottom: 15px;
+  }
+  
+  .data-list ul {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .data-list li {
+    padding: 8px 0;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .data-list li:last-child {
+    border-bottom: none;
+  }
+</style>
+
+<div class="export-container">
+  <div class="export-header">
+    <h1>📊 Export All Data</h1>
+    <p>Complete system backup - Export all database tables</p>
+  </div>
+  
+  <div class="export-card">
+    <form method="POST" action="/export/all">
+      <div class="form-group">
+        <label for="format">Export Format *</label>
+        <select id="format" name="format" required>
+          <option value="">Select format</option>
+          <option value="csv">Multiple CSV Files (ZIP)</option>
+          <option value="excel">Single Excel File (Multiple Sheets)</option>
+        </select>
+      </div>
+      
+      <div class="data-list">
+        <h3>📦 Data to be Exported:</h3>
+        <ul>
+          <li>✅ <strong>Assets</strong> - All asset records with full details</li>
+          <li>✅ <strong>Users</strong> - User accounts and permissions (passwords excluded)</li>
+          <li>✅ <strong>Transactions</strong> - Complete check-in/check-out history</li>
+          <li>✅ <strong>Maintenance</strong> - All maintenance records and schedules</li>
+          <li>✅ <strong>Categories</strong> - Asset categories and classifications</li>
+          <li>✅ <strong>Locations</strong> - All registered locations</li>
+          <li>✅ <strong>Suppliers</strong> - Supplier and vendor information</li>
+          <li>✅ <strong>Employees</strong> - Employee records</li>
+          <li>✅ <strong>Customers</strong> - Customer information</li>
+          <li>✅ <strong>Groups</strong> - User groups and permissions</li>
+        </ul>
+      </div>
+      
+      <div class="warning-box">
+        <strong>⚠️ Important:</strong> This export may take several minutes depending on the amount of data. 
+        Large exports will be downloaded as a compressed file. Sensitive data like passwords are never included 
+        in exports for security reasons.
+      </div>
+      
+      <button type="submit" class="export-btn">
+        📤 Export All Data
+      </button>
+    </form>
+  </div>
+  
+  <div style="text-align: center; padding: 25px; background: #f8f9fa; border-radius: 8px; margin-top: 20px;">
+    <h3 style="color: #2c3e50; margin-bottom: 10px;">💡 Backup Recommendations</h3>
+    <ul style="text-align: left; max-width: 600px; margin: 0 auto; color: #555; line-height: 1.8;">
+      <li>Schedule regular backups (weekly or monthly)</li>
+      <li>Store backups in a secure, off-site location</li>
+      <li>Test your backups by restoring to a test environment</li>
+      <li>Keep multiple backup versions (3-6 months)</li>
+      <li>Document your backup and restore procedures</li>
+    </ul>
+  </div>
+  
+  <div style="text-align: center; margin-top: 20px; color: #7f8c8d;">
+    <p>Need help? <a href="/help/user-guide" style="color: #667eea; font-weight: 600;">View User Guide</a> | 
+    <a href="/help/contact-support" style="color: #667eea; font-weight: 600;">Contact Support</a></p>
+  </div>
+</div>
+
+{% endblock %}

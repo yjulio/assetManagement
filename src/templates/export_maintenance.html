@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .export-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .export-header {
+    text-align: center;
+    padding: 30px;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    border-radius: 12px;
+    color: white;
+    margin-bottom: 30px;
+  }
+  
+  .export-card {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+  }
+  
+  .form-group {
+    margin-bottom: 20px;
+  }
+  
+  .form-group label {
+    display: block;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 8px;
+  }
+  
+  .form-group select,
+  .form-group input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ecf0f1;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+  
+  .form-group select:focus,
+  .form-group input:focus {
+    outline: none;
+    border-color: #f5576c;
+  }
+  
+  .export-btn {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    padding: 15px 40px;
+    border: none;
+    border-radius: 25px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    transition: transform 0.3s;
+  }
+  
+  .export-btn:hover {
+    transform: scale(1.02);
+  }
+  
+  .info-box {
+    background: #e7f3ff;
+    border-left: 4px solid #2196F3;
+    padding: 15px 20px;
+    margin: 20px 0;
+    border-radius: 4px;
+  }
+</style>
+
+<div class="export-container">
+  <div class="export-header">
+    <h1>🔧 Export Maintenance Records</h1>
+    <p>Export maintenance history to CSV or Excel format</p>
+  </div>
+  
+  <div class="export-card">
+    <form method="POST" action="/export/maintenance">
+      <div class="form-group">
+        <label for="format">Export Format *</label>
+        <select id="format" name="format" required>
+          <option value="">Select format</option>
+          <option value="csv">CSV (Comma Separated Values)</option>
+          <option value="excel">Excel (.xlsx)</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="filter">Filter Maintenance</label>
+        <select id="filter" name="filter">
+          <option value="all">All Maintenance Records</option>
+          <option value="completed">Completed</option>
+          <option value="scheduled">Scheduled/Upcoming</option>
+          <option value="overdue">Overdue</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="date_from">From Date</label>
+        <input type="date" id="date_from" name="date_from">
+      </div>
+      
+      <div class="form-group">
+        <label for="date_to">To Date</label>
+        <input type="date" id="date_to" name="date_to">
+      </div>
+      
+      <div class="info-box">
+        <strong>ℹ️ Note:</strong> Export includes asset name, maintenance type, cost, date performed, 
+        next scheduled date, and vendor information.
+      </div>
+      
+      <button type="submit" class="export-btn">
+        📤 Export Maintenance Records
+      </button>
+    </form>
+  </div>
+  
+  <div style="text-align: center; margin-top: 20px; color: #7f8c8d;">
+    <p>Need help? <a href="/help/user-guide" style="color: #f5576c; font-weight: 600;">View User Guide</a></p>
+  </div>
+</div>
+
+{% endblock %}
