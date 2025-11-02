@@ -6,7 +6,7 @@
 
 **Username:** `admin`  
 **Password:** `Admin@2025`  
-**Email:** admin@vbos.gov.vu
+**Email:** minomoya626@gmail.com
 
 ---
 

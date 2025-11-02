@@ -17,7 +17,7 @@ from werkzeug.security import generate_password_hash
 def create_admin():
     """Create admin user with predefined credentials"""
     username = 'admin'
-    email = 'admin@vbos.gov.vu'
+    email = 'minomoya626@gmail.com'
     password = 'Admin@2025'  # Strong default password
     
     print("Creating admin user...")
