@@ -7,7 +7,50 @@
   <link rel="icon" type="image/png" href="/static/asset.png">
   <link rel="shortcut icon" type="image/png" href="/static/asset.png">
   <link rel="apple-touch-icon" href="/static/asset.png">
-  <link rel="stylesheet" href="/static/css/styles.css?v=2.0">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              200: '#bae6fd',
+              300: '#7dd3fc',
+              400: '#38bdf8',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              700: '#0369a1',
+              800: '#075985',
+              900: '#0c4a6e',
+            },
+            sidebar: {
+              dark: '#1a1f3a',
+              mid: '#2c3e50',
+              green: '#1e8449',
+            },
+            success: '#2ecc71',
+            warning: '#f39c12',
+            danger: '#e74c3c',
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+  
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  
+  <!-- Custom Styles -->
+      <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/styles.css', v='3.7') }}" />
+      <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/notifications.css') }}" />
+      <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/tailwind-enhancements.css') }}" />
 </head>
 <body>
   <!-- Mobile Menu Toggle -->
@@ -27,7 +70,26 @@
     </div>
     <ul class="sidebar-menu">
   <!-- Dashboard -->
-  <li><a href='/'><i>🏠</i>Dashboard</a></li>
+  <li class="menu-item-has-children">
+    <a href='#' class="submenu-toggle"><i>🏠</i>Dashboard <span class="arrow">▼</span></a>
+    <ul class="submenu">
+      <li><a href='/'><i>📊</i>View Dashboard</a></li>
+      <li><a href='/manage-dashboard'><i>⚙️</i>Manage Dashboard</a></li>
+    </ul>
+  </li>
+  
+  <!-- Alerts -->
+  <li class="menu-item-has-children">
+    <a href='#' class="submenu-toggle"><i>🔔</i>Alerts <span class="badge" style="background-color: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 5px;">!</span> <span class="arrow">▼</span></a>
+    <ul class="submenu">
+      <li><a href='/alerts/assets-past-due'><i>⏰</i>Assets Past Due</a></li>
+      <li><a href='/alerts/contracts-expiring'><i>📄</i>Contracts Expiring</a></li>
+      <li><a href='/alerts/leases-expiring'><i>🏢</i>Leases Expiring</a></li>
+      <li><a href='/alerts/maintenance-due'><i>🔧</i>Maintenance Due</a></li>
+      <li><a href='/alerts/maintenance-overdue'><i>⚠️</i>Maintenance Overdue</a></li>
+      <li><a href='/alerts/warranties-expiring'><i>🛡️</i>Warranties Expiring</a></li>
+    </ul>
+  </li>
   
   <!-- Assets Management -->
   <li class="menu-item-has-children">
@@ -51,6 +113,7 @@
   <li class="menu-item-has-children">
     <a href='#' class="submenu-toggle"><i>🛠️</i>Tools <span class="arrow">▼</span></a>
     <ul class="submenu">
+      <li><a href='/data-quality'><i>📊</i>Data Quality</a></li>
       <li><a href='/import'><i>📥</i>Import Data</a></li>
       <li class="menu-item-has-children">
         <a href='#' class="submenu-toggle"><i>📤</i>Export Data <span class="arrow">▼</span></a>
@@ -108,9 +171,16 @@
         <ul class="submenu">
           <li><a href='/contracts/add'><i>➕</i>Add Contract</a></li>
           <li><a href='/contracts/list'><i>📋</i>View All Contracts</a></li>
-          <li><a href='/contracts/renewals'><i>�</i>Upcoming Renewals</a></li>
+          <li><a href='/contracts/renewals'><i>⏰</i>Upcoming Renewals</a></li>
           <li><a href='/contracts/expired'><i>⚠️</i>Expired Contracts</a></li>
           <li><a href='/contracts/licenses'><i>🔑</i>Software Licenses</a></li>
+        </ul>
+      </li>
+      <li class="menu-item-has-children">
+        <a href='#' class="submenu-toggle"><i>�</i>Asset Purchase Orders <span class="arrow">▼</span></a>
+        <ul class="submenu">
+          <li><a href='/apo/add'><i>➕</i>Add APO</a></li>
+          <li><a href='/apo/list'><i>📋</i>View All APOs</a></li>
         </ul>
       </li>
       <li><a href='/funding'><i>💵</i>Funding</a></li>
@@ -128,13 +198,18 @@
       <li><a href='/suppliers'><i>🏢</i>Suppliers</a></li>
       <li><a href='/company-info'><i>🏢</i>Company Info</a></li>
       <li><a href='/locations'><i>📍</i>Locations</a></li>
-      <li><a href='/departments'><i>🏛️</i>Departments</a></li>
+      <li><a href='/departments'><i>🏛️</i>Departments/Cost Centers</a></li>
       <li><a href='/categories'><i>🏷️</i>Categories</a></li>
       <li><a href='/subcategories'><i>📑</i>Subcategories</a></li>
       <li><a href='/assign-group'><i>🔗</i>Assign Group</a></li>
-      <li><a href='/manage-dashboard'><i>📊</i>Manage Dashboard</a></li>
       <li><a href='/settings/email'><i>📧</i>Email Settings</a></li>
-      <li><a href='/database'><i>💾</i>Database</a></li>
+      <li class="submenu-item-has-children">
+        <a href='#' class="submenu-toggle-nested"><i>💾</i>Database <span class="arrow-nested">▼</span></a>
+        <ul class="nested-submenu">
+          <li><a href='/database'><i>💾</i>Backup & Restore</a></li>
+          <li><a href='/backup-restore'><i>🔄</i>Legacy Backup/Restore</a></li>
+        </ul>
+      </li>
       <li class="submenu-item-has-children">
         <a href='#' class="submenu-toggle-nested"><i>📝</i>Customize Forms <span class="arrow-nested">▼</span></a>
         <ul class="nested-submenu">
@@ -155,12 +230,22 @@
       <li><a href='/help/documentation'><i>📚</i>Documentation</a></li>
       <li><a href='/help/faq'><i>❓</i>FAQ</a></li>
       <li><a href='/help/video-tutorials'><i>🎥</i>Video Tutorials</a></li>
-      <li><a href='/help/contact-support'><i>�</i>Contact Support</a></li>
+      <li><a href='/help/contact-support'><i>📧</i>Contact Support</a></li>
       <li><a href='/help/system-info'><i>ℹ️</i>System Information</a></li>
       <li><a href='/help/release-notes'><i>📋</i>Release Notes</a></li>
       <li><a href='/help-support'><i>👨‍💻</i>About Developer</a></li>
     </ul>
   </li>
+  
+  <!-- Developer Tools (Admin Only) -->
+  {% if session.get('role') == 'Admin' %}
+  <li class="menu-item-has-children">
+    <a href='#' class="submenu-toggle"><i>🛠️</i>Developer Tools <span class="arrow">▼</span></a>
+    <ul class="submenu">
+      <li><a href='/developer/code-generator'><i>🤖</i>Code Generator</a></li>
+    </ul>
+  </li>
+  {% endif %}
     </ul>
   </div>
   <div class="main-content">
@@ -217,7 +302,12 @@
               <div class="dropdown-divider"></div>
               <a href="#" onclick="showKeyboardShortcuts(event)">⌨️ Keyboard Shortcuts</a>
               <div class="dropdown-divider"></div>
-              <a href="/logout">🚪 Logout</a>
+              <form method="post" action="/logout" style="display: inline; margin: 0;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button type="submit" style="background: none; border: none; color: inherit; font: inherit; cursor: pointer; padding: 10px 20px; text-align: left; width: 100%; display: block;">
+                  🚪 Logout
+                </button>
+              </form>
             </div>
           </div>
         {% else %}
@@ -260,8 +350,9 @@
     <div class="container">
       {% with messages = get_flashed_messages(with_categories=True) %}
         {% if messages %}
+          <!-- Flash messages will be shown as toast notifications by our JS -->
           {% for category, msg in messages %}
-            <div class="message {{ category }}">{{ msg }}</div>
+            <div class="flash-message d-none" data-category="{{ category }}">{{ msg }}</div>
           {% endfor %}
         {% endif %}
       {% endwith %}
@@ -269,10 +360,10 @@
     </div>
     
     <!-- Footer Signature -->
-    <footer style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);color:white;padding:30px 20px;margin-top:50px;border-top:4px solid #f39c12;">
+    <footer style="background:linear-gradient(135deg, #1a1f3a 0%, #2c3e50 50%, #1e8449 100%);color:white;padding:30px 20px;margin-top:50px;border-top:4px solid #2ecc71;box-shadow:0 -4px 20px rgba(0,0,0,0.1);">
       <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;">
         <div style="display:flex;align-items:center;gap:15px;">
-          <img src="/static/asset.png" alt="VBOS Logo" style="width:60px;height:60px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.2);">
+          <img src="/static/asset.png" alt="VBOS Logo" style="width:60px;height:60px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.3);">
           <div>
             <h3 style="margin:0;font-size:20px;font-weight:700;">Vanuatu Bureau Of Statistics</h3>
             <p style="margin:5px 0 0 0;font-size:14px;opacity:0.9;">Asset Management System</p>
@@ -304,6 +395,11 @@
     <div class="loading-spinner"></div>
     <div class="loading-text">Loading...</div>
   </div>
+  
+  <!-- Back to Top Button -->
+  <button class="back-to-top" id="back-to-top" aria-label="Back to top">
+    ↑
+  </button>
   
   <script>
     // Back to top button
@@ -565,5 +661,69 @@
       }
     });
   </script>
+  <script>
+    // Mobile menu toggle functionality
+    const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+    const sidebar = document.querySelector('.sidebar');
+    const mainContent = document.querySelector('.main-content');
+    
+    if (mobileMenuToggle) {
+      mobileMenuToggle.addEventListener('click', function(e) {
+        e.stopPropagation();
+        sidebar.classList.toggle('mobile-open');
+        this.textContent = sidebar.classList.contains('mobile-open') ? '✕' : '☰';
+      });
+      
+      // Close menu when clicking outside
+      document.addEventListener('click', function(e) {
+        if (sidebar.classList.contains('mobile-open') && 
+            !sidebar.contains(e.target) && 
+            !mobileMenuToggle.contains(e.target)) {
+          sidebar.classList.remove('mobile-open');
+          mobileMenuToggle.textContent = '☰';
+        }
+      });
+      
+      // Close menu when clicking a menu link
+      const menuLinks = sidebar.querySelectorAll('a');
+      menuLinks.forEach(link => {
+        link.addEventListener('click', function() {
+          if (window.innerWidth <= 768) {
+            sidebar.classList.remove('mobile-open');
+            mobileMenuToggle.textContent = '☰';
+          }
+        });
+      });
+    }
+  </script>
+  <script>
+    // Back to top button functionality
+    const backToTopButton = document.getElementById('back-to-top');
+    
+    if (backToTopButton) {
+      // Show button when scrolling down
+      window.addEventListener('scroll', () => {
+        if (window.pageYOffset > 300) {
+          backToTopButton.style.display = 'flex';
+        } else {
+          backToTopButton.style.display = 'none';
+        }
+      });
+      
+      // Scroll to top on click
+      backToTopButton.addEventListener('click', () => {
+        window.scrollTo({
+          top: 0,
+          behavior: 'smooth'
+        });
+      });
+    }
+  </script>
+  
+  <!-- Bootstrap Bundle with Popper -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+  
+  <!-- Notification System -->
+  <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
 </body>
 </html>

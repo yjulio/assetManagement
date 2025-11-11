@@ -1,0 +1,46 @@
+{%extends 'base.html'%}
+{%block content%}
+<div class="content-header">
+    <h2>📋 Suppliers</h2>
+    <div>
+        <a href="{{url_for('add_suppliers')}}" class="btn-primary-modern">➕ Add New</a>
+    </div>
+</div>
+
+<div class="card-modern">
+    {%if records%}
+    <div class="table-responsive">
+        <table class="table-modern">
+            <thead>
+                <tr>
+            <th>Name</th>
+            <th>Contact</th>
+            <th>Email</th>
+            <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {%for record in records%}
+                <tr>
+            <td>{{record.name or '-'}}</td>
+            <td>{{record.contact or '-'}}</td>
+            <td>{{record.email or '-'}}</td>
+                    <td>
+                        <a href="{{url_for('edit_suppliers', record_id=record.id)}}" class="btn-sm btn-primary-modern">✏️ Edit</a>
+                        <form method="POST" action="{{url_for('delete_suppliers', record_id=record.id)}}" style="display:inline;" onsubmit="return confirm('Are you sure?');">
+                            <input type="hidden" name="csrf_token" value="{{generate_csrf_token()}}">
+                            <button type="submit" class="btn-sm btn-danger-modern">🗑️ Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {%endfor%}
+            </tbody>
+        </table>
+    </div>
+    {%else%}
+    <div class="alert alert-info-modern">
+        No records found. <a href="{{url_for('add_suppliers')}}">Add the first one</a>
+    </div>
+    {%endif%}
+</div>
+{%endblock%}

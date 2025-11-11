@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="content-header">
+  <h2>🔔 Maintenance Due</h2>
+  <p class="subtitle">Scheduled maintenance due within the next 7 days</p>
+</div>
+
+<div class="card-modern">
+  {% if maintenance_due %}
+    <div class="alert alert-warning-modern mb-4">
+      <i class="bi bi-exclamation-triangle"></i>
+      <strong>{{ maintenance_due|length }}</strong> maintenance task(s) coming due soon.
+    </div>
+    
+    <div class="table-responsive">
+      <table class="table-modern">
+        <thead>
+          <tr>
+            <th>Asset Name</th>
+            <th>Maintenance Type</th>
+            <th>Scheduled Date</th>
+            <th>Description</th>
+            <th>Days Until Due</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for maintenance in maintenance_due %}
+          <tr>
+            <td><strong>{{ maintenance.asset_name }}</strong></td>
+            <td>{{ maintenance.maintenance_type }}</td>
+            <td>{{ maintenance.scheduled_date.strftime('%Y-%m-%d') if maintenance.scheduled_date else 'N/A' }}</td>
+            <td>{{ maintenance.description or 'N/A' }}</td>
+            <td>
+              <span class="badge {% if maintenance.days_until_due <= 1 %}badge-danger{% elif maintenance.days_until_due <= 3 %}badge-warning{% else %}badge-info{% endif %}">
+                {{ maintenance.days_until_due }} day{{ 's' if maintenance.days_until_due != 1 else '' }}
+              </span>
+            </td>
+            <td>
+              <a href="/maintenance" class="btn-sm btn-primary-modern">View Details</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="alert alert-success-modern">
+      <i class="bi bi-check-circle"></i>
+      No maintenance is due in the next 7 days.
+    </div>
+  {% endif %}
+</div>
+
+<div class="mt-4">
+  <a href="/" class="btn-secondary-modern">← Back to Dashboard</a>
+  <a href="/maintenance" class="btn-primary-modern">Schedule Maintenance</a>
+</div>
+{% endblock %}

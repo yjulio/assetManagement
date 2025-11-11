@@ -1,73 +1,99 @@
 {% extends 'base.html' %}
 {% block content %}
   <div class="fade-in">
-    <h2>Asset List</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 class="mb-0">
+        <i class="bi bi-box-seam text-primary me-2"></i>Asset List
+      </h2>
+    </div>
     
-    <div style="margin-bottom:15px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
-      <button id="selectAllBtn" onclick="toggleSelectAll()" style="background-color:#3498db;color:white;padding:8px 15px;border:none;border-radius:4px;cursor:pointer;">Select All</button>
-      <button onclick="deleteSelected()" style="background-color:#e74c3c;color:white;padding:8px 15px;border:none;border-radius:4px;cursor:pointer;">Delete Selected</button>
-      <span id="selectedCount" style="color:#7f8c8d;font-weight:bold;">0 selected</span>
+    <div class="card shadow-sm border-0 mb-3">
+      <div class="card-body">
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+          <button id="selectAllBtn" onclick="toggleSelectAll()" class="btn btn-primary">
+            <i class="bi bi-check-all me-2"></i>Select All
+          </button>
+          <button onclick="deleteSelected()" class="btn btn-danger">
+            <i class="bi bi-trash3 me-2"></i>Delete Selected
+          </button>
+          <span id="selectedCount" class="badge bg-secondary fs-6 ms-2">0 selected</span>
+        </div>
+      </div>
     </div>
 
     <form id="bulkActionForm" method="post">
       <div class="table-responsive">
-        <table>
-      <tr>
-        <th style="width:40px;"><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
-        <th>Name</th>
-        <th>Quantity</th>
-        <th>Purchase Price</th>
-        <th>Current Value</th>
-        <th>Category</th>
-        <th>Model</th>
-        <th>Brand</th>
-        <th>Serial Number</th>
-        <th>Purchase Date</th>
-        <th>Depreciation</th>
-        <th>Location</th>
-        <th>Actions</th>
-      </tr>
+        <table class="table table-hover table-striped align-middle">
+      <thead class="table-dark">
+        <tr>
+          <th style="width:40px;"><input type="checkbox" id="selectAll" class="form-check-input" onchange="toggleSelectAll()"></th>
+          <th>Name</th>
+          <th>Quantity</th>
+          <th>Purchase Price</th>
+          <th>Current Value</th>
+          <th>Category</th>
+          <th>Model</th>
+          <th>Brand</th>
+          <th>Serial Number</th>
+          <th>Purchase Date</th>
+          <th>Depreciation</th>
+          <th>Location</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
       {% for name, d in assets %}
         <tr>
-          <td><input type="checkbox" class="asset-checkbox" name="selected_assets" value="{{ name }}" onchange="updateSelectedCount()"></td>
+          <td><input type="checkbox" class="form-check-input asset-checkbox" name="selected_assets" value="{{ name }}" onchange="updateSelectedCount()"></td>
           <td><strong>{{ name }}</strong></td>
-          <td>{{ d.quantity }}</td>
+          <td><span class="badge bg-info">{{ d.quantity }}</span></td>
           <td>VT{{ '%.2f'|format(d.price) }}</td>
           <td>
-            <span style="color:#27ae60;font-weight:600;">VT{{ '%.2f'|format(d.current_value) }}</span>
+            <span class="text-success fw-bold">VT{{ '%.2f'|format(d.current_value) }}</span>
             {% if d.purchase_date and d.depreciation_method != 'none' %}
               {% set depreciation_percent = ((d.price - d.current_value) / d.price * 100) if d.price > 0 else 0 %}
-              <br><small style="color:#7f8c8d;">({{ '%.1f'|format(depreciation_percent) }}% depreciated)</small>
+              <br><small class="text-muted">({{ '%.1f'|format(depreciation_percent) }}% depreciated)</small>
             {% endif %}
           </td>
-          <td>{{ d.category }}</td>
+          <td><span class="badge bg-secondary">{{ d.category }}</span></td>
           <td>{{ d.model or '-' }}</td>
           <td>{{ d.brand or '-' }}</td>
           <td>{{ d.serial_number or '-' }}</td>
           <td>{{ d.purchase_date or '-' }}</td>
           <td>
             {% if d.depreciation_method == 'straight_line' %}
-              <span style="color:#3498db;">Straight Line</span>
+              <span class="badge bg-primary">Straight Line</span>
             {% elif d.depreciation_method == 'declining_balance' %}
-              <span style="color:#9b59b6;">Declining Balance</span>
+              <span class="badge" style="background:#9b59b6;">Declining Balance</span>
             {% else %}
-              <span style="color:#95a5a6;">None</span>
+              <span class="badge bg-secondary">None</span>
             {% endif %}
             {% if d.useful_life_years %}
-              <br><small>{{ d.useful_life_years }}yr life</small>
+              <br><small class="text-muted">{{ d.useful_life_years }}yr life</small>
             {% endif %}
           </td>
           <td>{{ d.location or '-' }}</td>
           <td>
-            <a href="{{ url_for('view_asset', asset_name=name) }}" style="background-color:#9b59b6;color:white;padding:5px 10px;border:none;border-radius:4px;text-decoration:none;display:inline-block;margin-right:5px;">View</a>
-            <a href="{{ url_for('assign_asset', asset_name=name) }}" style="background-color:#f39c12;color:white;padding:5px 10px;border:none;border-radius:4px;text-decoration:none;display:inline-block;margin-right:5px;">Assign</a>
-            <a href="{{ url_for('edit_asset', asset_name=name) }}" style="background-color:#3498db;color:white;padding:5px 10px;border:none;border-radius:4px;text-decoration:none;display:inline-block;margin-right:5px;">Edit</a>
-            <form method="post" action="{{ url_for('delete_asset', asset_name=name) }}" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete {{ name }}?');">
-              <button type="submit" style="background-color:#e74c3c;color:white;padding:5px 10px;border:none;border-radius:4px;cursor:pointer;">Delete</button>
-            </form>
+            <div class="btn-group" role="group">
+              <a href="{{ url_for('view_asset', asset_name=name) }}" class="btn btn-sm btn-outline-primary" title="View Details">
+                <i class="bi bi-eye"></i>
+              </a>
+              <a href="{{ url_for('assign_asset', asset_name=name) }}" class="btn btn-sm btn-outline-warning" title="Assign Asset">
+                <i class="bi bi-person-check"></i>
+              </a>
+              <a href="{{ url_for('edit_asset', asset_name=name) }}" class="btn btn-sm btn-outline-info" title="Edit Asset">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <form method="post" action="{{ url_for('delete_asset', asset_name=name) }}" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete {{ name }}?');">
+                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Asset">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </div>
           </td>
         </tr>
       {% endfor %}
+      </tbody>
     </table>
       </div>
   </form>

@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="content-header">
+  <h2>🔔 Leases Expiring</h2>
+  <p class="subtitle">Asset leases expiring within the next 30 days</p>
+</div>
+
+<div class="card-modern">
+  {% if expiring_leases %}
+    <div class="alert alert-warning-modern mb-4">
+      <i class="bi bi-exclamation-triangle"></i>
+      <strong>{{ expiring_leases|length }}</strong> lease(s) expiring soon.
+    </div>
+    
+    <div class="table-responsive">
+      <table class="table-modern">
+        <thead>
+          <tr>
+            <th>Asset Name</th>
+            <th>Lessor</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th>Monthly Payment</th>
+            <th>Days Remaining</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for lease in expiring_leases %}
+          <tr>
+            <td><strong>{{ lease.asset_name }}</strong></td>
+            <td>{{ lease.lessor }}</td>
+            <td>{{ lease.lease_start_date.strftime('%Y-%m-%d') if lease.lease_start_date else 'N/A' }}</td>
+            <td>{{ lease.lease_end_date.strftime('%Y-%m-%d') if lease.lease_end_date else 'N/A' }}</td>
+            <td>VT{{ '{:,.0f}'.format(lease.monthly_payment) if lease.monthly_payment else 'N/A' }}</td>
+            <td>
+              <span class="badge {% if lease.days_until_expiry <= 7 %}badge-danger{% elif lease.days_until_expiry <= 14 %}badge-warning{% else %}badge-info{% endif %}">
+                {{ lease.days_until_expiry }} day{{ 's' if lease.days_until_expiry != 1 else '' }}
+              </span>
+            </td>
+            <td>
+              <a href="/assets" class="btn-sm btn-primary-modern">View Asset</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="alert alert-success-modern">
+      <i class="bi bi-check-circle"></i>
+      No leases are expiring in the next 30 days.
+    </div>
+  {% endif %}
+</div>
+
+<div class="mt-4">
+  <a href="/" class="btn-secondary-modern">← Back to Dashboard</a>
+  <a href="/assets" class="btn-primary-modern">View All Assets</a>
+</div>
+{% endblock %}

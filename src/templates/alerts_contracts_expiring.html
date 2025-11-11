@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="content-header">
+  <h2>🔔 Contracts Expiring</h2>
+  <p class="subtitle">Contracts expiring within the next 30 days</p>
+</div>
+
+<div class="card-modern">
+  {% if expiring_contracts %}
+    <div class="alert alert-warning-modern mb-4">
+      <i class="bi bi-exclamation-triangle"></i>
+      <strong>{{ expiring_contracts|length }}</strong> contract(s) expiring soon.
+    </div>
+    
+    <div class="table-responsive">
+      <table class="table-modern">
+        <thead>
+          <tr>
+            <th>Contract Name</th>
+            <th>Type</th>
+            <th>Vendor</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th>Days Remaining</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for contract in expiring_contracts %}
+          <tr>
+            <td><strong>{{ contract.contract_name }}</strong></td>
+            <td>{{ contract.contract_type }}</td>
+            <td>{{ contract.vendor }}</td>
+            <td>{{ contract.start_date.strftime('%Y-%m-%d') if contract.start_date else 'N/A' }}</td>
+            <td>{{ contract.end_date.strftime('%Y-%m-%d') if contract.end_date else 'N/A' }}</td>
+            <td>
+              <span class="badge {% if contract.days_until_expiry <= 7 %}badge-danger{% elif contract.days_until_expiry <= 14 %}badge-warning{% else %}badge-info{% endif %}">
+                {{ contract.days_until_expiry }} day{{ 's' if contract.days_until_expiry != 1 else '' }}
+              </span>
+            </td>
+            <td>
+              <a href="/contracts/list" class="btn-sm btn-primary-modern">View Details</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="alert alert-success-modern">
+      <i class="bi bi-check-circle"></i>
+      No contracts are expiring in the next 30 days.
+    </div>
+  {% endif %}
+</div>
+
+<div class="mt-4">
+  <a href="/" class="btn-secondary-modern">← Back to Dashboard</a>
+  <a href="/contracts/list" class="btn-primary-modern">View All Contracts</a>
+</div>
+{% endblock %}

@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UX Features Demo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/notifications.css">
+    <style>
+        body { padding: 40px; background: #f5f7fa; }
+        .demo-section { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 12px; 
+            margin-bottom: 30px; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .demo-title { 
+            font-size: 24px; 
+            font-weight: 600; 
+            margin-bottom: 20px; 
+            color: #2c3e50;
+        }
+        .btn-group { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; }
+        h1 { 
+            text-align: center; 
+            margin-bottom: 40px; 
+            color: #2c3e50;
+            font-weight: 700;
+        }
+        .demo-description {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        .code-example {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #3498db;
+            margin: 15px 0;
+            font-family: monospace;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 User Experience Features Demo</h1>
+        
+        <!-- Toast Notifications -->
+        <div class="demo-section">
+            <div class="demo-title">📢 Toast Notifications</div>
+            <p class="demo-description">
+                Smart, non-intrusive notifications that appear in the top-right corner with auto-dismiss.
+            </p>
+            <div class="btn-group">
+                <button class="btn btn-success" onclick="toast.success('Record saved successfully!', 'Success')">
+                    ✅ Success Toast
+                </button>
+                <button class="btn btn-danger" onclick="toast.error('Failed to save record. Please try again.', 'Error')">
+                    ❌ Error Toast
+                </button>
+                <button class="btn btn-warning" onclick="toast.warning('Please fill out all required fields.', 'Warning')">
+                    ⚠️ Warning Toast
+                </button>
+                <button class="btn btn-info" onclick="toast.info('Your data has been auto-saved.', 'Info')">
+                    ℹ️ Info Toast
+                </button>
+            </div>
+            <div class="code-example">
+                toast.success('Record saved successfully!', 'Success');<br>
+                toast.error('Failed to save record', 'Error');<br>
+                toast.warning('Please fill out all fields', 'Warning');
+            </div>
+        </div>
+
+        <!-- Loading Indicators -->
+        <div class="demo-section">
+            <div class="demo-title">⏳ Loading Indicators</div>
+            <p class="demo-description">
+                Visual feedback during operations with spinners and progress indicators.
+            </p>
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="showLoadingDemo()">
+                    Show Loading Overlay
+                </button>
+                <button class="btn btn-secondary" id="loadingBtn" onclick="buttonLoadingDemo(this)">
+                    Button Loading State
+                </button>
+            </div>
+            <div class="code-example">
+                LoadingOverlay.show('Processing...');<br>
+                // Perform operation<br>
+                LoadingOverlay.hide();
+            </div>
+        </div>
+
+        <!-- Confirmation Dialogs -->
+        <div class="demo-section">
+            <div class="demo-title">🔔 Confirmation Dialogs</div>
+            <p class="demo-description">
+                Elegant modals to confirm critical actions before proceeding.
+            </p>
+            <div class="btn-group">
+                <button class="btn btn-warning" onclick="showWarningConfirm()">
+                    ⚠️ Warning Confirmation
+                </button>
+                <button class="btn btn-danger" onclick="showDangerConfirm()">
+                    🗑️ Delete Confirmation
+                </button>
+            </div>
+            <div class="code-example">
+                const confirmed = await confirmModal.danger(<br>
+                &nbsp;&nbsp;'Are you sure you want to delete this?',<br>
+                &nbsp;&nbsp;'Confirm Deletion'<br>
+                );<br>
+                if (confirmed) { /* proceed */ }
+            </div>
+        </div>
+
+        <!-- Form Validation -->
+        <div class="demo-section">
+            <div class="demo-title">✔️ Real-Time Form Validation</div>
+            <p class="demo-description">
+                Instant feedback with helpful error messages as you type.
+            </p>
+            <form id="demoForm" class="mt-3">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="email" class="form-label">Email Address *</label>
+                        <input type="email" class="form-control" id="email" required 
+                               placeholder="user@example.com">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="phone" class="form-label">Phone Number *</label>
+                        <input type="tel" class="form-control" id="phone" required
+                               placeholder="+1-234-567-8900">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="quantity" class="form-label">Quantity *</label>
+                        <input type="number" class="form-control" id="quantity" required 
+                               min="1" placeholder="e.g., 5">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="price" class="form-label">Price *</label>
+                        <input type="number" class="form-control" id="price" required 
+                               min="0" step="0.01" placeholder="e.g., 1500.00">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    Submit Form
+                </button>
+            </form>
+            <div class="code-example mt-3">
+                new FormValidator(formElement);<br>
+                // Automatically validates on blur and input events
+            </div>
+        </div>
+
+        <!-- Keyboard Shortcuts -->
+        <div class="demo-section">
+            <div class="demo-title">⌨️ Keyboard Shortcuts</div>
+            <p class="demo-description">
+                Power-user features for faster navigation. Press <kbd>Shift + ?</kbd> to see all shortcuts.
+            </p>
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Shortcut</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><kbd>Ctrl + S</kbd></td>
+                        <td>Save/Submit form</td>
+                    </tr>
+                    <tr>
+                        <td><kbd>Esc</kbd></td>
+                        <td>Close modal or cancel</td>
+                    </tr>
+                    <tr>
+                        <td><kbd>Shift + ?</kbd></td>
+                        <td>Show shortcuts menu</td>
+                    </tr>
+                    <tr>
+                        <td><kbd>Ctrl + K</kbd></td>
+                        <td>Focus search field</td>
+                    </tr>
+                </tbody>
+            </table>
+            <button class="btn btn-info" onclick="keyboard.showShortcutsMenu()">
+                Show All Shortcuts
+            </button>
+        </div>
+
+        <!-- Enhanced Error Messages -->
+        <div class="demo-section">
+            <div class="demo-title">💬 Enhanced Error Messages</div>
+            <p class="demo-description">
+                Clear, actionable messages instead of technical jargon.
+            </p>
+            <div class="row">
+                <div class="col-md-6">
+                    <h6 class="text-danger">❌ Before:</h6>
+                    <div class="alert alert-secondary">
+                        <small>ValueError: invalid literal for int() with base 10: 'abc'</small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="text-success">✅ After:</h6>
+                    <div class="alert alert-warning">
+                        <small>⚠️ Quantity must be a whole number (e.g., 1, 5, 10).</small>
+                    </div>
+                </div>
+            </div>
+            <div class="code-example">
+                // Python helper function<br>
+                from utils.feedback import validate_number<br>
+                <br>
+                is_valid, result = validate_number(<br>
+                &nbsp;&nbsp;value, 'Quantity', min_val=1, allow_decimal=False<br>
+                )
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="demo-section">
+            <div class="demo-title">🎯 Try Everything!</div>
+            <div class="btn-group">
+                <button class="btn btn-outline-primary" onclick="showAllFeatures()">
+                    🚀 Show All Features
+                </button>
+                <button class="btn btn-outline-success" data-confirm="This is an example of a confirmation dialog. Click Confirm to see a success message!">
+                    Test Confirmation (with data-confirm)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/notifications.js"></script>
+    <script>
+        // Demo functions
+        function showLoadingDemo() {
+            LoadingOverlay.show('Processing your request...');
+            setTimeout(() => {
+                LoadingOverlay.hide();
+                toast.success('Operation completed!', 'Success');
+            }, 3000);
+        }
+
+        function buttonLoadingDemo(btn) {
+            setButtonLoading(btn, true);
+            setTimeout(() => {
+                setButtonLoading(btn, false);
+                toast.success('Button operation completed!');
+            }, 2000);
+        }
+
+        async function showWarningConfirm() {
+            const confirmed = await confirmModal.show({
+                title: 'Important Action',
+                message: 'This action will modify system settings. Are you sure you want to continue?',
+                type: 'warning',
+                confirmText: 'Yes, Continue',
+                cancelText: 'Cancel'
+            });
+            
+            if (confirmed) {
+                toast.success('Action confirmed!');
+            } else {
+                toast.info('Action cancelled');
+            }
+        }
+
+        async function showDangerConfirm() {
+            const confirmed = await confirmModal.danger(
+                'This will permanently delete the selected item. This action cannot be undone.',
+                'Confirm Deletion'
+            );
+            
+            if (confirmed) {
+                toast.success('Item deleted successfully!');
+            } else {
+                toast.info('Deletion cancelled');
+            }
+        }
+
+        function showAllFeatures() {
+            setTimeout(() => toast.success('Feature 1: Toast Notifications ✅'), 200);
+            setTimeout(() => toast.info('Feature 2: Loading Indicators ⏳'), 800);
+            setTimeout(() => toast.warning('Feature 3: Form Validation ✔️'), 1400);
+            setTimeout(() => toast.info('Feature 4: Keyboard Shortcuts ⌨️', 'Press Shift + ?'), 2000);
+        }
+
+        // Form submission handler
+        document.getElementById('demoForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const validator = new FormValidator(this);
+            if (validator.validateForm()) {
+                const submitBtn = this.querySelector('button[type="submit"]');
+                setButtonLoading(submitBtn, true);
+                
+                setTimeout(() => {
+                    setButtonLoading(submitBtn, false);
+                    toast.success('Form submitted successfully!', 'Success');
+                    this.reset();
+                    // Clear validation classes
+                    this.querySelectorAll('.is-valid, .is-invalid').forEach(el => {
+                        el.classList.remove('is-valid', 'is-invalid');
+                    });
+                    this.querySelectorAll('.form-feedback, .field-icon').forEach(el => el.remove());
+                }, 2000);
+            } else {
+                toast.warning('Please fix the errors in the form', 'Validation Failed');
+            }
+        });
+
+        // Show welcome message
+        setTimeout(() => {
+            toast.info('Welcome to the UX Features Demo! Try all the buttons to explore.', 'Welcome', 8000);
+        }, 500);
+    </script>
+</body>
+</html>

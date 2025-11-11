@@ -5,14 +5,16 @@
 
  
 
-from flask import Flask, request, redirect, url_for, flash, session, render_template
+from flask import Flask, request, redirect, url_for, flash, session, render_template, send_from_directory, jsonify
 from AssetManagement import InventorySystem
-from config import FLASK_CONFIG, DB_CONFIG
+from config import FLASK_CONFIG, DB_CONFIG, BACKUP_CONFIG
+from utils.data_quality import DataQualityCleaner
 import html
 import os
 from datetime import datetime, date
 import mysql.connector
 from mysql.connector import Error
+import secrets
 
 try:
     import pandas as pd
@@ -24,6 +26,21 @@ except Exception:
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
+
+# CSRF Protection Helper
+def validate_csrf_token():
+    """Validate CSRF token from form/JSON. Returns True if valid, False otherwise."""
+    # Check form data first
+    form_token = request.form.get('csrf_token')
+    # For JSON requests, check JSON body
+    if not form_token and request.is_json:
+        form_token = request.json.get('csrf_token')
+    
+    session_token = session.get('csrf_token')
+    
+    if not form_token or not session_token or form_token != session_token:
+        return False
+    return True
 
 # Database connection function
 def get_db_connection():
@@ -54,6 +71,15 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max upload size
 app.secret_key = FLASK_CONFIG.get('secret_key', 'change_this_to_a_random_secret')
 system = InventorySystem()
+
+# Inject CSRF token into all templates (simple session-based protection)
+@app.context_processor
+def inject_csrf_token():
+    token = session.get('csrf_token')
+    if not token:
+        token = secrets.token_urlsafe(32)
+        session['csrf_token'] = token
+    return dict(csrf_token=token)
 
 def calculate_depreciation(purchase_price, purchase_date_str, salvage_value, useful_life_years, method='straight_line'):
     """Calculate current asset value based on depreciation"""
@@ -94,8 +120,8 @@ def header(title="Asset Management System"):
     return ""
 
 
-def require_group(group_name):
-    """Decorator to require that the logged-in user belongs to group_name."""
+def require_group(*allowed_groups):
+    """Decorator to require that the logged-in user belongs to one of the allowed groups."""
     def decorator(f):
         @wraps(f)
         def wrapped(*args, **kwargs):
@@ -107,7 +133,9 @@ def require_group(group_name):
             if not user:
                 flash('Unknown user', 'error')
                 return redirect(url_for('login'))
-            if group_name not in user.get('groups', set()):
+            user_groups = user.get('groups', set())
+            # Check if user belongs to any of the allowed groups
+            if not any(group in user_groups for group in allowed_groups):
                 flash('You do not have permission to perform this action', 'error')
                 return redirect(url_for('index'))
             return f(*args, **kwargs)
@@ -119,13 +147,26 @@ def login_required(f):
     @wraps(f)
     def wrapped(*args, **kwargs):
         if not session.get('username'):
-            flash('Please log in to continue', 'warning')
-            return redirect(url_for('login'))
+            flash('Please log in to access this page', 'warning')
+            # Save the page they were trying to access
+            return redirect(url_for('login', next=request.url))
         return f(*args, **kwargs)
     return wrapped
 
+@app.route("/landing")
+def landing():
+    """Public landing page"""
+    groups_list = sorted(system.groups.keys()) if system.groups else []
+    return render_template('landing.html', groups=groups_list)
+
 @app.route("/")
 def index():
+    # If not logged in, show landing page
+    if not session.get('username'):
+        groups_list = sorted(system.groups.keys()) if system.groups else []
+        return render_template('landing.html', groups=groups_list)
+    
+    # If logged in, show dashboard
     # Get search query
     search_query = request.args.get('q', '').lower()
     # Calculate dashboard metrics
@@ -135,7 +176,7 @@ def index():
     
     # Get dashboard configuration from database or session
     user_id = session.get('username', 'default')
-    dashboard_widgets = session.get('dashboard_widgets', ['total_assets', 'total_value', 'low_stock', 'categories'])
+    dashboard_widgets = session.get('dashboard_widgets', ['total_assets', 'inhouse_assets', 'total_value', 'categories'])
     dashboard_charts = session.get('dashboard_charts', [])
     
     # Try to load from database
@@ -174,11 +215,14 @@ def index():
     unique_categories = len(set(item['category'] for item in items.values()))
     total_suppliers = len(system.suppliers)
     checked_out = sum(1 for item in items.values() if item.get('checked_out', False))
+    inhouse_assets = total_items - checked_out
     pending_maintenance = sum(1 for item in items.values() if item.get('maintenance_status') == 'pending')
     
-    # Get recent activity (last 10 items)
-    inventory_items = sorted([(name, type('Obj', (), d)) for name, d in items.items()], key=lambda x: x[0])
-    recent_activity = inventory_items[:10] if 'recent_activity' in dashboard_widgets else []
+    # Get recent activity (last 10 items) - only if needed
+    recent_activity = []
+    if 'recent_activity' in dashboard_widgets:
+        inventory_items = sorted([(name, type('Obj', (), d)) for name, d in items.items()], key=lambda x: x[0])
+        recent_activity = inventory_items[:10]
     
     return render_template('index.html', 
                          title='Dashboard', 
@@ -188,47 +232,310 @@ def index():
                          unique_categories=unique_categories,
                          total_suppliers=total_suppliers,
                          checked_out=checked_out,
+                         inhouse_assets=inhouse_assets,
                          pending_maintenance=pending_maintenance,
-                         inventory_items=inventory_items,
                          recent_activity=recent_activity,
                          dashboard_widgets=dashboard_widgets,
                          dashboard_charts=dashboard_charts)
 
+@app.route("/dashboard/export/<format_type>")
+@login_required
+def dashboard_export(format_type):
+    """Export dashboard data in various formats"""
+    # Get dashboard data
+    items = system.inventory
+    user_id = session.get('username', 'default')
+    
+    # Calculate metrics
+    total_items = len(items)
+    total_value = sum(item['quantity'] * item['price'] for item in items.values())
+    low_stock_items = sum(1 for item in items.values() if item['quantity'] <= 5)
+    unique_categories = len(set(item['category'] for item in items.values()))
+    
+    # Prepare data for export
+    dashboard_data = {
+        'Total Assets': total_items,
+        'Total Value': f'VT{total_value:,.0f}',
+        'Low Stock Items': low_stock_items,
+        'Categories': unique_categories,
+        'Suppliers': len(system.suppliers)
+    }
+    
+    # Get asset details
+    asset_details = []
+    for name, item in items.items():
+        asset_details.append({
+            'Asset Name': name,
+            'Quantity': item['quantity'],
+            'Price': item['price'],
+            'Total Value': item['quantity'] * item['price'],
+            'Category': item.get('category', ''),
+            'Supplier': item.get('supplier', ''),
+            'Department': item.get('department', ''),
+            'Location': item.get('location', ''),
+            'Status': 'Low Stock' if item['quantity'] <= 5 else 'Normal'
+        })
+    
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    
+    if format_type == 'pdf':
+        try:
+            from reportlab.lib import colors
+            from reportlab.lib.pagesizes import letter, A4
+            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
+            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+            from reportlab.lib.units import inch
+            from io import BytesIO
+            from flask import make_response
+            
+            buffer = BytesIO()
+            doc = SimpleDocTemplate(buffer, pagesize=A4)
+            elements = []
+            styles = getSampleStyleSheet()
+            
+            # Title
+            title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=24, textColor=colors.HexColor('#2c3e50'), spaceAfter=30)
+            title = Paragraph('Asset Management Dashboard', title_style)
+            elements.append(title)
+            
+            # Date
+            date_text = Paragraph(f'Generated: {datetime.now().strftime("%B %d, %Y at %H:%M")}', styles['Normal'])
+            elements.append(date_text)
+            elements.append(Spacer(1, 20))
+            
+            # Summary metrics table
+            summary_data = [['Metric', 'Value']]
+            for key, value in dashboard_data.items():
+                summary_data.append([key, str(value)])
+            
+            summary_table = Table(summary_data, colWidths=[3*inch, 2*inch])
+            summary_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#3498db')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 14),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black)
+            ]))
+            elements.append(summary_table)
+            elements.append(PageBreak())
+            
+            # Asset details table
+            if asset_details:
+                elements.append(Paragraph('Asset Details', styles['Heading2']))
+                elements.append(Spacer(1, 12))
+                
+                asset_data = [['Asset', 'Qty', 'Price', 'Value', 'Category', 'Status']]
+                for asset in asset_details[:50]:  # Limit to 50 items for PDF
+                    asset_data.append([
+                        asset['Asset Name'][:30],
+                        str(asset['Quantity']),
+                        f"VT{asset['Price']:.0f}",
+                        f"VT{asset['Total Value']:.0f}",
+                        asset['Category'][:20],
+                        asset['Status']
+                    ])
+                
+                asset_table = Table(asset_data, colWidths=[1.8*inch, 0.6*inch, 0.8*inch, 0.9*inch, 1.2*inch, 0.8*inch])
+                asset_table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#27ae60')),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                    ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0, 0), (-1, 0), 10),
+                    ('FONTSIZE', (0, 1), (-1, -1), 8),
+                    ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                    ('GRID', (0, 0), (-1, -1), 1, colors.black)
+                ]))
+                elements.append(asset_table)
+            
+            doc.build(elements)
+            buffer.seek(0)
+            
+            response = make_response(buffer.read())
+            response.headers['Content-Type'] = 'application/pdf'
+            response.headers['Content-Disposition'] = f'attachment; filename=dashboard_{timestamp}.pdf'
+            return response
+            
+        except ImportError:
+            flash('PDF export requires reportlab library. Please install: pip install reportlab', 'error')
+            return redirect(url_for('index'))
+        except Exception as e:
+            flash(f'PDF export error: {str(e)}', 'error')
+            return redirect(url_for('index'))
+    
+    elif format_type == 'excel':
+        try:
+            import pandas as pd
+            from io import BytesIO
+            from flask import make_response
+            
+            buffer = BytesIO()
+            with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+                # Dashboard summary sheet
+                summary_df = pd.DataFrame(list(dashboard_data.items()), columns=['Metric', 'Value'])
+                summary_df.to_excel(writer, sheet_name='Dashboard Summary', index=False)
+                
+                # Asset details sheet
+                if asset_details:
+                    assets_df = pd.DataFrame(asset_details)
+                    assets_df.to_excel(writer, sheet_name='Asset Details', index=False)
+            
+            buffer.seek(0)
+            response = make_response(buffer.read())
+            response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            response.headers['Content-Disposition'] = f'attachment; filename=dashboard_{timestamp}.xlsx'
+            return response
+            
+        except ImportError:
+            flash('Excel export requires pandas and openpyxl. Please install: pip install pandas openpyxl', 'error')
+            return redirect(url_for('index'))
+        except Exception as e:
+            flash(f'Excel export error: {str(e)}', 'error')
+            return redirect(url_for('index'))
+    
+    elif format_type == 'csv':
+        import csv
+        from io import StringIO
+        from flask import make_response
+        
+        si = StringIO()
+        writer = csv.writer(si)
+        
+        # Write summary
+        writer.writerow(['Asset Management Dashboard'])
+        writer.writerow(['Generated:', datetime.now().strftime('%Y-%m-%d %H:%M:%S')])
+        writer.writerow([])
+        writer.writerow(['Dashboard Summary'])
+        writer.writerow(['Metric', 'Value'])
+        for key, value in dashboard_data.items():
+            writer.writerow([key, value])
+        
+        writer.writerow([])
+        writer.writerow(['Asset Details'])
+        if asset_details:
+            writer.writerow(list(asset_details[0].keys()))
+            for asset in asset_details:
+                writer.writerow(list(asset.values()))
+        
+        output = si.getvalue()
+        response = make_response(output)
+        response.headers['Content-Type'] = 'text/csv'
+        response.headers['Content-Disposition'] = f'attachment; filename=dashboard_{timestamp}.csv'
+        return response
+    
+    else:
+        flash('Invalid export format', 'error')
+        return redirect(url_for('index'))
+
 @app.route("/add", methods=["GET", "POST"])
-@require_group('Admin')
+@require_group('Admin', 'manager')
 def add():
     if request.method == "POST":
-        name = (request.form.get("name", "") or "").strip()
-        quantity = int(request.form.get("quantity") or 0)
-        price = float(request.form.get("price") or 0.0)
-        description = request.form.get("description", "") or ""
-        low_stock_threshold = int(request.form.get("low_stock_threshold") or 5)
-        category = request.form.get("category", "Uncategorized") or "Uncategorized"
-        supplier = request.form.get("supplier", "Unknown") or "Unknown"
-        department = (request.form.get('department') or '').strip() or None
-        location = (request.form.get('location') or '').strip() or None
-        model = (request.form.get('model') or '').strip() or None
-        brand = (request.form.get('brand') or '').strip() or None
-        serial_number = (request.form.get('serial_number') or '').strip() or None
-        purchase_date = (request.form.get('purchase_date') or '').strip() or None
-        depreciation_method = request.form.get('depreciation_method', 'straight_line')
-        useful_life_years = int(request.form.get('useful_life_years') or 5)
-        salvage_value = float(request.form.get('salvage_value') or 0.0)
-        if name:
-            system.add_item(name, quantity, price, description, low_stock_threshold, category, supplier, 
-                          department, location, model, brand, serial_number, purchase_date,
-                          depreciation_method, useful_life_years, salvage_value)
-            flash(f"Added item '{name}'.", 'success')
-            return redirect(url_for('index'))
-        else:
-            flash('Name is required', 'error')
+        if not validate_csrf_token():
+            flash('⚠️ Invalid security token. Please refresh the page and try again.', 'error')
             return redirect(url_for('add'))
+        
+        try:
+            name = (request.form.get("name", "") or "").strip()
+            if not name:
+                flash('⚠️ Asset name is required. Please enter a descriptive name for the asset.', 'warning')
+                return redirect(url_for('add'))
+            
+            # Validate quantity
+            quantity_str = request.form.get("quantity") or "0"
+            try:
+                quantity = int(quantity_str)
+                if quantity < 0:
+                    flash('⚠️ Quantity must be a positive number (e.g., 1, 5, 10).', 'warning')
+                    return redirect(url_for('add'))
+            except ValueError:
+                flash('⚠️ Quantity must be a whole number (e.g., 1, 5, 10).', 'warning')
+                return redirect(url_for('add'))
+            
+            # Validate price
+            price_str = request.form.get("price") or "0.0"
+            try:
+                price = float(price_str)
+                if price < 0:
+                    flash('⚠️ Price must be a positive number (e.g., 100.00 or 1500.50).', 'warning')
+                    return redirect(url_for('add'))
+            except ValueError:
+                flash('⚠️ Price must be a valid number (e.g., 100.00 or 1500.50).', 'warning')
+                return redirect(url_for('add'))
+            
+            description = request.form.get("description", "") or ""
+            
+            # Validate low stock threshold
+            threshold_str = request.form.get("low_stock_threshold") or "5"
+            try:
+                low_stock_threshold = int(threshold_str)
+                if low_stock_threshold < 0:
+                    low_stock_threshold = 5
+            except ValueError:
+                low_stock_threshold = 5
+            
+            category = request.form.get("category", "Uncategorized") or "Uncategorized"
+            supplier = request.form.get("supplier", "Unknown") or "Unknown"
+            department = (request.form.get('department') or '').strip() or None
+            funding_source = (request.form.get('funding_source') or '').strip() or None
+            location = (request.form.get('location') or '').strip() or None
+            model = (request.form.get('model') or '').strip() or None
+            brand = (request.form.get('brand') or '').strip() or None
+            serial_number = (request.form.get('serial_number') or '').strip() or None
+            purchase_date = (request.form.get('purchase_date') or '').strip() or None
+            depreciation_method = request.form.get('depreciation_method', 'straight_line')
+            
+            # Validate useful life years
+            useful_life_str = request.form.get('useful_life_years') or "5"
+            try:
+                useful_life_years = int(useful_life_str)
+                if useful_life_years < 1:
+                    flash('⚠️ Useful life must be at least 1 year.', 'warning')
+                    return redirect(url_for('add'))
+            except ValueError:
+                flash('⚠️ Useful life must be a whole number (e.g., 3, 5, or 10 years).', 'warning')
+                return redirect(url_for('add'))
+            
+            # Validate salvage value
+            salvage_str = request.form.get('salvage_value') or "0.0"
+            try:
+                salvage_value = float(salvage_str)
+                if salvage_value < 0:
+                    flash('⚠️ Salvage value must be a positive number.', 'warning')
+                    return redirect(url_for('add'))
+            except ValueError:
+                flash('⚠️ Salvage value must be a valid number (e.g., 100.00).', 'warning')
+                return redirect(url_for('add'))
+            
+            system.add_item(name, quantity, price, description, low_stock_threshold, category, supplier, 
+                          department, funding_source, location, model, brand, serial_number, purchase_date,
+                          depreciation_method, useful_life_years, salvage_value)
+            
+            flash(f"✅ Successfully added asset '{name}'! Quantity: {quantity}, Price: ${price:.2f}", 'success')
+            return redirect(url_for('index'))
+            
+        except Exception as e:
+            error_msg = str(e).lower()
+            if "duplicate" in error_msg or "unique constraint" in error_msg:
+                flash(f"❌ An asset with this name or serial number already exists. Please use a different identifier.", 'error')
+            elif "foreign key" in error_msg:
+                flash("❌ Invalid reference. Please check your supplier or category selection.", 'error')
+            else:
+                flash(f"❌ Failed to add asset. Please check all fields and try again. Error: {str(e)}", 'error')
+            return redirect(url_for('add'))
+    
     return render_template('add.html', title='Add Asset', suppliers=sorted(system.suppliers.keys()))
 
 @app.route("/update", methods=["GET", "POST"])
-@require_group('Admin')
+@require_group('Admin', 'manager')
 def update():
     if request.method == "POST":
+        if not validate_csrf_token():
+            flash('Invalid CSRF token. Please try again.', 'error')
+            return redirect(url_for('update'))
         name = request.form.get("name","")
         change = int(request.form.get("change") or 0)
         system.update_quantity(name, change)
@@ -236,9 +543,12 @@ def update():
     return render_template('update.html', title='Update Quantity')
 
 @app.route("/suppliers", methods=["GET", "POST"])
-@require_group('Admin')
+@require_group('Admin', 'manager')
 def suppliers():
     if request.method == "POST":
+        if not validate_csrf_token():
+            flash('Invalid CSRF token. Please try again.', 'error')
+            return redirect(url_for('suppliers'))
         name = request.form.get("name","").strip()
         contact = request.form.get("contact","")
         email = request.form.get("email","")
@@ -253,6 +563,10 @@ def suppliers():
 @app.route("/groups", methods=["GET", "POST"])
 def groups():
     if request.method == "POST":
+        if not validate_csrf_token():
+            print(f"CSRF validation failed - Form token: {request.form.get('csrf_token')[:10] if request.form.get('csrf_token') else 'None'}, Session token: {session.get('csrf_token')[:10] if session.get('csrf_token') else 'None'}")
+            flash('Invalid CSRF token. Please try again.', 'error')
+            return redirect(url_for('groups'))
         name = request.form.get("name", "").strip()
         description = request.form.get("description", "")
         if name:
@@ -271,6 +585,9 @@ def groups():
 @app.route('/users', methods=['GET', 'POST'])
 def users():
     if request.method == 'POST':
+        if not validate_csrf_token():
+            flash('Invalid CSRF token. Please try again.', 'error')
+            return redirect(url_for('users'))
         username = request.form.get('username','').strip()
         email = request.form.get('email','').strip()
         password = request.form.get('password','')
@@ -282,17 +599,67 @@ def users():
                 return redirect(url_for('users'))
             pw_hash = generate_password_hash(password) if password else None
             system.add_user(username, email, pw_hash)
+            flash(f'User "{username}" added successfully', 'success')
         return redirect(url_for('users'))
     users_list = sorted([(uname, {'email': u.get('email',''), 'groups': u.get('groups', set())}) for uname, u in system.users.items()], key=lambda x: x[0])
     # For Jinja, groups can be set; Jinja can iterate sets but order may vary; acceptable for now
     users_ns = [(uname, type('Obj', (), d)) for uname, d in users_list]
     return render_template('users.html', title='Users', users=users_ns)
 
+@app.route('/users/delete/<username>', methods=['POST'])
+@require_group('Admin')
+def delete_user(username):
+    """Delete a user"""
+    if not validate_csrf_token():
+        flash('Invalid CSRF token', 'error')
+        return redirect(url_for('users'))
+    
+    try:
+        # Prevent deleting yourself
+        current_user = session.get('username')
+        if username == current_user:
+            flash('You cannot delete your own account', 'error')
+            return redirect(url_for('users'))
+        
+        # Check if user exists
+        if username not in system.users:
+            flash('User not found', 'error')
+            return redirect(url_for('users'))
+        
+        # Get user ID
+        user_id = system.users[username]['id']
+        
+        # Delete from database using connection
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Delete user_groups associations first (foreign key)
+        cursor.execute("DELETE FROM user_groups WHERE user_id = %s", (user_id,))
+        
+        # Delete user
+        cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        # Remove from memory
+        del system.users[username]
+        
+        flash(f'User "{username}" deleted successfully', 'success')
+    except Exception as e:
+        flash(f'Error deleting user: {str(e)}', 'error')
+    
+    return redirect(url_for('users'))
+
 
 @app.route('/assign-group', methods=['GET', 'POST'])
 @require_group('Admin')
 def assign_group():
     if request.method == 'POST':
+        if not validate_csrf_token():
+            flash('Invalid CSRF token. Please try again.', 'error')
+            return redirect(url_for('assign_group'))
         username = request.form.get('username','').strip()
         group_name = request.form.get('group','').strip()
         if username and group_name:
@@ -304,29 +671,78 @@ def assign_group():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    # If already logged in, redirect to dashboard
+    if session.get('username'):
+        return redirect(url_for('index'))
+    
     if request.method == 'POST':
+        if not validate_csrf_token():
+            error = 'Invalid security token. Please try again.'
+            groups_list = sorted(system.groups.keys())
+            return render_template('landing.html', error=error, groups=groups_list)
+        
         username = request.form.get('username','').strip()
         password = request.form.get('password','')
+        group = request.form.get('group','').strip()
+        
+        if not username or not password or not group:
+            error = 'Please fill in all fields.'
+            groups_list = sorted(system.groups.keys())
+            return render_template('landing.html', error=error, groups=groups_list)
+        
         user = system.users.get(username)
         if not user:
-            flash('Invalid username or password', 'error')
-            return redirect(url_for('login'))
+            error = 'Invalid username or password.'
+            groups_list = sorted(system.groups.keys())
+            return render_template('landing.html', error=error, groups=groups_list)
+        
+        # Check if user belongs to the selected group
+        user_groups = user.get('groups', set())
+        if group not in user_groups:
+            error = f'This account does not have {group} privileges.'
+            groups_list = sorted(system.groups.keys())
+            return render_template('landing.html', error=error, groups=groups_list)
+        
         pw_hash = user.get('password_hash')
         if pw_hash and check_password_hash(pw_hash, password):
             session['username'] = username
-            flash('Logged in', 'success')
+            session['group'] = group
+            session['groups'] = list(user_groups)  # Store all user groups
+            flash(f'Welcome to VBOS Asset Management System, {username}!', 'success')
+            # Redirect to the page they were trying to access, or dashboard
+            next_page = request.args.get('next')
+            if next_page and next_page.startswith('/'):
+                return redirect(next_page)
             return redirect(url_for('index'))
         else:
-            flash('Invalid username or password', 'error')
-            return redirect(url_for('login'))
-    # GET
-    return render_template('login.html', title='Login')
+            error = 'Invalid username or password.'
+            groups_list = sorted(system.groups.keys())
+            return render_template('landing.html', error=error, groups=groups_list)
+    
+    # GET request - show landing page with login form
+    groups_list = sorted(system.groups.keys())
+    return render_template('landing.html', groups=groups_list)
 
-@app.route('/logout')
+@app.route('/uploads/<path:filename>')
+def uploaded_file(filename):
+    """Serve uploaded files"""
+    upload_folder = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads')
+    return send_from_directory(upload_folder, filename)
+
+@app.route('/logout', methods=['GET', 'POST'])
 def logout():
-    session.pop('username', None)
-    flash('Logged out', 'info')
-    return redirect(url_for('index'))
+    # Support POST with CSRF validation (secure) and GET for backward compatibility
+    if request.method == 'POST':
+        if not validate_csrf_token():
+            flash('Invalid logout request. Please try again.', 'error')
+            return redirect(url_for('landing'))
+    
+    # Clear all session data
+    username = session.get('username', 'User')
+    session.clear()
+    
+    # Don't show goodbye message on landing page to avoid confusion on next login
+    return redirect(url_for('landing'))
 
 
 def allowed_file(filename):
@@ -365,6 +781,9 @@ def change_profile():
         flash('Please log in to change your profile', 'warning')
         return redirect(url_for('login'))
     if request.method == 'POST':
+        if not validate_csrf_token():
+            flash('Invalid CSRF token. Please try again.', 'error')
+            return redirect(url_for('change_profile'))
         name = request.form.get('name','').strip()
         email = request.form.get('email','').strip()
         password = request.form.get('password','')
@@ -409,21 +828,32 @@ def account_details():
 
 # ---- Assets submenu routes (placeholders) ----
 @app.route('/checkout', methods=['GET','POST'])
-@login_required
+@require_group('Admin', 'manager')
 def checkout():
     if request.method == 'POST':
+        if not validate_csrf_token():
+            flash('⚠️ Invalid security token. Please refresh the page and try again.', 'error')
+            return redirect(url_for('checkout'))
+        
         name = (request.form.get('name') or '').strip()
+        if not name:
+            flash('⚠️ Asset name is required. Please select an asset from the list.', 'warning')
+            return redirect(url_for('checkout'))
+        
         try:
             quantity = int(request.form.get('quantity') or 0)
-        except Exception:
-            quantity = 0
+            if quantity <= 0:
+                flash('⚠️ Quantity must be at least 1. Please enter a valid quantity.', 'warning')
+                return redirect(url_for('checkout'))
+        except ValueError:
+            flash('⚠️ Quantity must be a whole number (e.g., 1, 2, 5).', 'warning')
+            return redirect(url_for('checkout'))
+        
         person = (request.form.get('person') or '').strip() or None
         department = (request.form.get('department') or '').strip() or None
         location = (request.form.get('location') or '').strip() or None
         notes = (request.form.get('notes') or '').strip() or None
-        if not name:
-            flash('Item name is required', 'error')
-            return redirect(url_for('checkout'))
+        
         try:
             system.checkout_item(name, quantity, username=session.get('username'), person=person, department=department, location=location, notes=notes)
             
@@ -455,26 +885,40 @@ def checkout():
                             checkout_details=checkout_details,
                             notes=notes
                         )
-                        flash(f"Checked out {quantity} of '{name}'. Email notification sent to {person}.", 'success')
+                        flash(f"✅ Successfully checked out {quantity} unit(s) of '{name}' to {person}. Email notification sent!", 'success')
                     else:
-                        flash(f"Checked out {quantity} of '{name}'", 'success')
+                        flash(f"✅ Successfully checked out {quantity} unit(s) of '{name}' to {person}.", 'success')
                 else:
-                    flash(f"Checked out {quantity} of '{name}'", 'success')
+                    flash(f"✅ Successfully checked out {quantity} unit(s) of '{name}'.", 'success')
             except Exception as e:
                 print(f"Email notification error: {e}")
-                flash(f"Checked out {quantity} of '{name}'", 'success')
+                flash(f"✅ Successfully checked out {quantity} unit(s) of '{name}'. (Email notification could not be sent)", 'success')
             
             return redirect(url_for('index'))
+        except ValueError as e:
+            error_msg = str(e).lower()
+            if "insufficient" in error_msg or "not enough" in error_msg:
+                flash(f"❌ Insufficient inventory. Cannot checkout {quantity} unit(s) of '{name}'. Please check available quantity.", 'error')
+            else:
+                flash(f"❌ Checkout failed: {str(e)}", 'error')
+            return redirect(url_for('checkout'))
         except Exception as e:
-            flash(str(e), 'error')
+            error_msg = str(e).lower()
+            if "not found" in error_msg or "does not exist" in error_msg:
+                flash(f"❌ Asset '{name}' not found. Please select a valid asset from the list.", 'error')
+            else:
+                flash(f"❌ Failed to checkout asset. Please try again. Error: {str(e)}", 'error')
             return redirect(url_for('checkout'))
     # GET
     return render_template('checkout.html', title='Check Out', items=sorted(system.inventory.keys()))
 
 @app.route('/checkin', methods=['GET','POST'])
-@login_required
+@require_group('Admin', 'manager')
 def checkin():
     if request.method == 'POST':
+        if not validate_csrf_token():
+            flash('Invalid CSRF token. Please try again.', 'error')
+            return redirect(url_for('checkin'))
         name = (request.form.get('name') or '').strip()
         try:
             quantity = int(request.form.get('quantity') or 0)
@@ -508,6 +952,9 @@ def lease_return():
 @login_required
 def dispose():
     if request.method == 'POST':
+        if not validate_csrf_token():
+            flash('Invalid CSRF token. Please try again.', 'error')
+            return redirect(url_for('dispose'))
         asset_name = request.form.get('asset_name')
         quantity = int(request.form.get('quantity', 1))
         reason = request.form.get('reason', '')
@@ -551,6 +998,9 @@ def dispose():
 @login_required
 def maintenance():
     if request.method == 'POST':
+        if not validate_csrf_token():
+            flash('Invalid CSRF token. Please try again.', 'error')
+            return redirect(url_for('maintenance'))
         asset_name = request.form.get('asset_name')
         maintenance_type = request.form.get('maintenance_type')
         scheduled_date = request.form.get('scheduled_date')
@@ -585,6 +1035,9 @@ def maintenance():
 @login_required
 def move():
     if request.method == 'POST':
+        if not validate_csrf_token():
+            flash('Invalid CSRF token. Please try again.', 'error')
+            return redirect(url_for('move'))
         asset_name = request.form.get('asset_name')
         from_location = request.form.get('from_location')
         to_location = request.form.get('to_location')
@@ -633,6 +1086,9 @@ def move():
 @login_required
 def reserve():
     if request.method == 'POST':
+        if not validate_csrf_token():
+            flash('Invalid CSRF token. Please try again.', 'error')
+            return redirect(url_for('reserve'))
         asset_name = request.form.get('asset_name')
         quantity = int(request.form.get('quantity', 1))
         reserved_by = request.form.get('reserved_by')
@@ -671,20 +1127,281 @@ def reserve():
 
 
 # ---- Setup submenu routes ----
-@app.route('/company-info')
+@app.route('/company-info', methods=['GET', 'POST'])
 @login_required
 def company_info():
-    return render_template('page.html', title='Company Info', heading='Company Information', description='Manage organization details and branding.')
+    """Manage company information"""
+    if request.method == 'POST':
+        if not validate_csrf_token():
+            flash('Invalid CSRF token', 'error')
+            return redirect(url_for('company_info'))
+        
+        try:
+            # Get form data
+            name = request.form.get('name', '').strip()
+            legal_name = request.form.get('legal_name', '').strip()
+            abbreviation = request.form.get('abbreviation', '').strip()
+            description = request.form.get('description', '').strip()
+            address = request.form.get('address', '').strip()
+            city = request.form.get('city', '').strip()
+            state = request.form.get('state', '').strip()
+            postal_code = request.form.get('postal_code', '').strip()
+            country = request.form.get('country', '').strip()
+            phone = request.form.get('phone', '').strip()
+            fax = request.form.get('fax', '').strip()
+            email = request.form.get('email', '').strip()
+            website = request.form.get('website', '').strip()
+            tax_id = request.form.get('tax_id', '').strip()
+            registration_number = request.form.get('registration_number', '').strip()
+            fiscal_year_start = request.form.get('fiscal_year_start', '').strip()
+            currency = request.form.get('currency', '').strip()
+            timezone = request.form.get('timezone', '').strip()
+            
+            if not name:
+                flash('Company name is required', 'error')
+                return redirect(url_for('company_info'))
+            
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            
+            # Check if company info exists
+            cursor.execute("SELECT id FROM company_info LIMIT 1")
+            existing = cursor.fetchone()
+            
+            if existing:
+                # Update existing record
+                cursor.execute("""
+                    UPDATE company_info SET
+                        name = %s, legal_name = %s, abbreviation = %s, description = %s,
+                        address = %s, city = %s, state = %s, postal_code = %s, country = %s,
+                        phone = %s, fax = %s, email = %s, website = %s,
+                        tax_id = %s, registration_number = %s, fiscal_year_start = %s,
+                        currency = %s, timezone = %s, updated_by = %s
+                    WHERE id = %s
+                """, (name, legal_name, abbreviation, description, address, city, state, 
+                      postal_code, country, phone, fax, email, website, tax_id, 
+                      registration_number, fiscal_year_start or None, currency, timezone, 
+                      session.get('username'), existing[0]))
+                flash('Company information updated successfully', 'success')
+            else:
+                # Insert new record
+                cursor.execute("""
+                    INSERT INTO company_info (
+                        name, legal_name, abbreviation, description, address, city, state,
+                        postal_code, country, phone, fax, email, website, tax_id,
+                        registration_number, fiscal_year_start, currency, timezone, updated_by
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (name, legal_name, abbreviation, description, address, city, state,
+                      postal_code, country, phone, fax, email, website, tax_id,
+                      registration_number, fiscal_year_start or None, currency, timezone,
+                      session.get('username')))
+                flash('Company information added successfully', 'success')
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+        except Exception as e:
+            flash(f'Error saving company information: {str(e)}', 'error')
+        
+        return redirect(url_for('company_info'))
+    
+    # GET request - display company info
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        cursor.execute("SELECT * FROM company_info LIMIT 1")
+        company = cursor.fetchone()
+        
+        cursor.close()
+        conn.close()
+        
+        return render_template('company_info.html', company=company)
+    except Exception as e:
+        flash(f'Error loading company information: {str(e)}', 'error')
+        return render_template('company_info.html', company=None)
 
 @app.route('/locations')
 @login_required
 def locations():
-    return render_template('page.html', title='Locations', heading='Locations', description='Manage locations where assets are stored or used.')
+    """Display all locations"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        cursor.execute("""
+            SELECT * FROM locations 
+            ORDER BY is_active DESC, name ASC
+        """)
+        locations_list = cursor.fetchall()
+        
+        # Count active locations
+        active_count = sum(1 for loc in locations_list if loc.get('is_active'))
+        
+        # Count total assets with locations
+        cursor.execute("SELECT COUNT(DISTINCT name) as count FROM inventory WHERE location IS NOT NULL AND location != ''")
+        result = cursor.fetchone()
+        total_assets = result['count'] if result else 0
+        
+        cursor.close()
+        conn.close()
+        
+        return render_template('locations.html', 
+                             title='Locations Management',
+                             locations=locations_list,
+                             active_count=active_count,
+                             total_assets=total_assets)
+    except Exception as e:
+        flash(f'Error loading locations: {str(e)}', 'error')
+        return render_template('locations.html', title='Locations Management', locations=[], active_count=0, total_assets=0)
 
-@app.route('/departments')
+@app.route('/locations/add', methods=['POST'])
 @login_required
-def departments():
-    return render_template('page.html', title='Departments', heading='Departments', description='Manage departments and organizational units.')
+def locations_add():
+    """Add a new location"""
+    if not validate_csrf_token():
+        flash('Invalid CSRF token. Please try again.', 'error')
+        return redirect(url_for('locations'))
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        name = request.form.get('name', '').strip()
+        code = request.form.get('code', '').strip() or None
+        location_type = request.form.get('type', 'Office')
+        address = request.form.get('address', '').strip() or None
+        city = request.form.get('city', '').strip() or None
+        state = request.form.get('state', '').strip() or None
+        country = request.form.get('country', '').strip() or None
+        postal_code = request.form.get('postal_code', '').strip() or None
+        phone = request.form.get('phone', '').strip() or None
+        contact_person = request.form.get('contact_person', '').strip() or None
+        capacity = int(request.form.get('capacity', 0))
+        description = request.form.get('description', '').strip() or None
+        is_active = 1 if request.form.get('is_active') else 0
+        created_by = session.get('username', 'unknown')
+        
+        if not name:
+            flash('Location name is required', 'error')
+            return redirect(url_for('locations'))
+        
+        cursor.execute("""
+            INSERT INTO locations (name, code, type, address, city, state, country, postal_code, 
+                                 phone, contact_person, capacity, description, is_active, created_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (name, code, location_type, address, city, state, country, postal_code,
+              phone, contact_person, capacity, description, is_active, created_by))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        flash(f'Location "{name}" added successfully', 'success')
+    except Exception as e:
+        flash(f'Error adding location: {str(e)}', 'error')
+    
+    return redirect(url_for('locations'))
+
+@app.route('/locations/edit/<int:location_id>', methods=['GET', 'POST'])
+@login_required
+def locations_edit(location_id):
+    """Edit a location"""
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    
+    if request.method == 'POST':
+        if not validate_csrf_token():
+            flash('Invalid CSRF token. Please try again.', 'error')
+            return redirect(url_for('locations'))
+        
+        try:
+            name = request.form.get('name', '').strip()
+            code = request.form.get('code', '').strip() or None
+            location_type = request.form.get('type', 'Office')
+            address = request.form.get('address', '').strip() or None
+            city = request.form.get('city', '').strip() or None
+            state = request.form.get('state', '').strip() or None
+            country = request.form.get('country', '').strip() or None
+            postal_code = request.form.get('postal_code', '').strip() or None
+            phone = request.form.get('phone', '').strip() or None
+            contact_person = request.form.get('contact_person', '').strip() or None
+            capacity = int(request.form.get('capacity', 0))
+            description = request.form.get('description', '').strip() or None
+            is_active = 1 if request.form.get('is_active') else 0
+            
+            if not name:
+                flash('Location name is required', 'error')
+                return redirect(url_for('locations_edit', location_id=location_id))
+            
+            cursor.execute("""
+                UPDATE locations 
+                SET name = %s, code = %s, type = %s, address = %s, city = %s, state = %s, 
+                    country = %s, postal_code = %s, phone = %s, contact_person = %s, 
+                    capacity = %s, description = %s, is_active = %s
+                WHERE id = %s
+            """, (name, code, location_type, address, city, state, country, postal_code,
+                  phone, contact_person, capacity, description, is_active, location_id))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            flash(f'Location "{name}" updated successfully', 'success')
+            return redirect(url_for('locations'))
+        except Exception as e:
+            flash(f'Error updating location: {str(e)}', 'error')
+            cursor.close()
+            conn.close()
+            return redirect(url_for('locations_edit', location_id=location_id))
+    
+    # GET request - show edit form
+    try:
+        cursor.execute("SELECT * FROM locations WHERE id = %s", (location_id,))
+        location = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        
+        if not location:
+            flash('Location not found', 'error')
+            return redirect(url_for('locations'))
+        
+        return render_template('locations_edit.html', title='Edit Location', location=location)
+    except Exception as e:
+        flash(f'Error loading location: {str(e)}', 'error')
+        cursor.close()
+        conn.close()
+        return redirect(url_for('locations'))
+
+@app.route('/locations/delete/<int:location_id>', methods=['POST'])
+@login_required
+def locations_delete(location_id):
+    """Delete a location"""
+    if not validate_csrf_token():
+        flash('Invalid CSRF token. Please try again.', 'error')
+        return redirect(url_for('locations'))
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get location name first
+        cursor.execute("SELECT name FROM locations WHERE id = %s", (location_id,))
+        location = cursor.fetchone()
+        
+        if location:
+            cursor.execute("DELETE FROM locations WHERE id = %s", (location_id,))
+            conn.commit()
+            flash(f'Location "{location["name"]}" deleted successfully', 'success')
+        else:
+            flash('Location not found', 'error')
+        
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        flash(f'Error deleting location: {str(e)}', 'error')
+    
+    return redirect(url_for('locations'))
 
 @app.route('/categories')
 @login_required
@@ -699,7 +1416,383 @@ def subcategories():
 @app.route('/database')
 @require_group('Admin')
 def database():
-    return render_template('page.html', title='Database', heading='Database', description='Backup, restore, and manage database settings.')
+    """Database management page with backup, restore, and maintenance features"""
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+        
+        # Get recent backup history
+        cursor.execute("SELECT * FROM backup_history ORDER BY created_at DESC LIMIT 10")
+        backup_history = cursor.fetchall()
+        
+        # Get database settings
+        cursor.execute("SELECT setting_key, setting_value FROM database_settings")
+        settings_rows = cursor.fetchall()
+        settings = {row['setting_key']: row['setting_value'] for row in settings_rows}
+        
+        # Get database size and table count
+        cursor.execute("""
+            SELECT table_schema AS 'name',
+                   ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS 'size'
+            FROM information_schema.tables
+            WHERE table_schema = 'db_asset'
+            GROUP BY table_schema
+        """)
+        db_size = cursor.fetchone()
+        
+        cursor.execute("""
+            SELECT COUNT(*) as count
+            FROM information_schema.tables
+            WHERE table_schema = 'db_asset'
+        """)
+        table_count = cursor.fetchone()
+        
+        db_info = {
+            'name': db_size['name'] if db_size else 'db_asset',
+            'size': db_size['size'] if db_size else 0,
+            'tables': table_count['count'] if table_count else 0
+        }
+        
+        cursor.close()
+        connection.close()
+        
+        return render_template('backup_restore.html',
+                             backup_history=backup_history,
+                             settings=settings,
+                             db_info=db_info)
+    except Exception as e:
+        return render_template('page.html',
+                             title='Database Error',
+                             heading='Database Error',
+                             description=f'Error loading database information: {str(e)}')
+
+@app.route('/backup-restore')
+@require_group('Admin')
+def backup_restore():
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    
+    # Get backup history
+    cursor.execute('SELECT * FROM backup_history ORDER BY created_at DESC LIMIT 10')
+    backup_history = cursor.fetchall()
+    
+    # Get database settings
+    cursor.execute('SELECT setting_key, setting_value FROM database_settings')
+    settings_raw = cursor.fetchall()
+    settings = {s['setting_key']: s['setting_value'] for s in settings_raw}
+    
+    # Get database info
+    cursor.execute("SELECT table_schema AS 'name', ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS 'size' FROM information_schema.tables WHERE table_schema = 'db_asset' GROUP BY table_schema")
+    db_size = cursor.fetchone()
+    
+    cursor.execute("SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = 'db_asset'")
+    db_tables = cursor.fetchone()
+    
+    db_info = {
+        'name': 'db_asset',
+        'size': f"{db_size['size']} MB" if db_size else 'N/A',
+        'tables': db_tables['count'] if db_tables else 'N/A'
+    }
+    
+    cursor.close()
+    conn.close()
+    
+    return render_template('backup_restore.html', 
+                         title='Backup/Restore', 
+                         backup_history=backup_history,
+                         settings=settings,
+                         db_info=db_info)
+
+@app.route('/backup/sql', methods=['POST'])
+@require_group('Admin')
+def backup_sql():
+    import subprocess
+    import os
+    from flask import make_response
+    
+    if not validate_csrf_token():
+        flash('Invalid CSRF token. Please try again.', 'error')
+        return redirect(url_for('backup_restore'))
+    
+    try:
+        # Get database credentials from DB_CONFIG
+        db_password = DB_CONFIG['password']
+        db_name = DB_CONFIG['database']
+        db_user = DB_CONFIG['user']
+        db_host = DB_CONFIG['host']
+        
+        # Create SQL dump
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f'backup_{db_name}_{timestamp}.sql'
+        backup_dir = BACKUP_CONFIG['backup_dir']
+        
+        # Ensure backup directory exists
+        os.makedirs(backup_dir, exist_ok=True)
+        filepath = os.path.join(backup_dir, filename)
+        
+        # Use mysqldump command to save to file
+        cmd = f'mysqldump -h {db_host} -u {db_user} -p"{db_password}" {db_name} > {filepath}'
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        
+        if result.returncode == 0:
+            # Get file size
+            file_size = os.path.getsize(filepath)
+            
+            # Check if file size exceeds limit
+            max_size_bytes = BACKUP_CONFIG['max_backup_size_mb'] * 1024 * 1024
+            if file_size > max_size_bytes:
+                flash(f'Warning: Backup file size ({file_size / 1024 / 1024:.2f} MB) exceeds recommended limit', 'warning')
+            
+            # Save to backup history
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute(
+                'INSERT INTO backup_history (backup_type, filename, file_size, created_by, status) VALUES (%s, %s, %s, %s, %s)',
+                ('SQL', filename, file_size, session.get('username', 'Admin'), 'completed')
+            )
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            # Read file and send as download
+            with open(filepath, 'r') as f:
+                content = f.read()
+            
+            response = make_response(content)
+            response.headers["Content-Disposition"] = f"attachment; filename={filename}"
+            response.headers["Content-type"] = "application/sql"
+            flash(f'Database backup created successfully! Size: {file_size / 1024 / 1024:.2f} MB', 'success')
+            return response
+        else:
+            flash(f'Backup failed: {result.stderr}', 'error')
+            return redirect(url_for('backup_restore'))
+            
+    except Exception as e:
+        flash(f'Backup error: {str(e)}', 'error')
+        return redirect(url_for('backup_restore'))
+
+@app.route('/restore/sql', methods=['POST'])
+@require_group('Admin')
+def restore_sql():
+    import subprocess
+    import os
+    from werkzeug.utils import secure_filename
+    
+    if not validate_csrf_token():
+        flash('Invalid CSRF token. Please try again.', 'error')
+        return redirect(url_for('backup_restore'))
+    
+    if 'backup_file' not in request.files:
+        flash('No file uploaded!', 'error')
+        return redirect(url_for('backup_restore'))
+    
+    file = request.files['backup_file']
+    
+    if file.filename == '':
+        flash('No file selected!', 'error')
+        return redirect(url_for('backup_restore'))
+    
+    if not file.filename.endswith('.sql'):
+        flash('Only .sql files are allowed!', 'error')
+        return redirect(url_for('backup_restore'))
+    
+    try:
+        # Save uploaded file temporarily
+        filename = secure_filename(file.filename)
+        temp_path = os.path.join('/tmp', filename)
+        file.save(temp_path)
+        
+        # Verify file size
+        file_size = os.path.getsize(temp_path)
+        max_size_bytes = BACKUP_CONFIG['max_backup_size_mb'] * 1024 * 1024
+        if file_size > max_size_bytes:
+            os.remove(temp_path)
+            flash(f'File too large! Maximum size: {BACKUP_CONFIG["max_backup_size_mb"]} MB', 'error')
+            return redirect(url_for('backup_restore'))
+        
+        # Get database credentials from DB_CONFIG
+        db_password = DB_CONFIG['password']
+        db_name = DB_CONFIG['database']
+        db_user = DB_CONFIG['user']
+        db_host = DB_CONFIG['host']
+        
+        # Restore database
+        cmd = f'mysql -h {db_host} -u {db_user} -p"{db_password}" {db_name} < {temp_path}'
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        
+        # Clean up temp file
+        os.remove(temp_path)
+        
+        if result.returncode == 0:
+            # Log the restore
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute(
+                'INSERT INTO backup_history (backup_type, filename, created_by, status, notes) VALUES (%s, %s, %s, %s, %s)',
+                ('RESTORE', filename, session.get('username', 'Admin'), 'completed', 'Database restored from backup')
+            )
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            flash('Database restored successfully! Please log in again.', 'success')
+            # Log out all users after restore
+            session.clear()
+            return redirect(url_for('login'))
+        else:
+            flash(f'Restore failed: {result.stderr}', 'error')
+            return redirect(url_for('backup_restore'))
+            
+    except Exception as e:
+        flash(f'Restore error: {str(e)}', 'error')
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        return redirect(url_for('backup_restore'))
+
+@app.route('/database/optimize', methods=['POST'])
+@require_group('Admin')
+def database_optimize():
+    if not validate_csrf_token():
+        flash('Invalid CSRF token. Please try again.', 'error')
+        return redirect(url_for('backup_restore'))
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Get all tables
+        cursor.execute("SHOW TABLES")
+        tables = [table[0] for table in cursor.fetchall()]
+        
+        optimized_count = 0
+        for table in tables:
+            try:
+                cursor.execute(f"OPTIMIZE TABLE {table}")
+                optimized_count += 1
+            except Exception:
+                pass
+        
+        cursor.close()
+        conn.close()
+        
+        flash(f'Successfully optimized {optimized_count} tables!', 'success')
+    except Exception as e:
+        flash(f'Optimization error: {str(e)}', 'error')
+    
+    return redirect(url_for('backup_restore'))
+
+@app.route('/database/check', methods=['POST'])
+@require_group('Admin')
+def database_check():
+    if not validate_csrf_token():
+        flash('Invalid CSRF token. Please try again.', 'error')
+        return redirect(url_for('backup_restore'))
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Get all tables
+        cursor.execute("SHOW TABLES")
+        tables = [table[0] for table in cursor.fetchall()]
+        
+        checked_count = 0
+        errors = []
+        for table in tables:
+            try:
+                cursor.execute(f"CHECK TABLE {table}")
+                result = cursor.fetchone()
+                if result and 'OK' in str(result):
+                    checked_count += 1
+                else:
+                    errors.append(f"{table}: {result}")
+            except Exception as e:
+                errors.append(f"{table}: {str(e)}")
+        
+        cursor.close()
+        conn.close()
+        
+        if errors:
+            flash(f'Checked {checked_count} tables. Found issues in: {", ".join(errors[:5])}', 'warning')
+        else:
+            flash(f'All {checked_count} tables passed integrity check!', 'success')
+    except Exception as e:
+        flash(f'Check error: {str(e)}', 'error')
+    
+    return redirect(url_for('backup_restore'))
+
+@app.route('/database/repair', methods=['POST'])
+@require_group('Admin')
+def database_repair():
+    if not validate_csrf_token():
+        flash('Invalid CSRF token. Please try again.', 'error')
+        return redirect(url_for('backup_restore'))
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Get all tables
+        cursor.execute("SHOW TABLES")
+        tables = [table[0] for table in cursor.fetchall()]
+        
+        repaired_count = 0
+        for table in tables:
+            try:
+                cursor.execute(f"REPAIR TABLE {table}")
+                repaired_count += 1
+            except Exception:
+                pass
+        
+        cursor.close()
+        conn.close()
+        
+        flash(f'Successfully repaired {repaired_count} tables!', 'success')
+    except Exception as e:
+        flash(f'Repair error: {str(e)}', 'error')
+    
+    return redirect(url_for('backup_restore'))
+
+@app.route('/database/settings', methods=['POST'])
+@require_group('Admin')
+def database_settings():
+    if not validate_csrf_token():
+        flash('Invalid CSRF token. Please try again.', 'error')
+        return redirect(url_for('backup_restore'))
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Get form data
+        auto_backup_enabled = 'true' if request.form.get('auto_backup_enabled') else 'false'
+        auto_backup_time = request.form.get('auto_backup_time', '02:00')
+        backup_retention_days = request.form.get('backup_retention_days', '30')
+        optimize_on_backup = 'true' if request.form.get('optimize_on_backup') else 'false'
+        
+        # Update settings
+        settings = [
+            ('auto_backup_enabled', auto_backup_enabled),
+            ('auto_backup_time', auto_backup_time),
+            ('backup_retention_days', backup_retention_days),
+            ('optimize_on_backup', optimize_on_backup)
+        ]
+        
+        for key, value in settings:
+            cursor.execute(
+                'UPDATE database_settings SET setting_value = %s, updated_by = %s WHERE setting_key = %s',
+                (value, session.get('username', 'Admin'), key)
+            )
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        flash('Database settings updated successfully!', 'success')
+    except Exception as e:
+        flash(f'Settings update error: {str(e)}', 'error')
+    
+    return redirect(url_for('backup_restore'))
 
 @app.route('/manage-dashboard', methods=['GET', 'POST'])
 @login_required
@@ -708,6 +1801,12 @@ def manage_dashboard():
     cursor = conn.cursor()
     
     if request.method == 'POST':
+        if not validate_csrf_token():
+            flash('Invalid CSRF token. Please try again.', 'error')
+            cursor.close()
+            conn.close()
+            return redirect(url_for('manage_dashboard'))
+
         # Get selected widgets and charts from form
         selected_widgets = request.form.getlist('widget')
         selected_charts = request.form.getlist('chart')
@@ -771,7 +1870,7 @@ def manage_dashboard():
         
         # If no config in database, use defaults
         if not current_widgets:
-            current_widgets = ['total_assets', 'total_value', 'low_stock', 'categories']
+            current_widgets = ['total_assets', 'inhouse_assets', 'total_value', 'categories']
         if not current_charts:
             current_charts = []
             
@@ -781,7 +1880,7 @@ def manage_dashboard():
         
     except Exception as e:
         # Fallback to session or defaults
-        current_widgets = session.get('dashboard_widgets', ['total_assets', 'total_value', 'low_stock', 'categories'])
+        current_widgets = session.get('dashboard_widgets', ['total_assets', 'inhouse_assets', 'total_value', 'categories'])
         current_charts = session.get('dashboard_charts', [])
         flash(f'Using session configuration: {str(e)}', 'warning')
     finally:
@@ -794,6 +1893,193 @@ def manage_dashboard():
                          current_charts=current_charts)
 
 
+# ---- Data Quality Routes ----
+@app.route('/data-quality')
+@login_required
+def data_quality_dashboard():
+    """Data Quality Dashboard - Clean, standardize, and enrich asset data"""
+    items = system.inventory
+    
+    # Convert to list of dicts for processing
+    assets_list = []
+    for name, data in items.items():
+        asset = data.copy()
+        asset['name'] = name
+        assets_list.append(asset)
+    
+    # Generate data quality report
+    quality_report = DataQualityCleaner.generate_data_quality_report(assets_list)
+    
+    # Get sample of assets with issues
+    problematic_assets = []
+    for asset in assets_list[:20]:  # Show first 20
+        issues = []
+        if not asset.get('category') or asset.get('category') == '':
+            issues.append('Missing category')
+        if not asset.get('supplier') or asset.get('supplier') == '':
+            issues.append('Missing supplier')
+        if not asset.get('location') or asset.get('location') == '':
+            issues.append('Missing location')
+        if not asset.get('purchase_date'):
+            issues.append('Missing purchase date')
+        if DataQualityCleaner.clean_numeric(asset.get('price', 0)) == 0:
+            issues.append('Zero or invalid price')
+        
+        if issues:
+            problematic_assets.append({
+                'name': asset['name'],
+                'issues': issues
+            })
+    
+    return render_template('data_quality.html',
+                         title='Data Quality Dashboard',
+                         quality_report=quality_report,
+                         problematic_assets=problematic_assets)
+
+
+@app.route('/data-quality/clean', methods=['POST'])
+@login_required
+def clean_data():
+    """Clean and standardize all asset data"""
+    if not validate_csrf_token():
+        flash('Invalid CSRF token. Please try again.', 'error')
+        return redirect(url_for('data_quality_dashboard'))
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Get all assets
+        cursor.execute("SELECT name, category, supplier, location, price, quantity FROM inventory")
+        assets = cursor.fetchall()
+        
+        cleaned_count = 0
+        for asset in assets:
+            name, category, supplier, location, price, quantity = asset
+            
+            # Standardize
+            clean_category = DataQualityCleaner.standardize_category(category)
+            clean_supplier = DataQualityCleaner.standardize_supplier(supplier)
+            clean_location = DataQualityCleaner.standardize_location(location)
+            clean_price = DataQualityCleaner.clean_numeric(price)
+            
+            # Update if changed
+            if (clean_category != category or clean_supplier != supplier or 
+                clean_location != location or clean_price != price):
+                
+                cursor.execute("""
+                    UPDATE inventory 
+                    SET category = %s, supplier = %s, location = %s, price = %s
+                    WHERE name = %s
+                """, (clean_category, clean_supplier, clean_location, clean_price, name))
+                
+                cleaned_count += 1
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        # Reload system inventory
+        system.load_inventory()
+        
+        flash(f'✅ Successfully cleaned and standardized {cleaned_count} assets!', 'success')
+        
+    except Exception as e:
+        flash(f'Error cleaning data: {str(e)}', 'error')
+    
+    return redirect(url_for('data_quality_dashboard'))
+
+
+@app.route('/data-quality/enrich', methods=['POST'])
+@login_required
+def enrich_data():
+    """Enrich asset data with calculated fields"""
+    if not validate_csrf_token():
+        flash('Invalid CSRF token. Please try again.', 'error')
+        return redirect(url_for('data_quality_dashboard'))
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Check if calculated columns exist, if not add them
+        cursor.execute("SHOW COLUMNS FROM inventory LIKE 'age_years'")
+        if not cursor.fetchone():
+            cursor.execute("ALTER TABLE inventory ADD COLUMN age_years DECIMAL(10,2) DEFAULT 0")
+        
+        cursor.execute("SHOW COLUMNS FROM inventory LIKE 'depreciation_value'")
+        if not cursor.fetchone():
+            cursor.execute("ALTER TABLE inventory ADD COLUMN depreciation_value DECIMAL(15,2) DEFAULT 0")
+        
+        cursor.execute("SHOW COLUMNS FROM inventory LIKE 'book_value'")
+        if not cursor.fetchone():
+            cursor.execute("ALTER TABLE inventory ADD COLUMN book_value DECIMAL(15,2) DEFAULT 0")
+        
+        cursor.execute("SHOW COLUMNS FROM inventory LIKE 'lifecycle_status'")
+        if not cursor.fetchone():
+            cursor.execute("ALTER TABLE inventory ADD COLUMN lifecycle_status VARCHAR(50) DEFAULT 'Unknown'")
+        
+        cursor.execute("SHOW COLUMNS FROM inventory LIKE 'risk_level'")
+        if not cursor.fetchone():
+            cursor.execute("ALTER TABLE inventory ADD COLUMN risk_level VARCHAR(20) DEFAULT 'Low'")
+        
+        # Get all assets
+        cursor.execute("SELECT name, category, supplier, location, price, quantity, purchase_date FROM inventory")
+        assets = cursor.fetchall()
+        
+        enriched_count = 0
+        for asset in assets:
+            name, category, supplier, location, price, quantity, purchase_date = asset
+            
+            # Create asset dict
+            asset_dict = {
+                'name': name,
+                'category': category,
+                'supplier': supplier,
+                'location': location,
+                'price': price,
+                'quantity': quantity,
+                'purchase_date': purchase_date
+            }
+            
+            # Enrich
+            enriched = DataQualityCleaner.enrich_asset_data(asset_dict)
+            
+            # Update with calculated fields
+            cursor.execute("""
+                UPDATE inventory 
+                SET age_years = %s, 
+                    depreciation_value = %s,
+                    book_value = %s,
+                    lifecycle_status = %s,
+                    risk_level = %s
+                WHERE name = %s
+            """, (
+                enriched.get('age_years', 0),
+                enriched.get('accumulated_depreciation', 0),
+                enriched.get('book_value', price),
+                enriched.get('lifecycle_status', 'Unknown'),
+                enriched.get('risk_level', 'Low'),
+                name
+            ))
+            
+            enriched_count += 1
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        # Reload system inventory
+        system.load_inventory()
+        
+        flash(f'✅ Successfully enriched {enriched_count} assets with calculated fields!', 'success')
+        
+    except Exception as e:
+        flash(f'Error enriching data: {str(e)}', 'error')
+    
+    return redirect(url_for('data_quality_dashboard'))
+
+
 # ---- Advances submenu routes ----
 @app.route('/contracts')
 @login_required
@@ -804,6 +2090,9 @@ def contracts():
 @login_required
 def contracts_add():
     if request.method == 'POST':
+        if not validate_csrf_token():
+            flash('Invalid CSRF token. Please try again.', 'error')
+            return redirect(url_for('contracts_add'))
         # Handle contract creation
         contract_name = request.form.get('contract_name')
         contract_type = request.form.get('contract_type')
@@ -845,6 +2134,8 @@ def contracts_add():
 @login_required
 def contracts_upload():
     """Handle bulk contract file uploads"""
+    if not validate_csrf_token():
+        return jsonify({'error': 'Invalid CSRF token'}), 403
     try:
         if 'contract_files' not in request.files:
             return jsonify({'error': 'No files provided'}), 400
@@ -904,15 +2195,916 @@ def contracts_licenses():
     # TODO: Fetch software licenses
     return render_template('contracts_licenses.html', title='Software Licenses')
 
-@app.route('/employees')
+# =============================================
+# APO (Asset Purchase Order) Routes
+# =============================================
+
+@app.route('/apo')
 @login_required
-def employees():
-    return render_template('page.html', title='Person/Employees', heading='People and Employees', description='Manage people and employee records associated with assets.')
+def apo_index():
+    """APO Dashboard - redirect to list"""
+    return redirect('/apo/list')
+
+@app.route('/apo/add', methods=['GET', 'POST'])
+@login_required
+def apo_add():
+    """Add new Asset Purchase Order with file attachments"""
+    if request.method == 'POST':
+        if not validate_csrf_token():
+            flash('Invalid CSRF token. Please try again.', 'error')
+            return redirect(url_for('apo_add'))
+        apo_number = request.form.get('apo_number')
+        supplier = request.form.get('supplier')
+        department = request.form.get('department')
+        apo_date = request.form.get('apo_date')
+        delivery_date = request.form.get('delivery_date')
+        amount = float(request.form.get('amount', 0))
+        status = request.form.get('status', 'Pending')
+        description = request.form.get('description', '')
+        notes = request.form.get('notes', '')
+        
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            
+            # Insert APO record
+            cursor.execute("""
+                INSERT INTO apo (apo_number, supplier, department, apo_date, delivery_date, 
+                                amount, status, description, notes, uploaded_by)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (apo_number, supplier, department, apo_date, delivery_date, 
+                  amount, status, description, notes, session.get('username')))
+            
+            apo_id = cursor.lastrowid
+            
+            # Handle file uploads
+            uploaded_files = []
+            if 'apo_files' in request.files:
+                files = request.files.getlist('apo_files')
+                upload_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'apo')
+                os.makedirs(upload_folder, exist_ok=True)
+                
+                for file in files:
+                    if file and file.filename:
+                        from werkzeug.utils import secure_filename
+                        filename = secure_filename(file.filename)
+                        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                        unique_filename = f"{timestamp}_{filename}"
+                        filepath = os.path.join(upload_folder, unique_filename)
+                        file.save(filepath)
+                        
+                        # Save file info to database
+                        cursor.execute("""
+                            INSERT INTO apo_files (apo_id, original_filename, saved_filename, 
+                                                  file_size, uploaded_by)
+                            VALUES (%s, %s, %s, %s, %s)
+                        """, (apo_id, file.filename, unique_filename, 
+                              file.content_length or 0, session.get('username')))
+                        
+                        uploaded_files.append(unique_filename)
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            flash(f'APO "{apo_number}" added successfully! {len(uploaded_files)} file(s) uploaded.', 'success')
+            return redirect('/apo/list')
+            
+        except Exception as e:
+            flash(f'Error adding APO: {str(e)}', 'error')
+            return redirect('/apo/add')
+    
+    # GET request - show form
+    suppliers = sorted(system.suppliers.keys()) if hasattr(system, 'suppliers') else []
+    return render_template('apo_add.html', title='Add APO', suppliers=suppliers)
+
+@app.route('/apo/list')
+@login_required
+def apo_list():
+    """View all Asset Purchase Orders"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        cursor.execute("""
+            SELECT a.*, 
+                   COUNT(af.id) as file_count
+            FROM apo a
+            LEFT JOIN apo_files af ON a.id = af.apo_id
+            GROUP BY a.id
+            ORDER BY a.apo_date DESC, a.created_at DESC
+        """)
+        apos = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        return render_template('apo_list.html', title='Asset Purchase Orders', apos=apos)
+    except Exception as e:
+        flash(f'Error loading APOs: {str(e)}', 'error')
+        return render_template('apo_list.html', title='Asset Purchase Orders', apos=[])
+
+@app.route('/apo/upload', methods=['POST'])
+@login_required
+def apo_upload():
+    """Ajax file upload handler for APO documents"""
+    if not validate_csrf_token():
+        return jsonify({'error': 'Invalid CSRF token'}), 403
+    
+    try:
+        apo_id = request.form.get('apo_id')
+        if not apo_id:
+            return jsonify({'error': 'APO ID is required'}), 400
+        
+        if 'files[]' not in request.files:
+            return jsonify({'error': 'No files provided'}), 400
+        
+        files = request.files.getlist('files[]')
+        upload_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'apo')
+        os.makedirs(upload_folder, exist_ok=True)
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        uploaded_files = []
+        for file in files:
+            if file and file.filename:
+                from werkzeug.utils import secure_filename
+                filename = secure_filename(file.filename)
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                unique_filename = f"{timestamp}_{filename}"
+                filepath = os.path.join(upload_folder, unique_filename)
+                file.save(filepath)
+                
+                # Save to database
+                cursor.execute("""
+                    INSERT INTO apo_files (apo_id, filename, file_path, uploaded_by)
+                    VALUES (%s, %s, %s, %s)
+                """, (apo_id, filename, filepath, session.get('username')))
+                
+                uploaded_files.append(filename)
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': f'{len(uploaded_files)} file(s) uploaded successfully',
+            'files': uploaded_files
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/customers')
 @login_required
 def customers():
-    return render_template('page.html', title='Customers', heading='Customers', description='Manage customer records and assignments.')
+    """Display all customers"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        cursor.execute("""
+            SELECT * FROM customers 
+            ORDER BY status ASC, company_name ASC
+        """)
+        customers_list = cursor.fetchall()
+        
+        # Count active customers
+        active_count = sum(1 for c in customers_list if c.get('status') == 'Active')
+        
+        # Sum totals
+        total_assigned_assets = sum(c.get('assigned_assets_count', 0) for c in customers_list)
+        total_value = sum(c.get('total_value', 0) for c in customers_list)
+        
+        cursor.close()
+        conn.close()
+        
+        return render_template('customers.html', 
+                             title='Customers Management',
+                             customers=customers_list,
+                             active_count=active_count,
+                             total_assigned_assets=total_assigned_assets,
+                             total_value=total_value)
+    except Exception as e:
+        flash(f'Error loading customers: {str(e)}', 'error')
+        return render_template('customers.html', title='Customers Management', 
+                             customers=[], active_count=0, total_assigned_assets=0, total_value=0)
+
+@app.route('/customers/add', methods=['POST'])
+@login_required
+def customers_add():
+    """Add a new customer"""
+    if not validate_csrf_token():
+        flash('Invalid CSRF token. Please try again.', 'error')
+        return redirect(url_for('customers'))
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        customer_code = request.form.get('customer_code', '').strip() or None
+        company_name = request.form.get('company_name', '').strip()
+        contact_name = request.form.get('contact_name', '').strip() or None
+        email = request.form.get('email', '').strip() or None
+        phone = request.form.get('phone', '').strip() or None
+        mobile = request.form.get('mobile', '').strip() or None
+        address = request.form.get('address', '').strip() or None
+        city = request.form.get('city', '').strip() or None
+        state = request.form.get('state', '').strip() or None
+        country = request.form.get('country', '').strip() or None
+        postal_code = request.form.get('postal_code', '').strip() or None
+        website = request.form.get('website', '').strip() or None
+        tax_id = request.form.get('tax_id', '').strip() or None
+        customer_type = request.form.get('customer_type', 'Corporate')
+        status = request.form.get('status', 'Active')
+        credit_limit = float(request.form.get('credit_limit', 0))
+        payment_terms = request.form.get('payment_terms', '').strip() or None
+        notes = request.form.get('notes', '').strip() or None
+        created_by = session.get('username', 'unknown')
+        
+        if not company_name:
+            flash('Company name is required', 'error')
+            return redirect(url_for('customers'))
+        
+        cursor.execute("""
+            INSERT INTO customers (customer_code, company_name, contact_name, email, phone, mobile,
+                                 address, city, state, country, postal_code, website, tax_id,
+                                 customer_type, status, credit_limit, payment_terms, notes, created_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (customer_code, company_name, contact_name, email, phone, mobile,
+              address, city, state, country, postal_code, website, tax_id,
+              customer_type, status, credit_limit, payment_terms, notes, created_by))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        flash(f'Customer "{company_name}" added successfully', 'success')
+    except Exception as e:
+        flash(f'Error adding customer: {str(e)}', 'error')
+    
+    return redirect(url_for('customers'))
+
+@app.route('/customers/edit/<int:customer_id>', methods=['GET', 'POST'])
+@login_required
+def customers_edit(customer_id):
+    """Edit a customer"""
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    
+    if request.method == 'POST':
+        if not validate_csrf_token():
+            flash('Invalid CSRF token. Please try again.', 'error')
+            return redirect(url_for('customers'))
+        
+        try:
+            customer_code = request.form.get('customer_code', '').strip() or None
+            company_name = request.form.get('company_name', '').strip()
+            contact_name = request.form.get('contact_name', '').strip() or None
+            email = request.form.get('email', '').strip() or None
+            phone = request.form.get('phone', '').strip() or None
+            mobile = request.form.get('mobile', '').strip() or None
+            address = request.form.get('address', '').strip() or None
+            city = request.form.get('city', '').strip() or None
+            state = request.form.get('state', '').strip() or None
+            country = request.form.get('country', '').strip() or None
+            postal_code = request.form.get('postal_code', '').strip() or None
+            website = request.form.get('website', '').strip() or None
+            tax_id = request.form.get('tax_id', '').strip() or None
+            customer_type = request.form.get('customer_type', 'Corporate')
+            status = request.form.get('status', 'Active')
+            credit_limit = float(request.form.get('credit_limit', 0))
+            payment_terms = request.form.get('payment_terms', '').strip() or None
+            notes = request.form.get('notes', '').strip() or None
+            
+            if not company_name:
+                flash('Company name is required', 'error')
+                return redirect(url_for('customers_edit', customer_id=customer_id))
+            
+            cursor.execute("""
+                UPDATE customers 
+                SET customer_code = %s, company_name = %s, contact_name = %s, email = %s, 
+                    phone = %s, mobile = %s, address = %s, city = %s, state = %s, country = %s, 
+                    postal_code = %s, website = %s, tax_id = %s, customer_type = %s, status = %s,
+                    credit_limit = %s, payment_terms = %s, notes = %s
+                WHERE id = %s
+            """, (customer_code, company_name, contact_name, email, phone, mobile,
+                  address, city, state, country, postal_code, website, tax_id,
+                  customer_type, status, credit_limit, payment_terms, notes, customer_id))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            flash(f'Customer "{company_name}" updated successfully', 'success')
+            return redirect(url_for('customers'))
+        except Exception as e:
+            flash(f'Error updating customer: {str(e)}', 'error')
+            cursor.close()
+            conn.close()
+            return redirect(url_for('customers_edit', customer_id=customer_id))
+    
+    # GET request - show edit form
+    try:
+        cursor.execute("SELECT * FROM customers WHERE id = %s", (customer_id,))
+        customer = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        
+        if not customer:
+            flash('Customer not found', 'error')
+            return redirect(url_for('customers'))
+        
+        return render_template('customers_edit.html', title='Edit Customer', customer=customer)
+    except Exception as e:
+        flash(f'Error loading customer: {str(e)}', 'error')
+        cursor.close()
+        conn.close()
+        return redirect(url_for('customers'))
+
+@app.route('/customers/delete/<int:customer_id>', methods=['POST'])
+@login_required
+def customers_delete(customer_id):
+    """Delete a customer"""
+    if not validate_csrf_token():
+        flash('Invalid CSRF token. Please try again.', 'error')
+        return redirect(url_for('customers'))
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get customer name first
+        cursor.execute("SELECT company_name FROM customers WHERE id = %s", (customer_id,))
+        customer = cursor.fetchone()
+        
+        if customer:
+            cursor.execute("DELETE FROM customers WHERE id = %s", (customer_id,))
+            conn.commit()
+            flash(f'Customer "{customer["company_name"]}" deleted successfully', 'success')
+        else:
+            flash('Customer not found', 'error')
+        
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        flash(f'Error deleting customer: {str(e)}', 'error')
+    
+    return redirect(url_for('customers'))
+
+# ============================================================================
+# DEPARTMENTS MANAGEMENT
+# ============================================================================
+
+@app.route('/departments')
+@login_required
+def departments():
+    """Display all departments with statistics"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get filter parameters
+        status_filter = request.args.get('status', 'all')
+        search_query = request.args.get('search', '').strip()
+        
+        # Build query
+        query = "SELECT * FROM departments WHERE 1=1"
+        params = []
+        
+        if status_filter == 'active':
+            query += " AND is_active = TRUE"
+        elif status_filter == 'inactive':
+            query += " AND is_active = FALSE"
+            
+        if search_query:
+            query += " AND (name LIKE %s OR code LIKE %s OR manager LIKE %s OR location LIKE %s)"
+            search_param = f"%{search_query}%"
+            params.extend([search_param, search_param, search_param, search_param])
+        
+        query += " ORDER BY name ASC"
+        
+        cursor.execute(query, params)
+        departments_list = cursor.fetchall()
+        
+        # Calculate statistics
+        cursor.execute("SELECT COUNT(*) as total FROM departments WHERE is_active = TRUE")
+        active_count = cursor.fetchone()['total']
+        
+        cursor.execute("SELECT COUNT(*) as total FROM departments")
+        total_count = cursor.fetchone()['total']
+        
+        cursor.execute("SELECT SUM(budget) as total FROM departments WHERE is_active = TRUE")
+        result = cursor.fetchone()
+        total_budget = result['total'] if result['total'] else 0
+        
+        cursor.execute("SELECT COUNT(DISTINCT manager) as total FROM departments WHERE is_active = TRUE AND manager IS NOT NULL")
+        manager_count = cursor.fetchone()['total']
+        
+        cursor.close()
+        conn.close()
+        
+        return render_template('departments.html',
+                             departments=departments_list,
+                             active_count=active_count,
+                             total_count=total_count,
+                             total_budget=total_budget,
+                             manager_count=manager_count,
+                             status_filter=status_filter,
+                             search_query=search_query)
+    except Exception as e:
+        flash(f'Error loading departments: {str(e)}', 'error')
+        return render_template('departments.html', departments=[], active_count=0, total_count=0, total_budget=0, manager_count=0)
+
+@app.route('/departments/add', methods=['POST'])
+@login_required
+def add_department():
+    """Add a new department"""
+    if not validate_csrf_token():
+        flash('Invalid CSRF token', 'error')
+        return redirect(url_for('departments'))
+    
+    try:
+        name = request.form.get('name', '').strip()
+        code = request.form.get('code', '').strip().upper()
+        description = request.form.get('description', '').strip()
+        manager = request.form.get('manager', '').strip()
+        location = request.form.get('location', '').strip()
+        budget = request.form.get('budget', 0)
+        phone = request.form.get('phone', '').strip()
+        email = request.form.get('email', '').strip()
+        
+        if not name or not code:
+            flash('Department name and code are required', 'error')
+            return redirect(url_for('departments'))
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            INSERT INTO departments (name, code, description, manager, location, budget, phone, email, created_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (name, code, description, manager, location, budget, phone, email, session.get('username')))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        flash(f'Department "{name}" added successfully', 'success')
+    except Exception as e:
+        flash(f'Error adding department: {str(e)}', 'error')
+    
+    return redirect(url_for('departments'))
+
+@app.route('/departments/edit/<int:dept_id>')
+@login_required
+def edit_department(dept_id):
+    """Display edit form for a department"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        cursor.execute("SELECT * FROM departments WHERE id = %s", (dept_id,))
+        department = cursor.fetchone()
+        
+        cursor.close()
+        conn.close()
+        
+        if department:
+            return render_template('departments_edit.html', department=department)
+        else:
+            flash('Department not found', 'error')
+            return redirect(url_for('departments'))
+    except Exception as e:
+        flash(f'Error loading department: {str(e)}', 'error')
+        return redirect(url_for('departments'))
+
+@app.route('/departments/update/<int:dept_id>', methods=['POST'])
+@login_required
+def update_department(dept_id):
+    """Update an existing department"""
+    if not validate_csrf_token():
+        flash('Invalid CSRF token', 'error')
+        return redirect(url_for('departments'))
+    
+    try:
+        name = request.form.get('name', '').strip()
+        code = request.form.get('code', '').strip().upper()
+        description = request.form.get('description', '').strip()
+        manager = request.form.get('manager', '').strip()
+        location = request.form.get('location', '').strip()
+        budget = request.form.get('budget', 0)
+        phone = request.form.get('phone', '').strip()
+        email = request.form.get('email', '').strip()
+        is_active = request.form.get('is_active') == '1'
+        
+        if not name or not code:
+            flash('Department name and code are required', 'error')
+            return redirect(url_for('edit_department', dept_id=dept_id))
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            UPDATE departments 
+            SET name = %s, code = %s, description = %s, manager = %s, 
+                location = %s, budget = %s, phone = %s, email = %s, is_active = %s
+            WHERE id = %s
+        """, (name, code, description, manager, location, budget, phone, email, is_active, dept_id))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        flash(f'Department "{name}" updated successfully', 'success')
+    except Exception as e:
+        flash(f'Error updating department: {str(e)}', 'error')
+    
+    return redirect(url_for('departments'))
+
+@app.route('/departments/delete/<int:dept_id>', methods=['POST'])
+@login_required
+def delete_department(dept_id):
+    """Delete a department"""
+    if not validate_csrf_token():
+        flash('Invalid CSRF token', 'error')
+        return redirect(url_for('departments'))
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get department name before deleting
+        cursor.execute("SELECT name FROM departments WHERE id = %s", (dept_id,))
+        department = cursor.fetchone()
+        
+        if department:
+            cursor.execute("DELETE FROM departments WHERE id = %s", (dept_id,))
+            conn.commit()
+            flash(f'Department "{department["name"]}" deleted successfully', 'success')
+        else:
+            flash('Department not found', 'error')
+        
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        flash(f'Error deleting department: {str(e)}', 'error')
+    
+    return redirect(url_for('departments'))
+
+# ============================================================================
+# EMPLOYEES MANAGEMENT
+# ============================================================================
+
+@app.route('/employees')
+@login_required
+def employees():
+    """Display all employees with statistics"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get filter parameters
+        status_filter = request.args.get('status', 'all')
+        department_filter = request.args.get('department', 'all')
+        employment_type = request.args.get('employment_type', 'all')
+        search_query = request.args.get('search', '').strip()
+        
+        # Build query
+        query = """
+            SELECT e.*, d.name as department_name 
+            FROM employees e
+            LEFT JOIN departments d ON e.department_id = d.id
+            WHERE 1=1
+        """
+        params = []
+        
+        if status_filter == 'active':
+            query += " AND e.is_active = TRUE"
+        elif status_filter == 'inactive':
+            query += " AND e.is_active = FALSE"
+            
+        if department_filter != 'all':
+            query += " AND e.department_id = %s"
+            params.append(department_filter)
+            
+        if employment_type != 'all':
+            query += " AND e.employment_type = %s"
+            params.append(employment_type)
+            
+        if search_query:
+            query += " AND (e.first_name LIKE %s OR e.last_name LIKE %s OR e.employee_id LIKE %s OR e.email LIKE %s OR e.position LIKE %s)"
+            search_param = f"%{search_query}%"
+            params.extend([search_param] * 5)
+        
+        query += " ORDER BY e.last_name ASC, e.first_name ASC"
+        
+        cursor.execute(query, params)
+        employees_list = cursor.fetchall()
+        
+        # Get departments for filter dropdown
+        cursor.execute("SELECT id, name FROM departments WHERE is_active = TRUE ORDER BY name")
+        departments_list = cursor.fetchall()
+        
+        # Calculate statistics
+        cursor.execute("SELECT COUNT(*) as total FROM employees WHERE is_active = TRUE")
+        active_count = cursor.fetchone()['total']
+        
+        cursor.execute("SELECT COUNT(*) as total FROM employees")
+        total_count = cursor.fetchone()['total']
+        
+        cursor.execute("SELECT COUNT(DISTINCT department_id) as total FROM employees WHERE is_active = TRUE AND department_id IS NOT NULL")
+        dept_with_employees = cursor.fetchone()['total']
+        
+        cursor.execute("SELECT SUM(salary) as total FROM employees WHERE is_active = TRUE")
+        result = cursor.fetchone()
+        total_salary = result['total'] if result['total'] else 0
+        
+        cursor.close()
+        conn.close()
+        
+        return render_template('employees.html',
+                             employees=employees_list,
+                             departments=departments_list,
+                             active_count=active_count,
+                             total_count=total_count,
+                             dept_with_employees=dept_with_employees,
+                             total_salary=total_salary,
+                             status_filter=status_filter,
+                             department_filter=department_filter,
+                             employment_type=employment_type,
+                             search_query=search_query)
+    except Exception as e:
+        flash(f'Error loading employees: {str(e)}', 'error')
+        return render_template('employees.html', employees=[], departments=[], active_count=0, total_count=0, dept_with_employees=0, total_salary=0)
+
+@app.route('/employees/add', methods=['POST'])
+@login_required
+def add_employee():
+    """Add a new employee"""
+    if not validate_csrf_token():
+        flash('Invalid CSRF token', 'error')
+        return redirect(url_for('employees'))
+    
+    try:
+        # Get form data
+        employee_id = request.form.get('employee_id', '').strip()
+        first_name = request.form.get('first_name', '').strip()
+        last_name = request.form.get('last_name', '').strip()
+        email = request.form.get('email', '').strip()
+        phone = request.form.get('phone', '').strip()
+        mobile = request.form.get('mobile', '').strip()
+        date_of_birth = request.form.get('date_of_birth', '').strip()
+        gender = request.form.get('gender', '').strip()
+        department_id = request.form.get('department_id', '').strip()
+        position = request.form.get('position', '').strip()
+        qualification = request.form.get('qualification', '').strip()
+        employment_type = request.form.get('employment_type', '').strip()
+        hire_date = request.form.get('hire_date', '').strip()
+        salary = request.form.get('salary', '').strip()
+        address = request.form.get('address', '').strip()
+        city = request.form.get('city', '').strip()
+        notes = request.form.get('notes', '').strip()
+        
+        if not employee_id or not first_name or not last_name:
+            flash('Employee ID, first name, and last name are required', 'error')
+            return redirect(url_for('employees'))
+        
+        # Handle profile photo upload
+        photo_path = None
+        if 'profile_photo' in request.files:
+            file = request.files['profile_photo']
+            if file and file.filename:
+                # Validate file type
+                allowed_extensions = {'png', 'jpg', 'jpeg', 'gif'}
+                filename = file.filename.lower()
+                if '.' in filename and filename.rsplit('.', 1)[1] in allowed_extensions:
+                    # Create secure filename
+                    import os
+                    from datetime import datetime
+                    ext = filename.rsplit('.', 1)[1]
+                    secure_filename = f"{employee_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.{ext}"
+                    
+                    # Save file
+                    upload_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads', 'employees')
+                    os.makedirs(upload_dir, exist_ok=True)
+                    file_path = os.path.join(upload_dir, secure_filename)
+                    file.save(file_path)
+                    
+                    # Store relative path for database
+                    photo_path = f"uploads/employees/{secure_filename}"
+                else:
+                    flash('Invalid file type. Only PNG, JPG, JPEG, and GIF are allowed.', 'warning')
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            INSERT INTO employees (
+                employee_id, first_name, last_name, email, phone, mobile, date_of_birth, gender,
+                department_id, position, qualification, employment_type, hire_date, salary, address, city, notes, photo_path, created_by
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (employee_id, first_name, last_name, email or None, phone, mobile, date_of_birth or None, gender or None,
+              department_id or None, position, qualification, employment_type, hire_date or None, salary or None, address, city, notes, photo_path, session.get('username')))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        flash(f'Employee "{first_name} {last_name}" added successfully', 'success')
+    except Exception as e:
+        flash(f'Error adding employee: {str(e)}', 'error')
+    
+    return redirect(url_for('employees'))
+
+@app.route('/employees/view/<int:emp_id>')
+@login_required
+def view_employee(emp_id):
+    """Display detailed employee information"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        cursor.execute("""
+            SELECT e.*, d.name as department_name 
+            FROM employees e
+            LEFT JOIN departments d ON e.department_id = d.id
+            WHERE e.id = %s
+        """, (emp_id,))
+        employee = cursor.fetchone()
+        
+        cursor.close()
+        conn.close()
+        
+        if employee:
+            return render_template('employees_view.html', employee=employee)
+        else:
+            flash('Employee not found', 'error')
+            return redirect(url_for('employees'))
+    except Exception as e:
+        flash(f'Error loading employee: {str(e)}', 'error')
+        return redirect(url_for('employees'))
+
+@app.route('/employees/edit/<int:emp_id>')
+@login_required
+def edit_employee(emp_id):
+    """Display edit form for an employee"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        cursor.execute("""
+            SELECT e.*, d.name as department_name 
+            FROM employees e
+            LEFT JOIN departments d ON e.department_id = d.id
+            WHERE e.id = %s
+        """, (emp_id,))
+        employee = cursor.fetchone()
+        
+        # Get departments for dropdown
+        cursor.execute("SELECT id, name FROM departments WHERE is_active = TRUE ORDER BY name")
+        departments = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        if employee:
+            return render_template('employees_edit.html', employee=employee, departments=departments)
+        else:
+            flash('Employee not found', 'error')
+            return redirect(url_for('employees'))
+    except Exception as e:
+        flash(f'Error loading employee: {str(e)}', 'error')
+        return redirect(url_for('employees'))
+
+@app.route('/employees/update/<int:emp_id>', methods=['POST'])
+@login_required
+def update_employee(emp_id):
+    """Update an existing employee"""
+    if not validate_csrf_token():
+        flash('Invalid CSRF token', 'error')
+        return redirect(url_for('employees'))
+    
+    try:
+        # Get form data
+        employee_id = request.form.get('employee_id', '').strip()
+        first_name = request.form.get('first_name', '').strip()
+        last_name = request.form.get('last_name', '').strip()
+        email = request.form.get('email', '').strip()
+        phone = request.form.get('phone', '').strip()
+        mobile = request.form.get('mobile', '').strip()
+        date_of_birth = request.form.get('date_of_birth', '').strip()
+        gender = request.form.get('gender', '').strip()
+        department_id = request.form.get('department_id', '').strip()
+        position = request.form.get('position', '').strip()
+        qualification = request.form.get('qualification', '').strip()
+        employment_type = request.form.get('employment_type', '').strip()
+        hire_date = request.form.get('hire_date', '').strip()
+        termination_date = request.form.get('termination_date', '').strip()
+        salary = request.form.get('salary', '').strip()
+        address = request.form.get('address', '').strip()
+        city = request.form.get('city', '').strip()
+        emergency_contact_name = request.form.get('emergency_contact_name', '').strip()
+        emergency_contact_phone = request.form.get('emergency_contact_phone', '').strip()
+        notes = request.form.get('notes', '').strip()
+        is_active = request.form.get('is_active') == '1'
+        
+        if not employee_id or not first_name or not last_name:
+            flash('Employee ID, first name, and last name are required', 'error')
+            return redirect(url_for('edit_employee', emp_id=emp_id))
+        
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get current photo path
+        cursor.execute("SELECT photo_path FROM employees WHERE id = %s", (emp_id,))
+        current_employee = cursor.fetchone()
+        photo_path = current_employee['photo_path'] if current_employee else None
+        
+        # Handle profile photo upload
+        if 'profile_photo' in request.files:
+            file = request.files['profile_photo']
+            if file and file.filename:
+                # Validate file type
+                allowed_extensions = {'png', 'jpg', 'jpeg', 'gif'}
+                filename = file.filename.lower()
+                if '.' in filename and filename.rsplit('.', 1)[1] in allowed_extensions:
+                    # Delete old photo if exists
+                    if photo_path:
+                        import os
+                        old_photo = os.path.join(os.path.dirname(os.path.dirname(__file__)), photo_path)
+                        if os.path.exists(old_photo):
+                            os.remove(old_photo)
+                    
+                    # Create secure filename
+                    import os
+                    from datetime import datetime
+                    ext = filename.rsplit('.', 1)[1]
+                    secure_filename = f"{employee_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.{ext}"
+                    
+                    # Save file
+                    upload_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads', 'employees')
+                    os.makedirs(upload_dir, exist_ok=True)
+                    file_path = os.path.join(upload_dir, secure_filename)
+                    file.save(file_path)
+                    
+                    # Store relative path for database
+                    photo_path = f"uploads/employees/{secure_filename}"
+                else:
+                    flash('Invalid file type. Only PNG, JPG, JPEG, and GIF are allowed.', 'warning')
+        
+        cursor.execute("""
+            UPDATE employees SET
+                employee_id = %s, first_name = %s, last_name = %s, email = %s, phone = %s, mobile = %s,
+                date_of_birth = %s, gender = %s, department_id = %s, position = %s, qualification = %s, employment_type = %s,
+                hire_date = %s, termination_date = %s, salary = %s, address = %s, city = %s,
+                emergency_contact_name = %s, emergency_contact_phone = %s, notes = %s, is_active = %s, photo_path = %s
+            WHERE id = %s
+        """, (employee_id, first_name, last_name, email or None, phone, mobile, date_of_birth or None, 
+              gender or None, department_id or None, position, qualification, employment_type, hire_date or None, 
+              termination_date or None, salary or None, address, city, emergency_contact_name, 
+              emergency_contact_phone, notes, is_active, photo_path, emp_id))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        flash(f'Employee "{first_name} {last_name}" updated successfully', 'success')
+    except Exception as e:
+        flash(f'Error updating employee: {str(e)}', 'error')
+    
+    return redirect(url_for('employees'))
+
+@app.route('/employees/delete/<int:emp_id>', methods=['POST'])
+@login_required
+def delete_employee(emp_id):
+    """Delete an employee"""
+    if not validate_csrf_token():
+        flash('Invalid CSRF token', 'error')
+        return redirect(url_for('employees'))
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get employee name before deleting
+        cursor.execute("SELECT first_name, last_name FROM employees WHERE id = %s", (emp_id,))
+        employee = cursor.fetchone()
+        
+        if employee:
+            cursor.execute("DELETE FROM employees WHERE id = %s", (emp_id,))
+            conn.commit()
+            flash(f'Employee "{employee["first_name"]} {employee["last_name"]}" deleted successfully', 'success')
+        else:
+            flash('Employee not found', 'error')
+        
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        flash(f'Error deleting employee: {str(e)}', 'error')
+    
+    return redirect(url_for('employees'))
 
 @app.route('/funding')
 @login_required
@@ -943,9 +3135,12 @@ def customize_contracts_form():
 
 
 @app.route('/import', methods=['GET', 'POST'])
-@require_group('Admin')
+@require_group('Admin', 'manager')
 def import_data():
     if request.method == 'POST':
+        if not validate_csrf_token():
+            flash('Invalid CSRF token. Please try again.', 'error')
+            return redirect(url_for('import_data'))
         if 'file' not in request.files:
             flash('No file provided', 'error')
             return redirect(request.url)
@@ -1066,7 +3261,7 @@ def view_asset(asset_name):
 
 
 @app.route('/assign-asset/<asset_name>', methods=['GET', 'POST'])
-@login_required
+@require_group('Admin', 'manager')
 def assign_asset(asset_name):
     if asset_name not in system.inventory:
         flash(f'Asset "{asset_name}" not found', 'error')
@@ -1075,6 +3270,9 @@ def assign_asset(asset_name):
     asset = system.inventory[asset_name]
     
     if request.method == 'POST':
+        if not validate_csrf_token():
+            flash('Invalid CSRF token. Please try again.', 'error')
+            return redirect(url_for('assign_asset', asset_name=asset_name))
         person = request.form.get('person')
         department = request.form.get('department')
         location = request.form.get('location')
@@ -1145,13 +3343,16 @@ def assign_asset(asset_name):
 
 
 @app.route('/edit-asset/<asset_name>', methods=['GET', 'POST'])
-@login_required
+@require_group('Admin', 'manager')
 def edit_asset(asset_name):
     if asset_name not in system.inventory:
         flash(f'Asset "{asset_name}" not found', 'error')
         return redirect(url_for('assets'))
     
     if request.method == 'POST':
+        if not validate_csrf_token():
+            flash('Invalid CSRF token. Please try again.', 'error')
+            return redirect(url_for('edit_asset', asset_name=asset_name))
         try:
             # Get form data
             quantity = int(request.form.get('quantity', 0))
@@ -1218,7 +3419,7 @@ def edit_asset(asset_name):
 
 
 @app.route('/delete-asset/<asset_name>', methods=['POST'])
-@login_required
+@require_group('Admin', 'manager')
 def delete_asset(asset_name):
     try:
         system.remove_item(asset_name)
@@ -1229,7 +3430,7 @@ def delete_asset(asset_name):
 
 
 @app.route('/delete-selected-assets', methods=['POST'])
-@login_required
+@require_group('Admin', 'manager')
 def delete_selected_assets():
     selected_assets = request.form.getlist('selected_assets')
     if not selected_assets:
@@ -1293,28 +3494,259 @@ def lists_contracts():
     return render_template('lists_contracts.html', title='Lists of Contracts', contracts=contracts)
 
 
+# --- Alerts Routes ---
+@app.route('/alerts/assets-past-due')
+@login_required
+def alerts_assets_past_due():
+    """Display assets that are past their due date for check-in"""
+    past_due_assets = []
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        # Get checked out assets past their expected return date
+        cursor.execute("""
+            SELECT asset_name, checkout_date, expected_return_date, 
+                   checked_out_to, DATEDIFF(CURDATE(), expected_return_date) as days_overdue
+            FROM asset_checkout
+            WHERE status = 'checked_out' 
+            AND expected_return_date < CURDATE()
+            ORDER BY expected_return_date ASC
+        """)
+        rows = cursor.fetchall()
+        for row in rows:
+            past_due_assets.append({
+                'asset_name': row[0],
+                'checkout_date': row[1],
+                'expected_return_date': row[2],
+                'checked_out_to': row[3],
+                'days_overdue': row[4]
+            })
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        flash(f'Error loading past due assets: {str(e)}', 'error')
+    
+    return render_template('alerts_assets_past_due.html', 
+                         title='Assets Past Due', 
+                         past_due_assets=past_due_assets)
+
+
+@app.route('/alerts/contracts-expiring')
+@login_required
+def alerts_contracts_expiring():
+    """Display contracts expiring within the next 30 days"""
+    expiring_contracts = []
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT contract_name, contract_type, start_date, end_date, 
+                   vendor, DATEDIFF(end_date, CURDATE()) as days_until_expiry
+            FROM contracts
+            WHERE end_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+            AND status != 'expired'
+            ORDER BY end_date ASC
+        """)
+        rows = cursor.fetchall()
+        for row in rows:
+            expiring_contracts.append({
+                'contract_name': row[0],
+                'contract_type': row[1],
+                'start_date': row[2],
+                'end_date': row[3],
+                'vendor': row[4],
+                'days_until_expiry': row[5]
+            })
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        flash(f'Error loading expiring contracts: {str(e)}', 'error')
+    
+    return render_template('alerts_contracts_expiring.html', 
+                         title='Contracts Expiring', 
+                         expiring_contracts=expiring_contracts)
+
+
+@app.route('/alerts/leases-expiring')
+@login_required
+def alerts_leases_expiring():
+    """Display leases expiring within the next 30 days"""
+    expiring_leases = []
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT asset_name, lease_start_date, lease_end_date, 
+                   lessor, monthly_payment, DATEDIFF(lease_end_date, CURDATE()) as days_until_expiry
+            FROM asset_leases
+            WHERE lease_end_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+            AND status = 'active'
+            ORDER BY lease_end_date ASC
+        """)
+        rows = cursor.fetchall()
+        for row in rows:
+            expiring_leases.append({
+                'asset_name': row[0],
+                'lease_start_date': row[1],
+                'lease_end_date': row[2],
+                'lessor': row[3],
+                'monthly_payment': row[4],
+                'days_until_expiry': row[5]
+            })
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        flash(f'Error loading expiring leases: {str(e)}', 'error')
+    
+    return render_template('alerts_leases_expiring.html', 
+                         title='Leases Expiring', 
+                         expiring_leases=expiring_leases)
+
+
+@app.route('/alerts/maintenance-due')
+@login_required
+def alerts_maintenance_due():
+    """Display maintenance that is due within the next 7 days"""
+    maintenance_due = []
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        # Check if table exists first
+        cursor.execute("SHOW TABLES LIKE 'asset_maintenance'")
+        if cursor.fetchone():
+            cursor.execute("""
+                SELECT asset_name, maintenance_type, scheduled_date, 
+                       description, DATEDIFF(scheduled_date, CURDATE()) as days_until_due
+                FROM asset_maintenance
+                WHERE scheduled_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+                AND status = 'scheduled'
+                ORDER BY scheduled_date ASC
+            """)
+            rows = cursor.fetchall()
+            for row in rows:
+                maintenance_due.append({
+                    'asset_name': row[0],
+                    'maintenance_type': row[1],
+                    'scheduled_date': row[2],
+                    'description': row[3],
+                    'days_until_due': row[4]
+                })
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        flash(f'Error loading maintenance due: {str(e)}', 'error')
+    
+    return render_template('alerts_maintenance_due.html', 
+                         title='Maintenance Due', 
+                         maintenance_due=maintenance_due)
+
+
+@app.route('/alerts/maintenance-overdue')
+@login_required
+def alerts_maintenance_overdue():
+    """Display maintenance that is overdue"""
+    maintenance_overdue = []
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        # Check if table exists first
+        cursor.execute("SHOW TABLES LIKE 'asset_maintenance'")
+        if cursor.fetchone():
+            cursor.execute("""
+                SELECT asset_name, maintenance_type, scheduled_date, 
+                       description, DATEDIFF(CURDATE(), scheduled_date) as days_overdue
+                FROM asset_maintenance
+                WHERE scheduled_date < CURDATE()
+                AND status = 'scheduled'
+                ORDER BY scheduled_date ASC
+            """)
+            rows = cursor.fetchall()
+            for row in rows:
+                maintenance_overdue.append({
+                    'asset_name': row[0],
+                    'maintenance_type': row[1],
+                    'scheduled_date': row[2],
+                    'description': row[3],
+                    'days_overdue': row[4]
+                })
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        flash(f'Error loading overdue maintenance: {str(e)}', 'error')
+    
+    return render_template('alerts_maintenance_overdue.html', 
+                         title='Maintenance Overdue', 
+                         maintenance_overdue=maintenance_overdue)
+
+
+@app.route('/alerts/warranties-expiring')
+@login_required
+def alerts_warranties_expiring():
+    """Display warranties expiring within the next 30 days"""
+    expiring_warranties = []
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT asset_name, warranty_start_date, warranty_end_date, 
+                   warranty_provider, coverage_details, 
+                   DATEDIFF(warranty_end_date, CURDATE()) as days_until_expiry
+            FROM asset_warranties
+            WHERE warranty_end_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+            AND status = 'active'
+            ORDER BY warranty_end_date ASC
+        """)
+        rows = cursor.fetchall()
+        for row in rows:
+            expiring_warranties.append({
+                'asset_name': row[0],
+                'warranty_start_date': row[1],
+                'warranty_end_date': row[2],
+                'warranty_provider': row[3],
+                'coverage_details': row[4],
+                'days_until_expiry': row[5]
+            })
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        flash(f'Error loading expiring warranties: {str(e)}', 'error')
+    
+    return render_template('alerts_warranties_expiring.html', 
+                         title='Warranties Expiring', 
+                         expiring_warranties=expiring_warranties)
+
+
 # --- Reports Routes ---
 @app.route('/reports/automated')
 @login_required
 def report_automated():
     # Generate automated report with key metrics
-    metrics = {
-        'total_assets': len(system.inventory),
-        'total_quantity': sum(d['quantity'] for d in system.inventory.values()),
-        'total_value': sum(d.get('price', 0) * d['quantity'] for d in system.inventory.values()),
-        'low_stock_count': sum(1 for d in system.inventory.values() if d['quantity'] <= d.get('low_stock_threshold', 5))
-    }
+    total_assets = len(system.inventory)
+    total_quantity = sum(d['quantity'] for d in system.inventory.values())
+    total_value = sum(d.get('price', 0) * d['quantity'] for d in system.inventory.values())
+    low_stock_count = sum(1 for d in system.inventory.values() if d['quantity'] <= d.get('low_stock_threshold', 5))
     
-    # Get recent transactions
+    # Get recent transactions with full details
+    recent_activity = []
     try:
         system.cursor.execute("""
-            SELECT action, COUNT(*) as count
+            SELECT transaction_date, asset_name, action, quantity, notes
             FROM asset_transactions
-            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-            GROUP BY action
+            WHERE transaction_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            ORDER BY transaction_date DESC
+            LIMIT 20
         """)
-        recent_activity = system.cursor.fetchall()
-    except:
+        rows = system.cursor.fetchall()
+        for row in rows:
+            recent_activity.append({
+                'transaction_date': row[0],
+                'asset_name': row[1],
+                'action': row[2],
+                'quantity': row[3],
+                'notes': row[4]
+            })
+    except Exception as e:
+        print(f"Error fetching recent activity: {e}")
         recent_activity = []
     
     # Category breakdown
@@ -1327,17 +3759,25 @@ def report_automated():
         category_stats[cat]['quantity'] += d['quantity']
         category_stats[cat]['value'] += d.get('price', 0) * d['quantity']
     
-    # Top assets by value
+    # Top assets by value with all required fields
     top_assets = []
     for name, d in system.inventory.items():
-        value = d.get('price', 0) * d['quantity']
-        top_assets.append({'name': name, 'value': value, 'quantity': d['quantity']})
-    top_assets.sort(key=lambda x: x['value'], reverse=True)
+        total_val = d.get('price', 0) * d['quantity']
+        top_assets.append({
+            'name': name,
+            'category': d.get('category', 'Uncategorized'),
+            'quantity': d['quantity'],
+            'total_value': total_val
+        })
+    top_assets.sort(key=lambda x: x['total_value'], reverse=True)
     top_assets = top_assets[:10]
     
     return render_template('report_automated.html', 
                          title='Automated Report',
-                         metrics=metrics,
+                         total_assets=total_assets,
+                         total_quantity=total_quantity,
+                         total_value=total_value,
+                         low_stock_count=low_stock_count,
                          recent_activity=recent_activity,
                          category_stats=category_stats,
                          top_assets=top_assets)
@@ -2418,6 +4858,96 @@ Asset Management System
         else:
             return jsonify({'success': False, 'error': 'Failed to send email'}), 400
             
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/ux-demo')
+def ux_demo():
+    """Demo page showcasing all UX features"""
+    return render_template('ux_demo.html')
+
+
+@app.route('/tailwind-showcase')
+def tailwind_showcase():
+    """Showcase page for Tailwind CSS components"""
+    return render_template('tailwind_showcase.html', title='Tailwind CSS Showcase')
+
+
+@app.route('/developer/code-generator')
+@login_required
+@require_group('Admin')
+def code_generator():
+    """Code generator interface"""
+    try:
+        from utils.code_generator import CodeGenerator
+        generator = CodeGenerator()
+        tables = generator.get_all_tables()
+        generator.close()
+        return render_template('code_generator.html', tables=tables, title='Code Generator')
+    except Exception as e:
+        flash(f'Error loading tables: {str(e)}', 'error')
+        return render_template('code_generator.html', tables=[], title='Code Generator')
+
+
+@app.route('/developer/generate', methods=['POST'])
+@login_required
+@require_group('Admin')
+def generate_code():
+    """Generate code based on table selection"""
+    if not validate_csrf_token():
+        return jsonify({'success': False, 'error': 'Invalid CSRF token'}), 403
+    
+    try:
+        table_name = request.form.get('table')
+        generate_routes = request.form.get('generate_routes') == 'on'
+        generate_templates = request.form.get('generate_templates') == 'on'
+        save_files = request.form.get('save_files') == 'on'
+        
+        from utils.code_generator import CodeGenerator
+        generator = CodeGenerator()
+        
+        result = {
+            'success': True,
+            'table': table_name,
+            'routes': '',
+            'add_template': '',
+            'list_template': ''
+        }
+        
+        if generate_routes:
+            result['routes'] = generator.generate_all_routes(table_name)
+            
+            if save_files:
+                # Save to a separate routes file
+                routes_file = f'/root/assetManagement/src/generated_routes_{table_name}.py'
+                with open(routes_file, 'w') as f:
+                    f.write("# Auto-generated routes\n")
+                    f.write("# Copy these routes into app.py\n\n")
+                    f.write(result['routes'])
+                result['routes_file'] = routes_file
+        
+        if generate_templates:
+            columns = generator.get_table_schema(table_name)
+            result['add_template'] = generator.generate_add_template(table_name)
+            result['list_template'] = generator.generate_list_template(table_name)
+            
+            if save_files:
+                # Save template files
+                add_file = f'/root/assetManagement/src/templates/{table_name}_add.html'
+                list_file = f'/root/assetManagement/src/templates/{table_name}_list.html'
+                
+                with open(add_file, 'w') as f:
+                    f.write(result['add_template'])
+                with open(list_file, 'w') as f:
+                    f.write(result['list_template'])
+                
+                result['add_template_file'] = add_file
+                result['list_template_file'] = list_file
+        
+        generator.close()
+        return jsonify(result)
+        
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 

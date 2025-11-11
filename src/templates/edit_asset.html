@@ -7,6 +7,7 @@
 
 <div class="form-container">
   <form method="post" class="asset-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     
     <!-- Basic Information Section -->
     <div class="form-section">
@@ -79,12 +80,16 @@
           </select>
         </div>
         <div class="form-group">
-          <label for="department">Department</label>
-          <input type="text" id="department" name="department" value="{{ asset.department or '' }}" placeholder="e.g., IT, Finance, HR">
+          <label for="department">Department/Cost Center</label>
+          <input type="text" id="department" name="department" value="{{ asset.department or '' }}" placeholder="e.g., IT, Finance, HR, CC-001">
         </div>
       </div>
 
       <div class="form-row">
+        <div class="form-group">
+          <label for="funding_source">Funding Source</label>
+          <input type="text" id="funding_source" name="funding_source" value="{{ asset.funding_source or '' }}" placeholder="e.g., Budget 2025, Donor Fund, Government Grant">
+        </div>
         <div class="form-group">
           <label for="location">Location</label>
           <input type="text" id="location" name="location" value="{{ asset.location or '' }}" placeholder="e.g., Building A, Room 101">

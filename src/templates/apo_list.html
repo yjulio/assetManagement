@@ -1,0 +1,720 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<style>
+  .lpo-container {
+    max-width: 1400px;
+    margin: 30px auto;
+    padding: 0 20px;
+  }
+  
+  .lpo-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 40px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  }
+  
+  .lpo-header h1 {
+    margin: 0 0 10px 0;
+    font-size: 32px;
+    font-weight: 700;
+  }
+  
+  .lpo-header p {
+    margin: 0;
+    opacity: 0.95;
+    font-size: 16px;
+  }
+  
+  .filter-section {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    margin-bottom: 25px;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  
+  .filter-section select,
+  .filter-section input {
+    padding: 10px 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+  }
+  
+  .filter-section select:focus,
+  .filter-section input:focus {
+    outline: none;
+    border-color: #667eea;
+  }
+  
+  .filter-section input[type="search"] {
+    flex: 1;
+    min-width: 250px;
+  }
+  
+  .action-buttons {
+    display: flex;
+    gap: 10px;
+    margin-left: auto;
+  }
+  
+  .btn-action {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .btn-add {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+  }
+  
+  .btn-add:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  }
+  
+  .btn-upload {
+    background: #3498db;
+    color: white;
+  }
+  
+  .btn-upload:hover {
+    background: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+  }
+  
+  .lpo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 25px;
+  }
+  
+  .lpo-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    overflow: hidden;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+  
+  .lpo-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+  }
+  
+  .lpo-card-header {
+    padding: 20px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    border-bottom: 2px solid #e0e0e0;
+  }
+  
+  .lpo-number {
+    font-size: 18px;
+    font-weight: 700;
+    color: #2c3e50;
+    margin: 0 0 5px 0;
+  }
+  
+  .lpo-supplier {
+    font-size: 14px;
+    color: #6c757d;
+    margin: 0;
+  }
+  
+  .lpo-card-body {
+    padding: 20px;
+  }
+  
+  .lpo-info-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  
+  .lpo-info-row:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+  
+  .lpo-info-label {
+    font-size: 13px;
+    color: #6c757d;
+    font-weight: 600;
+  }
+  
+  .lpo-info-value {
+    font-size: 14px;
+    color: #2c3e50;
+    font-weight: 600;
+  }
+  
+  .lpo-amount {
+    font-size: 20px;
+    color: #27ae60;
+    font-weight: 700;
+  }
+  
+  .status-badge {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  
+  .status-pending {
+    background: #fff3cd;
+    color: #856404;
+  }
+  
+  .status-approved {
+    background: #d4edda;
+    color: #155724;
+  }
+  
+  .status-processing {
+    background: #cce5ff;
+    color: #004085;
+  }
+  
+  .status-delivered {
+    background: #d1ecf1;
+    color: #0c5460;
+  }
+  
+  .status-cancelled {
+    background: #f8d7da;
+    color: #721c24;
+  }
+  
+  .file-count {
+    background: #667eea;
+    color: white;
+    padding: 4px 10px;
+    border-radius: 15px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  }
+  
+  .empty-state h3 {
+    color: #6c757d;
+    margin: 20px 0 10px 0;
+  }
+  
+  .empty-state p {
+    color: #95a5a6;
+    margin-bottom: 25px;
+  }
+  
+  /* Modal Styles */
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(5px);
+  }
+  
+  .modal-content {
+    background-color: white;
+    margin: 5% auto;
+    padding: 0;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 600px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    animation: slideDown 0.3s ease-out;
+  }
+  
+  @keyframes slideDown {
+    from {
+      transform: translateY(-50px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  .modal-header {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    color: white;
+    padding: 25px 30px;
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .modal-header h2 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+  }
+  
+  .close {
+    color: white;
+    font-size: 32px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    line-height: 1;
+  }
+  
+  .close:hover {
+    transform: scale(1.2);
+  }
+  
+  .modal-body {
+    padding: 30px;
+  }
+  
+  .upload-area {
+    border: 3px dashed #cbd5e0;
+    border-radius: 10px;
+    padding: 50px 30px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: #f8f9fa;
+  }
+  
+  .upload-area:hover,
+  .upload-area.drag-over {
+    border-color: #3498db;
+    background: #e3f2fd;
+  }
+  
+  .upload-area p {
+    margin: 10px 0 0 0;
+    color: #6c757d;
+    font-size: 14px;
+  }
+  
+  .upload-icon {
+    font-size: 48px;
+    margin-bottom: 10px;
+  }
+  
+  .uploaded-files-list {
+    margin-top: 20px;
+  }
+  
+  .uploaded-file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    transition: all 0.2s ease;
+  }
+  
+  .uploaded-file-item:hover {
+    border-color: #3498db;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+  
+  .file-info-text {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .file-icon {
+    font-size: 20px;
+  }
+  
+  .remove-file {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+  }
+  
+  .remove-file:hover {
+    background: #c0392b;
+  }
+  
+  .upload-submit {
+    width: 100%;
+    padding: 15px;
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 20px;
+  }
+  
+  .upload-submit:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+  }
+  
+  .upload-submit:disabled {
+    background: #95a5a6;
+    cursor: not-allowed;
+  }
+  
+  @media (max-width: 768px) {
+    .lpo-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .filter-section {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    
+    .action-buttons {
+      margin-left: 0;
+      width: 100%;
+    }
+    
+    .btn-action {
+      flex: 1;
+      justify-content: center;
+    }
+  }
+</style>
+
+<div class="lpo-container">
+  <div class="lpo-header">
+    <h1>📄 Asset Purchase Orders</h1>
+    <p>Manage and track all APO records with document attachments</p>
+  </div>
+  
+  <div class="filter-section">
+    <select id="statusFilter" onchange="filterAPOs()">
+      <option value="">All Status</option>
+      <option value="Pending">Pending</option>
+      <option value="Approved">Approved</option>
+      <option value="Processing">Processing</option>
+      <option value="Delivered">Delivered</option>
+      <option value="Cancelled">Cancelled</option>
+    </select>
+    
+    <input type="search" id="searchBox" placeholder="🔍 Search by APO number, supplier..." 
+           onkeyup="filterAPOs()">
+    
+    <div class="action-buttons">
+      <button class="btn-action btn-upload" onclick="openUploadModal()">
+        📤 Upload Files
+      </button>
+      <a href="/apo/add" class="btn-action btn-add">
+        ➕ Add APO
+      </a>
+    </div>
+  </div>
+  
+  {% if lpos %}
+  <div class="lpo-grid" id="lpoGrid">
+    {% for lpo in lpos %}
+    <div class="lpo-card" data-status="{{ lpo.status }}" data-search="{{ lpo.apo_number|lower }} {{ lpo.supplier|lower }}"
+         onclick="window.location.href='/apo/view/{{ lpo.id }}'">
+      <div class="lpo-card-header">
+        <h3 class="lpo-number">{{ lpo.apo_number }}</h3>
+        <p class="lpo-supplier">{{ lpo.supplier }}</p>
+      </div>
+      
+      <div class="lpo-card-body">
+        <div class="lpo-info-row">
+          <span class="lpo-info-label">Status</span>
+          <span class="status-badge status-{{ lpo.status|lower }}">{{ lpo.status }}</span>
+        </div>
+        
+        <div class="lpo-info-row">
+          <span class="lpo-info-label">Dept/Cost Center</span>
+          <span class="lpo-info-value">{{ lpo.department or 'N/A' }}</span>
+        </div>
+        
+        <div class="lpo-info-row">
+          <span class="lpo-info-label">Date</span>
+          <span class="lpo-info-value">{{ lpo.apo_date.strftime('%Y-%m-%d') if lpo.apo_date else 'N/A' }}</span>
+        </div>
+        
+        <div class="lpo-info-row">
+          <span class="lpo-info-label">Amount</span>
+          <span class="lpo-amount">${{ "{:,.2f}".format(lpo.amount) }}</span>
+        </div>
+        
+        <div class="lpo-info-row">
+          <span class="lpo-info-label">Files Attached</span>
+          <span class="file-count">{{ lpo.file_count }} file(s)</span>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div style="font-size: 64px;">📄</div>
+    <h3>No APOs Found</h3>
+    <p>Start by creating your first Asset Purchase Order</p>
+    <a href="/apo/add" class="btn-action btn-add">
+      ➕ Add First APO
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Upload Modal -->
+<div id="uploadModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>📤 Upload APO Documents</h2>
+      <span class="close" onclick="closeUploadModal()">&times;</span>
+    </div>
+    <div class="modal-body">
+      <form id="uploadForm" enctype="multipart/form-data">
+        <div class="upload-area" id="uploadArea">
+          <div class="upload-icon">📁</div>
+          <label for="fileInput" style="cursor: pointer;">
+            <strong style="color: #3498db;">Click to browse</strong> or drag files here
+          </label>
+          <input type="file" id="fileInput" name="apo_files" multiple 
+                 accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xlsx,.xls" 
+                 style="display: none;">
+          <p>Supported: PDF, Word, Excel, Images</p>
+        </div>
+        
+        <div class="uploaded-files-list" id="uploadedFilesList"></div>
+        
+        <button type="submit" id="uploadSubmit" class="upload-submit" disabled>
+          📤 Upload Files
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Modal functions
+  function openUploadModal() {
+    document.getElementById('uploadModal').style.display = 'block';
+  }
+  
+  function closeUploadModal() {
+    document.getElementById('uploadModal').style.display = 'none';
+    document.getElementById('fileInput').value = '';
+    document.getElementById('uploadedFilesList').innerHTML = '';
+    document.getElementById('uploadSubmit').disabled = true;
+  }
+  
+  // Close modal on outside click
+  window.onclick = function(event) {
+    const modal = document.getElementById('uploadModal');
+    if (event.target == modal) {
+      closeUploadModal();
+    }
+  }
+  
+  // File upload handling
+  const fileInput = document.getElementById('fileInput');
+  const uploadArea = document.getElementById('uploadArea');
+  const uploadedFilesList = document.getElementById('uploadedFilesList');
+  const uploadSubmit = document.getElementById('uploadSubmit');
+  
+  // Click to select files
+  uploadArea.addEventListener('click', function() {
+    fileInput.click();
+  });
+  
+  fileInput.addEventListener('change', function(e) {
+    displayFiles(e.target.files);
+  });
+  
+  // Drag and drop
+  uploadArea.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    uploadArea.classList.add('drag-over');
+  });
+  
+  uploadArea.addEventListener('dragleave', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    uploadArea.classList.remove('drag-over');
+  });
+  
+  uploadArea.addEventListener('drop', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    uploadArea.classList.remove('drag-over');
+    
+    const dt = new DataTransfer();
+    
+    // Add existing files
+    for (let i = 0; i < fileInput.files.length; i++) {
+      dt.items.add(fileInput.files[i]);
+    }
+    
+    // Add new files
+    for (let i = 0; i < e.dataTransfer.files.length; i++) {
+      dt.items.add(e.dataTransfer.files[i]);
+    }
+    
+    fileInput.files = dt.files;
+    displayFiles(fileInput.files);
+  });
+  
+  function displayFiles(files) {
+    uploadedFilesList.innerHTML = '';
+    
+    if (files.length === 0) {
+      uploadSubmit.disabled = true;
+      return;
+    }
+    
+    uploadSubmit.disabled = false;
+    
+    Array.from(files).forEach((file, index) => {
+      const fileSize = file.size / 1024;
+      const sizeUnit = fileSize > 1024 ? 
+        ((file.size / 1024 / 1024).toFixed(2) + ' MB') : 
+        (fileSize.toFixed(2) + ' KB');
+      
+      let icon = '📄';
+      if (file.type.includes('pdf')) icon = '📕';
+      else if (file.type.includes('word') || file.name.endsWith('.doc') || file.name.endsWith('.docx')) icon = '📘';
+      else if (file.type.includes('excel') || file.name.endsWith('.xls') || file.name.endsWith('.xlsx')) icon = '📗';
+      else if (file.type.includes('image')) icon = '🖼️';
+      
+      const fileItem = document.createElement('div');
+      fileItem.className = 'uploaded-file-item';
+      fileItem.innerHTML = `
+        <div class="file-info-text">
+          <span class="file-icon">${icon}</span>
+          <div>
+            <div style="font-weight: 600;">${file.name}</div>
+            <div style="font-size: 12px; color: #6c757d;">${sizeUnit}</div>
+          </div>
+        </div>
+        <button type="button" class="remove-file" onclick="removeFile(${index})">✕ Remove</button>
+      `;
+      uploadedFilesList.appendChild(fileItem);
+    });
+  }
+  
+  function removeFile(index) {
+    const dt = new DataTransfer();
+    const files = fileInput.files;
+    
+    for (let i = 0; i < files.length; i++) {
+      if (i !== index) {
+        dt.items.add(files[i]);
+      }
+    }
+    
+    fileInput.files = dt.files;
+    displayFiles(fileInput.files);
+  }
+  
+  // Form submission
+  document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData();
+    const files = fileInput.files;
+    
+    for (let i = 0; i < files.length; i++) {
+      formData.append('apo_files', files[i]);
+    }
+    
+    uploadSubmit.innerHTML = '⏳ Uploading...';
+    uploadSubmit.disabled = true;
+    
+    fetch('/apo/upload', {
+      method: 'POST',
+      body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert('✅ Files uploaded successfully!');
+        closeUploadModal();
+        window.location.reload();
+      } else {
+        alert('❌ Upload failed: ' + (data.error || 'Unknown error'));
+        uploadSubmit.innerHTML = '📤 Upload Files';
+        uploadSubmit.disabled = false;
+      }
+    })
+    .catch(error => {
+      alert('❌ Upload failed: ' + error.message);
+      uploadSubmit.innerHTML = '📤 Upload Files';
+      uploadSubmit.disabled = false;
+    });
+  });
+  
+  // Filter APOs
+  function filterAPOs() {
+    const statusFilter = document.getElementById('statusFilter').value.toLowerCase();
+    const searchTerm = document.getElementById('searchBox').value.toLowerCase();
+    const cards = document.querySelectorAll('.lpo-card');
+    
+    cards.forEach(card => {
+      const status = card.getAttribute('data-status').toLowerCase();
+      const searchData = card.getAttribute('data-search');
+      
+      const statusMatch = !statusFilter || status === statusFilter;
+      const searchMatch = !searchTerm || searchData.includes(searchTerm);
+      
+      if (statusMatch && searchMatch) {
+        card.style.display = 'block';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  }
+</script>
+{% endblock %}

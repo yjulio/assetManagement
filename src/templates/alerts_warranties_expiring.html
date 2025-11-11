@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="content-header">
+  <h2>🔔 Warranties Expiring</h2>
+  <p class="subtitle">Asset warranties expiring within the next 30 days</p>
+</div>
+
+<div class="card-modern">
+  {% if expiring_warranties %}
+    <div class="alert alert-warning-modern mb-4">
+      <i class="bi bi-exclamation-triangle"></i>
+      <strong>{{ expiring_warranties|length }}</strong> warranty/warranties expiring soon.
+    </div>
+    
+    <div class="table-responsive">
+      <table class="table-modern">
+        <thead>
+          <tr>
+            <th>Asset Name</th>
+            <th>Provider</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th>Coverage Details</th>
+            <th>Days Remaining</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for warranty in expiring_warranties %}
+          <tr>
+            <td><strong>{{ warranty.asset_name }}</strong></td>
+            <td>{{ warranty.warranty_provider }}</td>
+            <td>{{ warranty.warranty_start_date.strftime('%Y-%m-%d') if warranty.warranty_start_date else 'N/A' }}</td>
+            <td>{{ warranty.warranty_end_date.strftime('%Y-%m-%d') if warranty.warranty_end_date else 'N/A' }}</td>
+            <td>{{ warranty.coverage_details or 'N/A' }}</td>
+            <td>
+              <span class="badge {% if warranty.days_until_expiry <= 7 %}badge-danger{% elif warranty.days_until_expiry <= 14 %}badge-warning{% else %}badge-info{% endif %}">
+                {{ warranty.days_until_expiry }} day{{ 's' if warranty.days_until_expiry != 1 else '' }}
+              </span>
+            </td>
+            <td>
+              <a href="/assets" class="btn-sm btn-primary-modern">View Asset</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="alert alert-success-modern">
+      <i class="bi bi-check-circle"></i>
+      No warranties are expiring in the next 30 days.
+    </div>
+  {% endif %}
+</div>
+
+<div class="mt-4">
+  <a href="/" class="btn-secondary-modern">← Back to Dashboard</a>
+  <a href="/assets" class="btn-primary-modern">View All Assets</a>
+</div>
+{% endblock %}

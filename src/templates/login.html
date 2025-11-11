@@ -1,9 +1,10 @@
 {% extends 'base.html' %}
 {% block content %}
   <style>
+    /* Login page specific styling */
     .login-container {
-      max-width: 400px;
-      margin: 0 auto;
+      max-width: 450px;
+      margin: 50px auto;
       padding: 20px;
     }
     
@@ -11,6 +12,7 @@
       text-align: center;
       margin-bottom: 30px;
       font-size: 1.8rem;
+      font-weight: 700;
     }
     
     .login-container .form-group {
@@ -131,40 +133,59 @@
   </style>
 
   <div class="login-container">
-    <h2>Login</h2>
-    <form method='post'>
-      <div class="form-group">
-        <label>Username</label>
-        <input name='username' type="text" required autocomplete="username">
+    <div class="card shadow-lg border-0" style="border-radius:12px;">
+      <div class="card-body p-4">
+        <h2 class="text-center mb-4">
+          <i class="bi bi-shield-lock text-primary"></i>
+          Login
+        </h2>
+        <form method='post'>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          
+          <div class="mb-3">
+            <label for="username-input" class="form-label fw-semibold">
+              <i class="bi bi-person-fill text-primary me-2"></i>Username
+            </label>
+            <input name='username' type="text" class="form-control form-control-lg" id="username-input" required autocomplete="username" placeholder="Enter your username">
+          </div>
+          
+          <div class="mb-4">
+            <label for="password-input" class="form-label fw-semibold">
+              <i class="bi bi-key-fill text-primary me-2"></i>Password
+            </label>
+            <div class="input-group password-wrapper">
+              <input type='password' name='password' class="form-control form-control-lg" id='password-input' required autocomplete="current-password" placeholder="Enter your password">
+              <button class="btn btn-outline-secondary" type="button" id="toggle-password" title="Show Password" aria-label="Show Password">
+                <i class="bi bi-eye-fill"></i>
+              </button>
+            </div>
+          </div>
+          
+          <div class="d-grid">
+            <button type='submit' class="btn btn-primary btn-lg" style="background:linear-gradient(135deg, #f9d423 0%, #4ca1af 50%, #2ecc71 100%);border:none;">
+              <i class="bi bi-box-arrow-in-right me-2"></i>Login
+            </button>
+          </div>
+        </form>
       </div>
-      <div class="form-group">
-        <label>Password</label>
-        <div class="password-wrapper">
-          <input type='password' name='password' id='password-input' required autocomplete="current-password">
-          <button type="button" id="toggle-password" title="Show Password" aria-label="Show Password">
-            👁️
-          </button>
-        </div>
-      </div>
-      <input type='submit' value='Login'>
-    </form>
+    </div>
   </div>
 
   <script>
     document.getElementById('toggle-password').addEventListener('click', function() {
       const passwordInput = document.getElementById('password-input');
-      const button = this;
+      const icon = this.querySelector('i');
       
       if (passwordInput.type === 'password') {
         passwordInput.type = 'text';
-        button.textContent = '🙈';
-        button.title = 'Hide Password';
-        button.setAttribute('aria-label', 'Hide Password');
+        icon.className = 'bi bi-eye-slash-fill';
+        this.title = 'Hide Password';
+        this.setAttribute('aria-label', 'Hide Password');
       } else {
         passwordInput.type = 'password';
-        button.textContent = '👁️';
-        button.title = 'Show Password';
-        button.setAttribute('aria-label', 'Show Password');
+        icon.className = 'bi bi-eye-fill';
+        this.title = 'Show Password';
+        this.setAttribute('aria-label', 'Show Password');
       }
     });
   </script>

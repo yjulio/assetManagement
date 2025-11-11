@@ -12,4 +12,4 @@ export FLASK_DEBUG=${FLASK_DEBUG:-false}
 cd src
 
 # Run the Flask application
-python app.py
+python3 app.py

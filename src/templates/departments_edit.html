@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h1>✏️ Edit Department/Cost Center</h1>
+    <p>Update department/cost center information</p>
+</div>
+
+<div class="form-card">
+    <form method="POST" action="{{ url_for('update_department', dept_id=department.id) }}" class="form-grid">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        
+        <div class="form-group">
+            <label for="name">Department/Cost Center Name *</label>
+            <input type="text" id="name" name="name" value="{{ department.name }}" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="code">Dept/Cost Center Code *</label>
+            <input type="text" id="code" name="code" value="{{ department.code }}" required maxlength="50" style="text-transform: uppercase;">
+        </div>
+        
+        <div class="form-group">
+            <label for="manager">Manager</label>
+            <input type="text" id="manager" name="manager" value="{{ department.manager or '' }}">
+        </div>
+        
+        <div class="form-group">
+            <label for="location">Location</label>
+            <input type="text" id="location" name="location" value="{{ department.location or '' }}">
+        </div>
+        
+        <div class="form-group">
+            <label for="budget">Budget (VUV)</label>
+            <input type="number" id="budget" name="budget" step="0.01" min="0" value="{{ department.budget or 0 }}">
+        </div>
+        
+        <div class="form-group">
+            <label for="phone">Phone</label>
+            <input type="text" id="phone" name="phone" value="{{ department.phone or '' }}">
+        </div>
+        
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" value="{{ department.email or '' }}">
+        </div>
+        
+        <div class="form-group">
+            <label for="is_active">Status</label>
+            <select id="is_active" name="is_active">
+                <option value="1" {% if department.is_active %}selected{% endif %}>Active</option>
+                <option value="0" {% if not department.is_active %}selected{% endif %}>Inactive</option>
+            </select>
+        </div>
+        
+        <div class="form-group" style="grid-column: span 2;">
+            <label for="description">Description</label>
+            <textarea id="description" name="description" rows="4">{{ department.description or '' }}</textarea>
+        </div>
+        
+        <div class="form-group" style="grid-column: span 2; display: flex; gap: 10px;">
+            <button type="submit" class="btn btn-primary">
+                💾 Update Department
+            </button>
+            <a href="{{ url_for('departments') }}" class="btn btn-secondary">
+                ❌ Cancel
+            </a>
+        </div>
+    </form>
+</div>
+
+{% if department.created_at or department.updated_at %}
+<div class="info-card" style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+    <h3 style="margin-bottom: 10px; font-size: 16px;">📅 Audit Information</h3>
+    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; font-size: 14px;">
+        {% if department.created_at %}
+        <div>
+            <strong>Created:</strong> {{ department.created_at.strftime('%Y-%m-%d %H:%M') }}
+            {% if department.created_by %}<br><small>By: {{ department.created_by }}</small>{% endif %}
+        </div>
+        {% endif %}
+        {% if department.updated_at %}
+        <div>
+            <strong>Last Updated:</strong> {{ department.updated_at.strftime('%Y-%m-%d %H:%M') }}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<style>
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    margin-bottom: 5px;
+    font-weight: 500;
+    color: #333;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.form-group textarea {
+    resize: vertical;
+    font-family: inherit;
+}
+
+@media (max-width: 768px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-group[style*="span 2"] {
+        grid-column: span 1 !important;
+    }
+}
+</style>
+
+{% endblock %}

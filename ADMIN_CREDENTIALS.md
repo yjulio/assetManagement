@@ -5,7 +5,8 @@
 ### Administrator Account
 
 **Username:** `admin`  
-**Password:** `Admin@2025`  
+**Password:** `NewAdmin@2025` ⚠️ **CHANGED on November 4, 2025**  
+**Previous Password:** ~~`Admin@2025`~~ (deprecated)  
 **Email:** minomoya626@gmail.com
 
 ---
@@ -31,16 +32,53 @@ This will create/update the admin user with the default password.
 
 ---
 
-## How to Reset Admin Password
+## How to Change Admin Password
 
-If you need to reset the admin password, run:
+### Method 1: Interactive Password Change (Recommended)
+
+For secure password change with validation:
 
 ```bash
-cd /home/ubuntu/assetManagement
+cd /root/assetManagement
+python3 change_admin_password.py
+```
+
+This interactive script will:
+- Prompt for username (default: admin)
+- Ask for new password (hidden input)
+- Confirm password
+- Validate password strength:
+  - Minimum 8 characters
+  - At least one uppercase letter
+  - At least one lowercase letter
+  - At least one number
+  - At least one special character
+- Update password in database
+
+### Method 2: Quick Password Reset
+
+To set a specific password directly:
+
+```bash
+cd /root/assetManagement
+python3 reset_admin_password.py "YourNewPassword@2025"
+```
+
+**Example:**
+```bash
+python3 reset_admin_password.py "SecurePass@2025"
+```
+
+### Method 3: Reset to Default Password
+
+To reset to the default password `Admin@2025`:
+
+```bash
+cd /root/assetManagement
 python3 create_admin.py
 ```
 
-This will update the password to the default: `Admin@2025`
+⚠️ **Security Note:** Always change from default password in production!
 
 ---
 

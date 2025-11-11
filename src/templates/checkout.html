@@ -2,6 +2,7 @@
 {% block content %}
   <h2>Check Out Asset</h2>
   <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <div class="form-group">
       <label>Asset</label>
       <select name="name" required>

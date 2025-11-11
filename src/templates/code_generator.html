@@ -1,0 +1,316 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="content-header">
+    <h2>🤖 Automatic Code Generator</h2>
+    <p>Generate CRUD operations, routes, and templates automatically from database schema</p>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card-modern">
+            <h3>⚙️ Generator Settings</h3>
+            <form id="generatorForm">
+                <input type="hidden" name="csrf_token" value="{{ generate_csrf_token() }}">
+                
+                <div class="form-group">
+                    <label for="table">Database Table *</label>
+                    <select id="table" name="table" required class="form-control">
+                        <option value="">-- Select Table --</option>
+                        {% for table in tables %}
+                        <option value="{{ table }}">{{ table }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="generate_routes" checked>
+                        Generate Flask Routes (List, Add, Edit, Delete)
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="generate_templates" checked>
+                        Generate HTML Templates (Add, List, Edit)
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="save_files" checked>
+                        Save Generated Files to Disk
+                    </label>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary-modern" id="generateBtn">
+                        🚀 Generate Code
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <div class="card-modern mt-3">
+            <h4>📋 Features Generated</h4>
+            <ul class="feature-list">
+                <li>✅ List View with pagination</li>
+                <li>✅ Add Form with validation</li>
+                <li>✅ Edit Form with data binding</li>
+                <li>✅ Delete with confirmation</li>
+                <li>✅ CSRF protection</li>
+                <li>✅ Flash messages</li>
+                <li>✅ Responsive design</li>
+                <li>✅ Modern UI components</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div id="resultsContainer" style="display: none;">
+            <div class="card-modern">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3>📄 Generated Code</h3>
+                    <button class="btn-secondary-modern" onclick="copyAllCode()">📋 Copy All</button>
+                </div>
+                
+                <div id="routesSection" style="display: none;">
+                    <h4>Flask Routes</h4>
+                    <div class="alert alert-info-modern mb-2">
+                        <strong>File:</strong> <code id="routesFile">app.py</code>
+                        <button class="btn-sm btn-secondary-modern float-right" onclick="copyCode('routesCode')">📋 Copy</button>
+                    </div>
+                    <pre><code id="routesCode" class="language-python"></code></pre>
+                </div>
+                
+                <div id="addTemplateSection" style="display: none;" class="mt-4">
+                    <h4>Add Template</h4>
+                    <div class="alert alert-info-modern mb-2">
+                        <strong>File:</strong> <code id="addTemplateFile"></code>
+                        <button class="btn-sm btn-secondary-modern float-right" onclick="copyCode('addTemplateCode')">📋 Copy</button>
+                    </div>
+                    <pre><code id="addTemplateCode" class="language-html"></code></pre>
+                </div>
+                
+                <div id="listTemplateSection" style="display: none;" class="mt-4">
+                    <h4>List Template</h4>
+                    <div class="alert alert-info-modern mb-2">
+                        <strong>File:</strong> <code id="listTemplateFile"></code>
+                        <button class="btn-sm btn-secondary-modern float-right" onclick="copyCode('listTemplateCode')">📋 Copy</button>
+                    </div>
+                    <pre><code id="listTemplateCode" class="language-html"></code></pre>
+                </div>
+                
+                <div id="successMessage" class="alert alert-success-modern mt-3" style="display: none;">
+                    <strong>✅ Success!</strong> Code generated successfully.
+                    <span id="savedFilesInfo"></span>
+                </div>
+            </div>
+        </div>
+        
+        <div id="loadingContainer" style="display: none;">
+            <div class="card-modern text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="sr-only">Generating...</span>
+                </div>
+                <p class="mt-3">Generating code, please wait...</p>
+            </div>
+        </div>
+        
+        <div id="welcomeContainer">
+            <div class="card-modern text-center">
+                <div style="font-size: 80px;">🚀</div>
+                <h3>Ready to Generate!</h3>
+                <p class="text-muted">
+                    Select a database table and click "Generate Code" to automatically create:
+                </p>
+                <ul class="text-left" style="max-width: 500px; margin: 20px auto;">
+                    <li>Complete CRUD routes (Create, Read, Update, Delete)</li>
+                    <li>Form templates with proper validation</li>
+                    <li>List views with sorting and actions</li>
+                    <li>All with modern UI and best practices</li>
+                </ul>
+                <p class="text-muted mt-3">
+                    <strong>Pro Tip:</strong> Enable "Save Files" to automatically create the files in your project!
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.feature-list {
+    list-style: none;
+    padding: 0;
+}
+
+.feature-list li {
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.feature-list li:last-child {
+    border-bottom: none;
+}
+
+pre {
+    background: #1e1e1e;
+    color: #d4d4d4;
+    padding: 20px;
+    border-radius: 8px;
+    overflow-x: auto;
+    max-height: 500px;
+}
+
+code {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 13px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 10px;
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+
+.checkbox-label:hover {
+    background: #f8f9fa;
+}
+
+.checkbox-label input[type="checkbox"] {
+    margin-right: 10px;
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+    border: 0.3em solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spinner-border 0.75s linear infinite;
+}
+
+@keyframes spinner-border {
+    to { transform: rotate(360deg); }
+}
+</style>
+
+<script>
+document.getElementById('generatorForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const table = formData.get('table');
+    
+    if (!table) {
+        alert('Please select a table');
+        return;
+    }
+    
+    // Show loading
+    document.getElementById('welcomeContainer').style.display = 'none';
+    document.getElementById('resultsContainer').style.display = 'none';
+    document.getElementById('loadingContainer').style.display = 'block';
+    document.getElementById('generateBtn').disabled = true;
+    
+    try {
+        const response = await fetch('/developer/generate', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Hide loading
+            document.getElementById('loadingContainer').style.display = 'none';
+            document.getElementById('resultsContainer').style.display = 'block';
+            
+            // Show routes
+            if (result.routes) {
+                document.getElementById('routesSection').style.display = 'block';
+                document.getElementById('routesCode').textContent = result.routes;
+                if (result.routes_file) {
+                    document.getElementById('routesFile').textContent = result.routes_file;
+                }
+            }
+            
+            // Show add template
+            if (result.add_template) {
+                document.getElementById('addTemplateSection').style.display = 'block';
+                document.getElementById('addTemplateCode').textContent = result.add_template;
+                if (result.add_template_file) {
+                    document.getElementById('addTemplateFile').textContent = result.add_template_file;
+                }
+            }
+            
+            // Show list template
+            if (result.list_template) {
+                document.getElementById('listTemplateSection').style.display = 'block';
+                document.getElementById('listTemplateCode').textContent = result.list_template;
+                if (result.list_template_file) {
+                    document.getElementById('listTemplateFile').textContent = result.list_template_file;
+                }
+            }
+            
+            // Show success message
+            document.getElementById('successMessage').style.display = 'block';
+            if (result.routes_file || result.add_template_file) {
+                document.getElementById('savedFilesInfo').textContent = ' Files saved successfully to disk!';
+            }
+            
+            // Scroll to results
+            document.getElementById('resultsContainer').scrollIntoView({ behavior: 'smooth' });
+        } else {
+            alert('Error: ' + result.error);
+            document.getElementById('loadingContainer').style.display = 'none';
+            document.getElementById('welcomeContainer').style.display = 'block';
+        }
+    } catch (error) {
+        alert('Error generating code: ' + error.message);
+        document.getElementById('loadingContainer').style.display = 'none';
+        document.getElementById('welcomeContainer').style.display = 'block';
+    } finally {
+        document.getElementById('generateBtn').disabled = false;
+    }
+});
+
+function copyCode(elementId) {
+    const code = document.getElementById(elementId).textContent;
+    navigator.clipboard.writeText(code).then(() => {
+        alert('Code copied to clipboard!');
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+    });
+}
+
+function copyAllCode() {
+    let allCode = '';
+    
+    if (document.getElementById('routesSection').style.display !== 'none') {
+        allCode += '# ROUTES\n' + document.getElementById('routesCode').textContent + '\n\n';
+    }
+    
+    if (document.getElementById('addTemplateSection').style.display !== 'none') {
+        allCode += '# ADD TEMPLATE\n' + document.getElementById('addTemplateCode').textContent + '\n\n';
+    }
+    
+    if (document.getElementById('listTemplateSection').style.display !== 'none') {
+        allCode += '# LIST TEMPLATE\n' + document.getElementById('listTemplateCode').textContent + '\n\n';
+    }
+    
+    navigator.clipboard.writeText(allCode).then(() => {
+        alert('All code copied to clipboard!');
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+    });
+}
+</script>
+
+{% endblock %}

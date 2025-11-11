@@ -95,7 +95,7 @@ body{
 	left:0;
 	top:0;
 	height:100vh;
-	padding:20px 0;
+	padding:10px 0 20px 0;
 	overflow-y:auto;
 	overflow-x:hidden;
 	transition:all 0.3s ease;
@@ -124,7 +124,7 @@ body{
 	background:rgba(255,255,255,0.5);
 }
 .sidebar-header{
-  padding:20px;
+  padding:15px 20px;
   border-bottom:1px solid rgba(255,255,255,.1);
   text-align:center;
 }
@@ -194,12 +194,12 @@ body{
   color:rgba(255,255,255,.85);
   margin-top:2px;
 }
-.sidebar-menu{list-style:none;padding:20px 0}
+.sidebar-menu{list-style:none;padding:10px 0}
 .sidebar-menu li{
-	padding:10px 20px;
+	padding:12px 20px;
 	transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 	border-radius:8px;
-	margin:0 10px;
+	margin:2px 10px;
 	cursor:pointer;
 	position:relative;
 }
@@ -263,12 +263,12 @@ body{
   margin:5px 0;
 }
 .sidebar-menu .menu-item-has-children.active .submenu {
-  max-height: 600px;
+  max-height: 2000px;
   transition: max-height 0.5s ease-in;
 }
 .sidebar-menu .submenu li {
   padding: 10px 20px 10px 40px;
-  margin:2px 0;
+  margin:3px 0;
   cursor:pointer;
   position:relative;
   transition:all 0.3s ease;
@@ -297,10 +297,17 @@ body{
 }
 .sidebar-menu .submenu-item-has-children > a {
   justify-content: space-between;
+  display: flex;
+  align-items: center;
 }
 .sidebar-menu .arrow-nested {
   font-size: 0.7em;
   transition: transform 0.3s ease, color 0.2s ease;
+  margin-left: auto;
+}
+.sidebar-menu .submenu-item-has-children:hover > a {
+  background: rgba(255,255,255,0.15);
+  padding-left: 25px;
 }
 .sidebar-menu .submenu-item-has-children:hover > a .arrow-nested {
   color:#f9d423;
@@ -314,18 +321,35 @@ body{
   padding: 0;
   margin: 0;
   max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.3s ease-out;
+  overflow: visible;
+  transition: max-height 0.4s ease-out, opacity 0.3s ease;
   background: rgba(0,0,0,0.35);
   border-radius:6px;
   margin:5px 0;
+  opacity: 0;
 }
+.sidebar-menu .submenu .nested-submenu {
+  background: rgba(0,0,0,0.25);
+  margin-left: 10px;
+  border-left: 3px solid rgba(46, 204, 113, 0.5);
+}
+/* Show nested submenu on active state */
 .sidebar-menu .submenu-item-has-children.active .nested-submenu {
-  max-height: 400px;
-  transition: max-height 0.5s ease-in;
+  max-height: 1500px;
+  opacity: 1;
+  overflow: visible;
+  transition: max-height 0.5s ease-in, opacity 0.3s ease;
+}
+/* Show nested submenu on hover (optional - makes it more accessible) */
+.sidebar-menu .submenu-item-has-children:hover .nested-submenu {
+  max-height: 1500px;
+  opacity: 1;
+  overflow: visible;
+  transition: max-height 0.4s ease-in, opacity 0.3s ease;
 }
 .sidebar-menu .nested-submenu li {
-  padding: 8px 20px 8px 60px;
+  padding: 10px 20px 10px 60px;
+  margin:3px 0;
   cursor:pointer;
   transition:all 0.3s ease;
   position:relative;
@@ -373,6 +397,12 @@ body{
 	top:0;
 	z-index:100;
 	border:1px solid rgba(0,0,0,0.04);
+}
+.topbar-brand {
+	font-weight: 600;
+	font-size: 18px;
+	color: #2c3e50;
+	margin-right: 20px;
 }
 .search-bar{flex:1;max-width:600px;position:relative}
 .search-bar{flex:1;max-width:400px;position:relative}
@@ -662,6 +692,7 @@ body{
 	color:#2c3e50;
 	margin:15px 0;
 	letter-spacing:-0.5px;
+	text-align:center;
 }
 .metric-label{
 	color:#7f8c8d;
@@ -669,6 +700,7 @@ body{
 	text-transform:uppercase;
 	letter-spacing:1.2px;
 	font-weight:600;
+	text-align:center;
 }
 .low-stock{color:#e74c3c;animation:pulse 2s infinite}
 @keyframes pulse{0%{opacity:1}50%{opacity:.5}100%{opacity:1}}
@@ -1298,9 +1330,11 @@ input[type=file]{display:block;width:100%;padding:12px;border:2px dashed #ddd;bo
 	.metric-value{
 		font-size:24px;
 		margin:10px 0;
+		text-align:center;
 	}
 	.metric-label{
 		font-size:14px;
+		text-align:center;
 	}
 	form{
 		padding:15px;
@@ -1832,140 +1866,475 @@ a:not(.btn):not(.logo):hover::after{
 .mobile-menu-toggle,
 .btn-link,
 button:not(.print-include) {
-: none !important;
+display: none !important;
 }
 
 /* Main content full width */
 .main-content {
--left: 0 !important;
-100% !important;
+margin-left: 0 !important;
+width: 100% !important;
 }
 
 .container {
-100% !important;
-g: 20px !important;
+width: 100% !important;
+padding: 20px !important;
 }
 
 /* Add header with logo on every printed page */
 body::before {
-tent: '';
-: block;
-: fixed;
-0;
-0;
-0;
-100px;
-d: white;
-3px solid #667eea;
-dex: 1000;
+content: '';
+display: block;
+position: fixed;
+top: 0;
+left: 0;
+right: 0;
+height: 100px;
+background: white;
+border-bottom: 3px solid #667eea;
+z-index: 1000;
 }
 
 @page {
--top: 120px;
--bottom: 120px;
+margin-top: 120px;
+margin-bottom: 120px;
 }
 
 /* Print header */
 body::after {
-tent: '';
-: block;
-: fixed;
-15px;
-20px;
-70px;
-70px;
-d: url('/static/asset.png') no-repeat center;
-d-size: contain;
-dex: 1001;
+content: '';
+display: block;
+position: fixed;
+top: 15px;
+left: 20px;
+width: 70px;
+height: 70px;
+background: url('/static/asset.png') no-repeat center;
+background-size: contain;
+z-index: 1001;
 }
 
 /* Print footer signature on every page */
 footer,
 .print-footer {
-: block !important;
-: fixed;
-0;
-0;
-0;
-d: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-white !important;
-g: 15px 20px !important;
-3px solid #f39c12 !important;
-t-size: 11px !important;
-avoid;
-dex: 1000;
+display: block !important;
+position: fixed;
+bottom: 0;
+left: 0;
+right: 0;
+background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+color: white !important;
+padding: 15px 20px !important;
+border-top: 3px solid #f39c12 !important;
+font-size: 11px !important;
+page-break-inside: avoid;
+z-index: 1000;
 }
 
 footer * {
-white !important;
+color: white !important;
 }
 
 /* Organization info in print header */
 .print-header-text {
-: fixed;
-20px;
-110px;
-20px;
-dex: 1001;
-t-size: 12px;
+position: fixed;
+top: 20px;
+left: 110px;
+right: 20px;
+z-index: 1001;
+font-size: 12px;
 }
 
 .print-header-text h1 {
-: 0;
-t-size: 18px;
-t-weight: 700;
-#2c3e50;
+margin: 0;
+font-size: 18px;
+font-weight: 700;
+color: #2c3e50;
 }
 
 .print-header-text p {
-: 2px 0 0 0;
-t-size: 11px;
-#7f8c8d;
+margin: 2px 0 0 0;
+font-size: 11px;
+color: #7f8c8d;
 }
 
 .print-header-text .slogan {
-t-style: italic;
-#667eea;
-t-weight: 600;
+font-style: italic;
+color: #667eea;
+font-weight: 600;
 }
 
 /* Ensure content doesn't overlap with fixed header/footer */
 body {
-g-top: 120px !important;
-g-bottom: 100px !important;
+padding-top: 120px !important;
+padding-bottom: 100px !important;
 }
 
 /* Better table printing */
 table {
-side: auto;
-collapse;
-100%;
+page-break-inside: auto;
+border-collapse: collapse;
+width: 100%;
 }
 
 tr {
-side: avoid;
-auto;
+page-break-inside: avoid;
+page-break-after: auto;
 }
 
 thead {
-: table-header-group;
+display: table-header-group;
 }
 
 tfoot {
-: table-footer-group;
+display: table-footer-group;
 }
 
 /* Remove box shadows and transitions for print */
 * {
-none !important;
-none !important;
-sition: none !important;
-imation: none !important;
+box-shadow: none !important;
+text-shadow: none !important;
+transition: none !important;
+animation: none !important;
 }
 
 /* Ensure good contrast */
 body {
-d: white !important;
-black !important;
+background: white !important;
+color: black !important;
+}
+}
+
+/* ========================================
+   ENHANCED MOBILE RESPONSIVENESS
+   ======================================== */
+
+/* Mobile-specific improvements for forms */
+@media screen and (max-width: 768px) {
+/* Form grid adjustments */
+.form-grid {
+grid-template-columns: 1fr !important;
+gap: 15px;
+}
+
+.form-grid .form-group[style*="span 2"],
+.form-grid h3[style*="span 2"] {
+grid-column: span 1 !important;
+}
+
+/* Page header adjustments */
+.page-header {
+padding: 15px;
+margin-bottom: 20px;
+}
+
+.page-header h1 {
+font-size: 1.5rem;
+}
+
+.page-header p {
+font-size: 0.9rem;
+}
+
+.page-header > div {
+flex-direction: column;
+gap: 10px;
+}
+
+.page-header .btn {
+width: 100%;
+justify-content: center;
+}
+
+/* Dashboard cards */
+.dashboard {
+grid-template-columns: 1fr !important;
+gap: 15px;
+padding: 0 10px;
+}
+
+.card {
+padding: 15px;
+}
+
+.card-content h3 {
+font-size: 1.5rem;
+}
+
+/* Table improvements */
+.table-card {
+margin: 15px 0;
+padding: 15px;
+}
+
+.table-responsive {
+overflow-x: auto;
+-webkit-overflow-scrolling: touch;
+}
+
+.data-table {
+min-width: 600px;
+font-size: 13px;
+}
+
+.data-table th,
+.data-table td {
+padding: 8px 10px;
+white-space: nowrap;
+}
+
+.data-table .actions {
+display: flex;
+gap: 5px;
+flex-wrap: nowrap;
+}
+
+/* Filter forms */
+.filter-form {
+flex-direction: column !important;
+gap: 10px;
+}
+
+.filter-form select,
+.filter-form input {
+width: 100% !important;
+max-width: auto !important;
+}
+
+/* Buttons */
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn-danger {
+width: 100%;
+padding: 12px;
+justify-content: center;
+}
+
+/* Form cards */
+.form-card {
+padding: 15px;
+margin: 15px 0;
+}
+
+/* Detail sections for view pages */
+.detail-section {
+padding: 15px;
+margin-bottom: 20px;
+}
+
+.detail-grid {
+grid-template-columns: 1fr !important;
+gap: 15px;
+}
+
+/* Employee/Department specific */
+.employee-details,
+.department-details {
+padding: 0 10px;
+}
+
+/* Image displays */
+img[style*="max-width"],
+img[style*="border-radius"] {
+max-width: 100% !important;
+height: auto !important;
+}
+
+/* Statistics dashboard */
+.dashboard .card-icon {
+font-size: 2rem;
+}
+
+/* Collapsible forms */
+#add-employee-form,
+#add-department-form {
+padding: 15px 10px;
+}
+
+/* Badges */
+.badge,
+.status-badge {
+font-size: 11px;
+padding: 3px 8px;
+}
+
+/* Action buttons in tables */
+.btn-action {
+padding: 6px 10px;
+font-size: 16px;
+}
+
+/* Search bars in filters */
+input[type="text"][name="search"] {
+font-size: 14px;
+padding: 10px;
+}
+}
+
+/* Extra small devices (max-width: 480px) */
+@media screen and (max-width: 480px) {
+/* Further reduce font sizes */
+body {
+font-size: 14px;
+}
+
+.page-header h1 {
+font-size: 1.3rem;
+}
+
+.page-header p {
+font-size: 0.85rem;
+}
+
+/* Compact cards */
+.card {
+padding: 12px;
+}
+
+.card-icon {
+font-size: 1.5rem !important;
+width: 40px;
+height: 40px;
+}
+
+.card-content h3 {
+font-size: 1.2rem;
+}
+
+.card-content p {
+font-size: 0.75rem;
+}
+
+/* Compact tables */
+.data-table {
+font-size: 12px;
+}
+
+.data-table th,
+.data-table td {
+padding: 6px 8px;
+}
+
+/* Forms */
+.form-group label {
+font-size: 13px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+font-size: 14px;
+padding: 8px;
+}
+
+/* Buttons */
+.btn {
+padding: 10px;
+font-size: 14px;
+}
+
+/* Mobile menu adjustments */
+.mobile-menu-toggle {
+top: 10px;
+left: 10px;
+padding: 8px 12px;
+font-size: 18px;
+}
+
+.main-content {
+padding-top: 60px;
+}
+
+/* Sidebar width on very small screens */
+.sidebar {
+width: 90% !important;
+}
+
+/* Image galleries */
+.profile-photo,
+.employee-photo {
+max-width: 120px !important;
+max-height: 120px !important;
+}
+
+/* Detail items */
+.detail-item strong {
+font-size: 12px;
+}
+
+.detail-item span {
+font-size: 14px;
+}
+
+/* Notes sections */
+.detail-notes {
+padding: 12px;
+font-size: 13px;
+}
+}
+
+/* Landscape orientation improvements */
+@media screen and (max-width: 768px) and (orientation: landscape) {
+.sidebar {
+width: 250px !important;
+}
+
+.main-content {
+padding-top: 60px;
+}
+
+.dashboard {
+grid-template-columns: repeat(2, 1fr) !important;
+}
+}
+
+/* Touch-friendly improvements */
+@media (hover: none) and (pointer: coarse) {
+/* Increase touch targets */
+.btn,
+.btn-action,
+a,
+button {
+min-height: 44px;
+min-width: 44px;
+}
+
+/* Better spacing for touch */
+.sidebar-menu li a {
+padding: 14px 20px;
+}
+
+/* Remove hover effects on touch devices */
+.metric-card:hover {
+transform: none;
+box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.btn:hover {
+transform: none;
+}
+
+/* Make dropdowns easier to tap */
+.dropdown-toggle {
+padding: 12px 15px;
+}
+
+.dropdown-menu a {
+padding: 14px 20px;
+}
+}
+
+/* Dark mode mobile adjustments */
+@media screen and (max-width: 768px) {
+[data-theme="dark"] .sidebar {
+background: linear-gradient(180deg, #0a0e1a 0%, #1a1f3a 50%, #0d3d1f 100%);
+}
+
+[data-theme="dark"] .mobile-menu-toggle {
+background: linear-gradient(135deg, #d4af37 0%, #3a8fa0 50%, #28a745 100%);
+}
+
+[data-theme="dark"] .main-content {
+background: #1a1f3a;
 }
 }

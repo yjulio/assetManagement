@@ -268,12 +268,12 @@ class InventorySystem:
 
     def _load_inventory(self):
         self.cursor.execute("""
-            SELECT name, quantity, price, description, low_stock_threshold, category, supplier, department, location,
+            SELECT name, quantity, price, description, low_stock_threshold, category, supplier, department, funding_source, location,
                    model, brand, serial_number, purchase_date, depreciation_method, useful_life_years, salvage_value
             FROM inventory
         """)
         for row in self.cursor.fetchall():
-            name, qty, price, desc, threshold, cat, sup, dept, loc, model, brand, serial_num, purchase_dt, dep_method, useful_life, salvage = row
+            name, qty, price, desc, threshold, cat, sup, dept, funding, loc, model, brand, serial_num, purchase_dt, dep_method, useful_life, salvage = row
             self.inventory[name] = {
                 'quantity': qty,
                 'price': float(price) if price is not None else 0.0,
@@ -282,6 +282,7 @@ class InventorySystem:
                 'category': cat or "Uncategorized",
                 'supplier': sup or "Unknown",
                 'department': dept or None,
+                'funding_source': funding or None,
                 'location': loc or None,
                 'model': model or None,
                 'brand': brand or None,
@@ -395,7 +396,7 @@ class InventorySystem:
             s = self.suppliers[name]
             print(f"- {name}: Contact={s['contact']}, Email={s['email']}")
 
-    def add_item(self, name, quantity, price=0.0, description="", low_stock_threshold=5, category="Uncategorized", supplier="Unknown", department=None, location=None, model=None, brand=None, serial_number=None, purchase_date=None, depreciation_method='straight_line', useful_life_years=5, salvage_value=0.0):
+    def add_item(self, name, quantity, price=0.0, description="", low_stock_threshold=5, category="Uncategorized", supplier="Unknown", department=None, funding_source=None, location=None, model=None, brand=None, serial_number=None, purchase_date=None, depreciation_method='straight_line', useful_life_years=5, salvage_value=0.0):
         if name in self.inventory:
             print(f"Item '{name}' already exists. Use update_quantity to adjust stock.")
             return
@@ -407,10 +408,10 @@ class InventorySystem:
         try:
             self.cursor.execute("""
                 INSERT INTO inventory 
-                (name, quantity, price, description, low_stock_threshold, category, supplier, department, location,
+                (name, quantity, price, description, low_stock_threshold, category, supplier, department, funding_source, location,
                  model, brand, serial_number, purchase_date, depreciation_method, useful_life_years, salvage_value)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (name, quantity, price, description, low_stock_threshold, category, supplier, department, location,
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (name, quantity, price, description, low_stock_threshold, category, supplier, department, funding_source, location,
                   model, brand, serial_number, purchase_date, depreciation_method, useful_life_years, salvage_value))
             self.conn.commit()
 
@@ -422,6 +423,7 @@ class InventorySystem:
                 'category': category,
                 'supplier': supplier,
                 'department': department,
+                'funding_source': funding_source,
                 'location': location,
                 'model': model,
                 'brand': brand,

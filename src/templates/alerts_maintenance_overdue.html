@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="content-header">
+  <h2>🔔 Maintenance Overdue</h2>
+  <p class="subtitle">Scheduled maintenance that is past due</p>
+</div>
+
+<div class="card-modern">
+  {% if maintenance_overdue %}
+    <div class="alert alert-danger-modern mb-4">
+      <i class="bi bi-exclamation-circle"></i>
+      <strong>{{ maintenance_overdue|length }}</strong> maintenance task(s) are overdue!
+    </div>
+    
+    <div class="table-responsive">
+      <table class="table-modern">
+        <thead>
+          <tr>
+            <th>Asset Name</th>
+            <th>Maintenance Type</th>
+            <th>Scheduled Date</th>
+            <th>Description</th>
+            <th>Days Overdue</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for maintenance in maintenance_overdue %}
+          <tr class="table-danger">
+            <td><strong>{{ maintenance.asset_name }}</strong></td>
+            <td>{{ maintenance.maintenance_type }}</td>
+            <td>{{ maintenance.scheduled_date.strftime('%Y-%m-%d') if maintenance.scheduled_date else 'N/A' }}</td>
+            <td>{{ maintenance.description or 'N/A' }}</td>
+            <td>
+              <span class="badge badge-danger">
+                {{ maintenance.days_overdue }} day{{ 's' if maintenance.days_overdue != 1 else '' }}
+              </span>
+            </td>
+            <td>
+              <a href="/maintenance" class="btn-sm btn-danger-modern">Complete Now</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="alert alert-success-modern">
+      <i class="bi bi-check-circle"></i>
+      No overdue maintenance tasks. All scheduled maintenance is up to date.
+    </div>
+  {% endif %}
+</div>
+
+<div class="mt-4">
+  <a href="/" class="btn-secondary-modern">← Back to Dashboard</a>
+  <a href="/maintenance" class="btn-primary-modern">View All Maintenance</a>
+</div>
+{% endblock %}

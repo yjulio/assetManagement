@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="content-header">
+  <h2>📊 Data Quality Dashboard</h2>
+  <p class="subtitle">Clean, enrich, and standardize your asset data</p>
+</div>
+
+<!-- Data Quality Score -->
+<div class="card-modern" style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);color:white;margin-bottom:30px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;">
+    <div>
+      <h3 style="margin-bottom:10px;">Data Quality Score</h3>
+      <div style="font-size:48px;font-weight:700;margin:15px 0;">
+        {{ quality_report.quality_score }}%
+      </div>
+      <p style="font-size:14px;opacity:0.9;">
+        {{ quality_report.total_assets }} total assets | {{ quality_report.issues.total_issues }} issues found
+      </p>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:60px;opacity:0.3;">
+        {% if quality_report.quality_score >= 90 %}✅
+        {% elif quality_report.quality_score >= 70 %}⚠️
+        {% else %}❌{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Issues Breakdown -->
+<div class="card-modern">
+  <h3 style="margin-bottom:20px;display:flex;align-items:center;gap:10px;">
+    <i class="bi bi-exclamation-triangle text-warning"></i> Data Quality Issues
+  </h3>
+  
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;margin-bottom:30px;">
+    <div class="stat-card" style="border-left:4px solid #e74c3c;">
+      <div class="stat-value">{{ quality_report.issues.missing_categories }}</div>
+      <div class="stat-label">Missing Categories</div>
+    </div>
+    
+    <div class="stat-card" style="border-left:4px solid #f39c12;">
+      <div class="stat-value">{{ quality_report.issues.missing_suppliers }}</div>
+      <div class="stat-label">Missing Suppliers</div>
+    </div>
+    
+    <div class="stat-card" style="border-left:4px solid #3498db;">
+      <div class="stat-value">{{ quality_report.issues.missing_locations }}</div>
+      <div class="stat-label">Missing Locations</div>
+    </div>
+    
+    <div class="stat-card" style="border-left:4px solid #9b59b6;">
+      <div class="stat-value">{{ quality_report.issues.missing_dates }}</div>
+      <div class="stat-label">Missing Dates</div>
+    </div>
+    
+    <div class="stat-card" style="border-left:4px solid #95a5a6;">
+      <div class="stat-value">{{ quality_report.issues.zero_prices }}</div>
+      <div class="stat-label">Zero Prices</div>
+    </div>
+  </div>
+  
+  <!-- Recommendations -->
+  <div class="alert alert-info-modern">
+    <h4 style="margin-bottom:15px;"><i class="bi bi-lightbulb"></i> Recommendations</h4>
+    <ul style="margin:0;padding-left:20px;">
+      {% for recommendation in quality_report.recommendations %}
+        {% if recommendation %}
+        <li style="margin:8px 0;">{{ recommendation }}</li>
+        {% endif %}
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+
+<!-- Action Buttons -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;margin:30px 0;">
+  <div class="card-modern" style="background:linear-gradient(135deg, #11998e 0%, #38ef7d 100%);color:white;">
+    <h4 style="margin-bottom:15px;"><i class="bi bi-broom"></i> Clean & Standardize</h4>
+    <p style="font-size:14px;margin-bottom:20px;opacity:0.9;">
+      Automatically fix inconsistent names, remove extra spaces, and standardize categories, suppliers, and locations.
+    </p>
+    <form method="POST" action="{{ url_for('clean_data') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit" class="btn-success-modern" style="width:100%;" onclick="return confirm('This will standardize all asset data. Continue?')">
+        <i class="bi bi-check-circle"></i> Clean Data Now
+      </button>
+    </form>
+  </div>
+  
+  <div class="card-modern" style="background:linear-gradient(135deg, #ee0979 0%, #ff6a00 100%);color:white;">
+    <h4 style="margin-bottom:15px;"><i class="bi bi-plus-circle"></i> Enrich Data</h4>
+    <p style="font-size:14px;margin-bottom:20px;opacity:0.9;">
+      Add calculated fields like asset age, depreciation, book value, lifecycle status, and risk levels.
+    </p>
+    <form method="POST" action="{{ url_for('enrich_data') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit" class="btn-warning-modern" style="width:100%;background:#ff6a00;border:none;" onclick="return confirm('This will add calculated fields to all assets. Continue?')">
+        <i class="bi bi-calculator"></i> Enrich Data Now
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Problematic Assets -->
+{% if problematic_assets %}
+<div class="card-modern">
+  <h3 style="margin-bottom:20px;display:flex;align-items:center;gap:10px;">
+    <i class="bi bi-flag text-danger"></i> Assets with Issues (Sample)
+  </h3>
+  <p style="color:#7f8c8d;margin-bottom:20px;font-size:14px;">
+    Showing up to 20 assets with data quality issues
+  </p>
+  
+  <div class="table-responsive">
+    <table class="table-modern">
+      <thead>
+        <tr>
+          <th>Asset Name</th>
+          <th>Issues</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for asset in problematic_assets %}
+        <tr>
+          <td><strong>{{ asset.name }}</strong></td>
+          <td>
+            {% for issue in asset.issues %}
+            <span class="badge badge-warning" style="margin-right:5px;">{{ issue }}</span>
+            {% endfor %}
+          </td>
+          <td>
+            <a href="/assets" class="btn-sm btn-primary-modern">Edit</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Data Standardization Rules -->
+<div class="card-modern" style="margin-top:30px;">
+  <h3 style="margin-bottom:20px;display:flex;align-items:center;gap:10px;">
+    <i class="bi bi-book"></i> Standardization Rules
+  </h3>
+  
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;">
+    <div>
+      <h4 style="color:#2c3e50;margin-bottom:10px;">Categories</h4>
+      <ul style="font-size:14px;color:#7f8c8d;">
+        <li>"Laptop", "Laptops", "Notebook" → "Laptop"</li>
+        <li>"Computer", "Desktop", "PC" → "Computer"</li>
+        <li>"Monitor", "Display", "Screen" → "Monitor"</li>
+        <li>"Phone", "Mobile", "Smartphone" → "Phone"</li>
+      </ul>
+    </div>
+    
+    <div>
+      <h4 style="color:#2c3e50;margin-bottom:10px;">Suppliers</h4>
+      <ul style="font-size:14px;color:#7f8c8d;">
+        <li>"hp", "Hewlett Packard" → "HP"</li>
+        <li>"dell inc", "dell inc." → "Dell"</li>
+        <li>"ms", "microsoft" → "Microsoft"</li>
+        <li>"apple inc", "apple inc." → "Apple"</li>
+      </ul>
+    </div>
+    
+    <div>
+      <h4 style="color:#2c3e50;margin-bottom:10px;">Calculated Fields</h4>
+      <ul style="font-size:14px;color:#7f8c8d;">
+        <li><strong>Asset Age:</strong> Years since purchase</li>
+        <li><strong>Depreciation:</strong> Straight-line method</li>
+        <li><strong>Book Value:</strong> Current estimated value</li>
+        <li><strong>Lifecycle Status:</strong> New, Mature, Aging, EOL</li>
+        <li><strong>Risk Level:</strong> Low, Medium, High</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Back Button -->
+<div class="mt-4">
+  <a href="/" class="btn-secondary-modern">← Back to Dashboard</a>
+</div>
+
+<style>
+.stat-card {
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+}
+.stat-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 5px;
+}
+.stat-label {
+  font-size: 14px;
+  color: #7f8c8d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+</style>
+{% endblock %}

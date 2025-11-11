@@ -1,0 +1,295 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="customer-view-container" style="max-width: 1400px; margin: 0 auto;">
+    <div class="page-header" style="margin-bottom: 30px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+            <div>
+                <h2>👤 Customer Details</h2>
+                <p style="color: #6c757d; margin: 5px 0 0 0;">{{ customer.company_name }}</p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <a href="/customers/edit/{{ customer.id }}" class="btn" 
+                   style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+                    ✏️ Edit Customer
+                </a>
+                <a href="/customers" class="btn" 
+                   style="background: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+                    ← Back to List
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Information Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px;">
+        <!-- Basic Info Card -->
+        <div class="card" style="background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <h3 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 24px;">📋</span> Basic Information
+            </h3>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>Company Name</label>
+                    <div class="info-value">{{ customer.company_name }}</div>
+                </div>
+                <div class="info-item">
+                    <label>Customer Code</label>
+                    <div class="info-value">
+                        {% if customer.customer_code %}
+                        <code style="background: #e9ecef; padding: 2px 8px; border-radius: 3px;">{{ customer.customer_code }}</code>
+                        {% else %}
+                        <span style="color: #999;">Not set</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="info-item">
+                    <label>Customer Type</label>
+                    <div class="info-value">
+                        <span style="display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 500;
+                            {% if customer.customer_type == 'Individual' %}background: #e3f2fd; color: #1976d2;
+                            {% elif customer.customer_type == 'Corporate' %}background: #f3e5f5; color: #7b1fa2;
+                            {% elif customer.customer_type == 'Government' %}background: #e8f5e9; color: #388e3c;
+                            {% elif customer.customer_type == 'Non-Profit' %}background: #fff3e0; color: #f57c00;
+                            {% else %}background: #f5f5f5; color: #616161;{% endif %}">
+                            {{ customer.customer_type }}
+                        </span>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <label>Status</label>
+                    <div class="info-value">
+                        <span style="display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 500;
+                            {% if customer.status == 'Active' %}background: #d4edda; color: #155724;
+                            {% elif customer.status == 'Inactive' %}background: #f8d7da; color: #721c24;
+                            {% elif customer.status == 'Suspended' %}background: #fff3cd; color: #856404;
+                            {% else %}background: #d1ecf1; color: #0c5460;{% endif %}">
+                            {{ customer.status }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Info Card -->
+        <div class="card" style="background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <h3 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 24px;">📞</span> Contact Information
+            </h3>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>Contact Person</label>
+                    <div class="info-value">{{ customer.contact_name or '—' }}</div>
+                </div>
+                <div class="info-item">
+                    <label>Email</label>
+                    <div class="info-value">
+                        {% if customer.email %}
+                        <a href="mailto:{{ customer.email }}" style="color: #007bff; text-decoration: none;">{{ customer.email }}</a>
+                        {% else %}
+                        <span style="color: #999;">—</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="info-item">
+                    <label>Phone</label>
+                    <div class="info-value">
+                        {% if customer.phone %}
+                        <a href="tel:{{ customer.phone }}" style="color: #007bff; text-decoration: none;">{{ customer.phone }}</a>
+                        {% else %}
+                        <span style="color: #999;">—</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="info-item">
+                    <label>Mobile</label>
+                    <div class="info-value">
+                        {% if customer.mobile %}
+                        <a href="tel:{{ customer.mobile }}" style="color: #007bff; text-decoration: none;">{{ customer.mobile }}</a>
+                        {% else %}
+                        <span style="color: #999;">—</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="info-item">
+                    <label>Website</label>
+                    <div class="info-value">
+                        {% if customer.website %}
+                        <a href="{{ customer.website }}" target="_blank" style="color: #007bff; text-decoration: none;">{{ customer.website }}</a>
+                        {% else %}
+                        <span style="color: #999;">—</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Financial Info Card -->
+        <div class="card" style="background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <h3 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 24px;">💰</span> Financial Information
+            </h3>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>Credit Limit</label>
+                    <div class="info-value" style="font-weight: 500; color: #28a745;">VT{{ "%.2f"|format(customer.credit_limit or 0) }}</div>
+                </div>
+                <div class="info-item">
+                    <label>Payment Terms</label>
+                    <div class="info-value">{{ customer.payment_terms or '—' }}</div>
+                </div>
+                <div class="info-item">
+                    <label>Tax ID</label>
+                    <div class="info-value">{{ customer.tax_id or '—' }}</div>
+                </div>
+                <div class="info-item">
+                    <label>Total Asset Value</label>
+                    <div class="info-value" style="font-weight: 500; color: #007bff;">VT{{ "%.2f"|format(customer.total_value or 0) }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Address Card -->
+    <div class="card" style="background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 30px;">
+        <h3 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 24px;">📍</span> Address
+        </h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+            <div class="info-item">
+                <label>Street Address</label>
+                <div class="info-value">{{ customer.address or '—' }}</div>
+            </div>
+            <div class="info-item">
+                <label>City</label>
+                <div class="info-value">{{ customer.city or '—' }}</div>
+            </div>
+            <div class="info-item">
+                <label>State/Province</label>
+                <div class="info-value">{{ customer.state or '—' }}</div>
+            </div>
+            <div class="info-item">
+                <label>Country</label>
+                <div class="info-value">{{ customer.country or '—' }}</div>
+            </div>
+            <div class="info-item">
+                <label>Postal Code</label>
+                <div class="info-value">{{ customer.postal_code or '—' }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notes Card -->
+    {% if customer.notes %}
+    <div class="card" style="background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 30px;">
+        <h3 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 24px;">📝</span> Notes
+        </h3>
+        <div style="padding: 15px; background: #f8f9fa; border-radius: 5px; white-space: pre-wrap;">{{ customer.notes }}</div>
+    </div>
+    {% endif %}
+
+    <!-- Assigned Assets Card -->
+    <div class="card" style="background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <h3 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 24px;">📦</span> Assigned Assets
+            <span style="background: #007bff; color: white; padding: 2px 10px; border-radius: 12px; font-size: 14px;">
+                {{ assigned_assets|length }}
+            </span>
+        </h3>
+
+        {% if assigned_assets %}
+        <div class="table-responsive">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                        <th style="padding: 12px; text-align: left;">Asset Name</th>
+                        <th style="padding: 12px; text-align: left;">Assigned Date</th>
+                        <th style="padding: 12px; text-align: left;">Expected Return</th>
+                        <th style="padding: 12px; text-align: right;">Lease Amount</th>
+                        <th style="padding: 12px; text-align: center;">Status</th>
+                        <th style="padding: 12px; text-align: left;">Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for asset in assigned_assets %}
+                    <tr style="border-bottom: 1px solid #dee2e6;">
+                        <td style="padding: 12px;">
+                            <a href="/view-asset/{{ asset.asset_name }}" style="color: #007bff; text-decoration: none; font-weight: 500;">
+                                {{ asset.asset_name }}
+                            </a>
+                        </td>
+                        <td style="padding: 12px;">{{ asset.assigned_date }}</td>
+                        <td style="padding: 12px;">
+                            {% if asset.expected_return_date %}
+                            {{ asset.expected_return_date }}
+                            {% else %}
+                            <span style="color: #999;">—</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 12px; text-align: right; font-weight: 500;">
+                            VT{{ "%.2f"|format(asset.lease_amount or 0) }}
+                        </td>
+                        <td style="padding: 12px; text-align: center;">
+                            <span style="display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 500;
+                                {% if asset.status == 'Active' %}background: #d4edda; color: #155724;
+                                {% elif asset.status == 'Returned' %}background: #d1ecf1; color: #0c5460;
+                                {% elif asset.status == 'Overdue' %}background: #fff3cd; color: #856404;
+                                {% else %}background: #f8d7da; color: #721c24;{% endif %}">
+                                {{ asset.status }}
+                            </span>
+                        </td>
+                        <td style="padding: 12px; font-size: 13px; color: #6c757d;">
+                            {{ asset.notes or '—' }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 40px; color: #6c757d;">
+            <p style="font-size: 48px; margin: 0;">📦</p>
+            <p style="font-size: 16px; margin: 10px 0 0 0;">No assets assigned to this customer</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Metadata -->
+    <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 5px; font-size: 13px; color: #6c757d;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+            <div>
+                <strong>Created:</strong> {{ customer.created_at.strftime('%Y-%m-%d %H:%M') if customer.created_at else '—' }}
+            </div>
+            <div>
+                <strong>Last Updated:</strong> {{ customer.updated_at.strftime('%Y-%m-%d %H:%M') if customer.updated_at else '—' }}
+            </div>
+            <div>
+                <strong>Created By:</strong> {{ customer.created_by or '—' }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .info-grid {
+        display: grid;
+        gap: 15px;
+    }
+    .info-item label {
+        display: block;
+        font-size: 12px;
+        color: #6c757d;
+        text-transform: uppercase;
+        margin-bottom: 5px;
+        font-weight: 500;
+    }
+    .info-value {
+        font-size: 15px;
+        color: #333;
+    }
+    .table-responsive {
+        overflow-x: auto;
+    }
+</style>
+{% endblock %}

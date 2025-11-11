@@ -1,0 +1,294 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="locations-container">
+    <div class="page-header">
+        <h2>📍 Locations Management</h2>
+        <p>Track and manage physical locations where assets are stored or used</p>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
+        <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px;">
+            <div style="font-size: 14px; opacity: 0.9;">Total Locations</div>
+            <div style="font-size: 32px; font-weight: bold; margin: 10px 0;">{{ locations|length }}</div>
+        </div>
+        <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 20px; border-radius: 10px;">
+            <div style="font-size: 14px; opacity: 0.9;">Active Locations</div>
+            <div style="font-size: 32px; font-weight: bold; margin: 10px 0;">{{ active_count }}</div>
+        </div>
+        <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 20px; border-radius: 10px;">
+            <div style="font-size: 14px; opacity: 0.9;">Assets Tracked</div>
+            <div style="font-size: 32px; font-weight: bold; margin: 10px 0;">{{ total_assets }}</div>
+        </div>
+    </div>
+
+    <!-- Add Location Form -->
+    <div class="card" style="background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 30px;">
+        <h3 style="margin-bottom: 20px;">➕ Add New Location</h3>
+        <form method="post" action="/locations/add">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                <div class="form-group">
+                    <label>Location Name *</label>
+                    <input type="text" name="name" required placeholder="e.g., Main Office">
+                </div>
+                
+                <div class="form-group">
+                    <label>Location Code</label>
+                    <input type="text" name="code" placeholder="e.g., HQ-001">
+                </div>
+                
+                <div class="form-group">
+                    <label>Type *</label>
+                    <select name="type" required>
+                        <option value="Office">Office</option>
+                        <option value="Warehouse">Warehouse</option>
+                        <option value="Store">Store</option>
+                        <option value="Branch">Branch</option>
+                        <option value="Remote">Remote</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Contact Person</label>
+                    <input type="text" name="contact_person" placeholder="Person in charge">
+                </div>
+                
+                <div class="form-group">
+                    <label>Phone</label>
+                    <input type="tel" name="phone" placeholder="Contact number">
+                </div>
+                
+                <div class="form-group">
+                    <label>Capacity</label>
+                    <input type="number" name="capacity" placeholder="Max items" min="0" value="0">
+                </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 15px;">
+                <div class="form-group">
+                    <label>Address</label>
+                    <input type="text" name="address" placeholder="Street address">
+                </div>
+                
+                <div class="form-group">
+                    <label>City</label>
+                    <input type="text" name="city" placeholder="City">
+                </div>
+                
+                <div class="form-group">
+                    <label>State/Province</label>
+                    <input type="text" name="state" placeholder="State or Province">
+                </div>
+                
+                <div class="form-group">
+                    <label>Country</label>
+                    <input type="text" name="country" placeholder="Country">
+                </div>
+                
+                <div class="form-group">
+                    <label>Postal Code</label>
+                    <input type="text" name="postal_code" placeholder="ZIP/Postal code">
+                </div>
+            </div>
+            
+            <div class="form-group" style="margin-top: 15px;">
+                <label>Description</label>
+                <textarea name="description" rows="3" placeholder="Additional information about this location"></textarea>
+            </div>
+            
+            <div class="form-group" style="margin-top: 15px;">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" name="is_active" value="1" checked style="margin-right: 8px;">
+                    Active Location
+                </label>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="margin-top: 20px;">
+                ➕ Add Location
+            </button>
+        </form>
+    </div>
+
+    <!-- Locations List -->
+    <div class="card" style="background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3>📋 All Locations</h3>
+            <div>
+                <input type="text" id="searchLocation" placeholder="🔍 Search locations..." 
+                       style="padding: 8px 15px; border: 1px solid #ddd; border-radius: 5px; width: 250px;">
+            </div>
+        </div>
+
+        {% if locations %}
+        <div class="table-responsive">
+            <table class="table" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                        <th style="padding: 12px; text-align: left;">Location</th>
+                        <th style="padding: 12px; text-align: left;">Code</th>
+                        <th style="padding: 12px; text-align: left;">Type</th>
+                        <th style="padding: 12px; text-align: left;">Address</th>
+                        <th style="padding: 12px; text-align: left;">Contact</th>
+                        <th style="padding: 12px; text-align: center;">Capacity</th>
+                        <th style="padding: 12px; text-align: center;">Status</th>
+                        <th style="padding: 12px; text-align: center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="locationsTableBody">
+                    {% for loc in locations %}
+                    <tr style="border-bottom: 1px solid #dee2e6;" class="location-row">
+                        <td style="padding: 12px;">
+                            <strong>{{ loc.name }}</strong>
+                            {% if loc.description %}
+                            <br><small style="color: #6c757d;">{{ loc.description[:50] }}{% if loc.description|length > 50 %}...{% endif %}</small>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 12px;">
+                            {% if loc.code %}
+                            <code style="background: #e9ecef; padding: 2px 6px; border-radius: 3px;">{{ loc.code }}</code>
+                            {% else %}
+                            <span style="color: #999;">—</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 12px;">
+                            <span style="display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 500;
+                                {% if loc.type == 'Office' %}background: #e3f2fd; color: #1976d2;
+                                {% elif loc.type == 'Warehouse' %}background: #fff3e0; color: #f57c00;
+                                {% elif loc.type == 'Store' %}background: #f3e5f5; color: #7b1fa2;
+                                {% elif loc.type == 'Branch' %}background: #e8f5e9; color: #388e3c;
+                                {% else %}background: #f5f5f5; color: #616161;{% endif %}">
+                                {{ loc.type }}
+                            </span>
+                        </td>
+                        <td style="padding: 12px; font-size: 13px;">
+                            {% if loc.city or loc.state or loc.country %}
+                            {{ loc.city }}{% if loc.city and loc.state %}, {% endif %}{{ loc.state }}{% if (loc.city or loc.state) and loc.country %}, {% endif %}{{ loc.country }}
+                            {% else %}
+                            <span style="color: #999;">—</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 12px; font-size: 13px;">
+                            {% if loc.contact_person %}
+                            <div>👤 {{ loc.contact_person }}</div>
+                            {% endif %}
+                            {% if loc.phone %}
+                            <div style="color: #6c757d;">📞 {{ loc.phone }}</div>
+                            {% endif %}
+                            {% if not loc.contact_person and not loc.phone %}
+                            <span style="color: #999;">—</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 12px; text-align: center;">
+                            {% if loc.capacity > 0 %}
+                            {{ loc.capacity }}
+                            {% else %}
+                            <span style="color: #999;">—</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 12px; text-align: center;">
+                            {% if loc.is_active %}
+                            <span style="color: #28a745; font-weight: 500;">✓ Active</span>
+                            {% else %}
+                            <span style="color: #dc3545; font-weight: 500;">✗ Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 12px; text-align: center;">
+                            <div style="display: flex; gap: 8px; justify-content: center;">
+                                <a href="/locations/edit/{{ loc.id }}" class="btn-sm" 
+                                   style="padding: 5px 10px; background: #007bff; color: white; text-decoration: none; border-radius: 4px; font-size: 12px;">
+                                    ✏️ Edit
+                                </a>
+                                <form method="post" action="/locations/delete/{{ loc.id }}" style="display: inline;" 
+                                      onsubmit="return confirm('Delete location {{ loc.name }}?');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                    <button type="submit" class="btn-sm" 
+                                            style="padding: 5px 10px; background: #dc3545; color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer;">
+                                        🗑️ Delete
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 40px; color: #6c757d;">
+            <p style="font-size: 48px; margin: 0;">📍</p>
+            <p style="font-size: 18px; margin: 10px 0 0 0;">No locations found</p>
+            <p style="font-size: 14px; margin: 5px 0 0 0;">Add your first location using the form above</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .form-group {
+        margin-bottom: 15px;
+    }
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+        color: #333;
+    }
+    .form-group input, 
+    .form-group select, 
+    .form-group textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 14px;
+    }
+    .form-group input:focus, 
+    .form-group select:focus, 
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: 500;
+        font-size: 14px;
+    }
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+    .table-responsive {
+        overflow-x: auto;
+    }
+    .location-row:hover {
+        background-color: #f8f9fa;
+    }
+</style>
+
+<script>
+// Search functionality
+document.getElementById('searchLocation').addEventListener('keyup', function() {
+    const searchTerm = this.value.toLowerCase();
+    const rows = document.querySelectorAll('.location-row');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        if (text.includes(searchTerm)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %}

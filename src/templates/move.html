@@ -4,11 +4,12 @@
   <div style="max-width:900px;margin:0 auto;">
     <div style="margin-bottom:30px;">
       <h2 style="color:#2c3e50;margin-bottom:10px;">🚚 Move Asset</h2>
-      <p style="color:#7f8c8d;">Relocate assets between locations or departments with full tracking</p>
+      <p style="color:#7f8c8d;">Relocate assets between locations or departments/cost centers with full tracking</p>
     </div>
 
     <div style="background:white;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.1);padding:30px;">
       <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <!-- Asset Selection -->
         <div style="margin-bottom:30px;padding-bottom:20px;border-bottom:2px solid #9b59b6;">
           <h3 style="color:#9b59b6;margin-bottom:20px;">📦 Asset Selection</h3>
@@ -44,7 +45,7 @@
               <div id="current_loc" style="color:#2c3e50;font-size:15px;margin-top:3px;font-weight:600;">-</div>
             </div>
             <div>
-              <div style="font-size:12px;color:#856404;">DEPARTMENT</div>
+              <div style="font-size:12px;color:#856404;">DEPT/COST CENTER</div>
               <div id="current_dept" style="color:#2c3e50;font-size:15px;margin-top:3px;font-weight:600;">-</div>
             </div>
           </div>
@@ -62,9 +63,9 @@
             </div>
             <div>
               <label style="display:block;font-weight:600;color:#2c3e50;margin-bottom:8px;">
-                Current Department
+                Current Department/Cost Center
               </label>
-              <input type="text" name="from_department" placeholder="Enter current department" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:15px;background:#fafafa;">
+              <input type="text" name="from_department" placeholder="Enter current department/cost center" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:15px;background:#fafafa;">
             </div>
           </div>
         </div>
@@ -81,9 +82,9 @@
             </div>
             <div>
               <label style="display:block;font-weight:600;color:#2c3e50;margin-bottom:8px;">
-                New Department <span style="color:#e74c3c;">*</span>
+                New Department/Cost Center <span style="color:#e74c3c;">*</span>
               </label>
-              <input type="text" name="to_department" required placeholder="Enter destination department" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:15px;background:#fafafa;">
+              <input type="text" name="to_department" required placeholder="Enter destination department/cost center" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:15px;background:#fafafa;">
             </div>
           </div>
           <div style="margin-top:20px;">

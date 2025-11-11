@@ -204,6 +204,7 @@
     
     <div class="upload-section">
       <form method="post" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <div class="file-input-wrapper">
           <input type="file" name="file" accept=".csv,.xlsx,.xls" required>
           <input type="submit" value="📤 Upload and Import Assets">
@@ -290,8 +291,8 @@
           <td><strong>department</strong></td>
           <td>No</td>
           <td>Text</td>
-          <td>Department assignment</td>
-          <td>IT Department</td>
+          <td>Department/cost center assignment</td>
+          <td>IT Department or CC-001</td>
         </tr>
         <tr>
           <td><strong>location</strong></td>

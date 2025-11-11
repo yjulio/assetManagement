@@ -184,6 +184,7 @@
   
   <div class="contract-card">
     <form method="POST" action="/contracts/add" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <div class="form-row">
         <div class="form-group">
           <label for="contract_name">Contract Name *</label>

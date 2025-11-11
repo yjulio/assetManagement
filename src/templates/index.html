@@ -6,10 +6,45 @@
       <h2>Overview</h2>
       <p style="color:#7f8c8d;">Welcome to your Asset Management Dashboard</p>
     </div>
-    <div class="dropdown">
-      <a href="/manage-dashboard" class="dropdown-toggle btn-manage-dashboard" style="text-decoration:none;"><i>⚙️</i> Manage Dashboard</a>
+    <div class="d-flex gap-2 align-items-center flex-wrap">
+      <!-- Bootstrap Dropdown for Download -->
+      <div class="dropdown">
+        <button class="btn btn-primary dropdown-toggle d-flex align-items-center gap-2" type="button" id="downloadDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);border:none;box-shadow:0 2px 8px rgba(102,126,234,0.3);">
+          <i class="bi bi-download"></i>
+          <span>Download Dashboard</span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="downloadDropdown" style="border-radius:8px;min-width:220px;">
+          <li>
+            <a class="dropdown-item d-flex align-items-center gap-3 py-2" href="/dashboard/export/pdf">
+              <i class="bi bi-file-pdf text-danger fs-5"></i>
+              <span>Download as PDF</span>
+            </a>
+          </li>
+          <li><hr class="dropdown-divider"></li>
+          <li>
+            <a class="dropdown-item d-flex align-items-center gap-3 py-2" href="/dashboard/export/excel">
+              <i class="bi bi-file-excel text-success fs-5"></i>
+              <span>Download as Excel</span>
+            </a>
+          </li>
+          <li><hr class="dropdown-divider"></li>
+          <li>
+            <a class="dropdown-item d-flex align-items-center gap-3 py-2" href="/dashboard/export/csv">
+              <i class="bi bi-file-earmark-spreadsheet text-info fs-5"></i>
+              <span>Download as CSV</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+      
+      <!-- Manage Dashboard Button with Bootstrap -->
+      <a href="/manage-dashboard" class="btn btn-info text-white d-flex align-items-center gap-2 shadow-sm" style="background:#3498db;">
+        <i class="bi bi-gear-fill"></i>
+        <span>Manage Dashboard</span>
+      </a>
     </div>
   </div>
+  
   <div class="dashboard">
     {% if 'total_assets' in dashboard_widgets %}
     <a href="/assets" class="metric-card metric-link" title="View all assets">
@@ -21,23 +56,23 @@
     </a>
     {% endif %}
     
+    {% if 'inhouse_assets' in dashboard_widgets %}
+    <a href="/assets" class="metric-card metric-link" title="View in-house assets">
+      <div>
+        <div class="metric-label">In-House Assets</div>
+        <div class="metric-value">{{ inhouse_assets }}</div>
+      </div>
+      <div class="icon">🏢</div>
+    </a>
+    {% endif %}
+    
     {% if 'total_value' in dashboard_widgets %}
     <a href="/assets" class="metric-card metric-link" title="View asset value">
       <div>
         <div class="metric-label">Total Value</div>
-        <div class="metric-value">VT{{ '%.2f'|format(total_value) }}</div>
+        <div class="metric-value">VT{{ '{:,.0f}'.format(total_value) }}</div>
       </div>
       <div class="icon">💰</div>
-    </a>
-    {% endif %}
-    
-    {% if 'low_stock' in dashboard_widgets %}
-    <a href="/assets?q=low+stock" class="metric-card metric-link" title="View low stock assets">
-      <div>
-        <div class="metric-label">Low Stock Alert</div>
-        <div class="metric-value{% if low_stock_items > 0 %} low-stock{% endif %}">{{ low_stock_items }}</div>
-      </div>
-      <div class="icon">⚠️</div>
     </a>
     {% endif %}
     
@@ -50,6 +85,10 @@
       <div class="icon">🏷️</div>
     </a>
     {% endif %}
+  </div>
+
+  <!-- Optional Additional Widgets -->
+  <div class="dashboard">
     
     {% if 'suppliers' in dashboard_widgets %}
     <a href="/suppliers" class="metric-card metric-link" title="View suppliers">
@@ -87,7 +126,7 @@
   <div style="background:#fff;padding:24px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,.08);margin:30px 0;">
     <h3 style="margin-bottom:20px;display:flex;align-items:center;gap:10px;"><i>📋</i> Recent Activity</h3>
     <table>
-      <tr><th>Name</th><th>Qty</th><th>Price</th><th>Category</th><th>Supplier</th><th>Department</th><th>Location</th></tr>
+      <tr><th>Name</th><th>Qty</th><th>Price</th><th>Category</th><th>Supplier</th><th>Dept/Cost Center</th><th>Location</th></tr>
       {% for name, d in recent_activity %}
         <tr>
           <td>{{ name }}</td>
@@ -135,8 +174,8 @@
       
       {% if 'donut_chart' in dashboard_charts %}
       <div style="border:1px solid #e0e0e0;border-radius:8px;padding:20px;">
-        <h4 style="margin-bottom:15px;color:#2c3e50;">🍩 Department Breakdown</h4>
-        <p style="color:#7f8c8d;font-size:14px;">Donut chart by department</p>
+        <h4 style="margin-bottom:15px;color:#2c3e50;">🍩 Department/Cost Center Breakdown</h4>
+        <p style="color:#7f8c8d;font-size:14px;">Donut chart by department/cost center</p>
         <canvas id="donutChart" style="max-height:300px;"></canvas>
       </div>
       {% endif %}
@@ -159,8 +198,8 @@
       
       {% if 'heatmap' in dashboard_charts %}
       <div style="border:1px solid #e0e0e0;border-radius:8px;padding:20px;">
-        <h4 style="margin-bottom:15px;color:#2c3e50;">🔥 Usage by Department</h4>
-        <p style="color:#7f8c8d;font-size:14px;">Heat map of department usage</p>
+        <h4 style="margin-bottom:15px;color:#2c3e50;">🔥 Usage by Department/Cost Center</h4>
+        <p style="color:#7f8c8d;font-size:14px;">Heat map of department/cost center usage</p>
         <div id="heatMap" style="height:300px;"></div>
       </div>
       {% endif %}
@@ -325,7 +364,7 @@
   {% endif %}
 
   <table>
-    <tr><th>Name</th><th>Qty</th><th>Price</th><th>Category</th><th>Supplier</th><th>Department</th><th>Location</th><th>Description</th></tr>
+    <tr><th>Name</th><th>Qty</th><th>Price</th><th>Category</th><th>Supplier</th><th>Dept/Cost Center</th><th>Location</th><th>Description</th></tr>
     {% for name, d in inventory_items %}
       <tr>
         <td>{{ name }}</td>
