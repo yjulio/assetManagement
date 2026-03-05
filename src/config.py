@@ -2,6 +2,12 @@
 import os
 import sys
 import secrets
+from dotenv import load_dotenv
+import pathlib
+
+# Load environment variables from .env file
+env_path = pathlib.Path(__file__).parent.parent / ".env"
+load_dotenv(dotenv_path=env_path)
 
 # Database Configuration
 # Supports environment variables for cloud deployment

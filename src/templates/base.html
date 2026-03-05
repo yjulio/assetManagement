@@ -1,282 +1,313 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ title or 'Asset Management System' }}</title>
-  <link rel="icon" type="image/png" href="/static/asset.png">
-  <link rel="shortcut icon" type="image/png" href="/static/asset.png">
-  <link rel="apple-touch-icon" href="/static/asset.png">
-  
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            primary: {
-              50: '#f0f9ff',
-              100: '#e0f2fe',
-              200: '#bae6fd',
-              300: '#7dd3fc',
-              400: '#38bdf8',
-              500: '#0ea5e9',
-              600: '#0284c7',
-              700: '#0369a1',
-              800: '#075985',
-              900: '#0c4a6e',
-            },
-            sidebar: {
-              dark: '#1a1f3a',
-              mid: '#2c3e50',
-              green: '#1e8449',
-            },
-            success: '#2ecc71',
-            warning: '#f39c12',
-            danger: '#e74c3c',
-          }
-        }
-      }
-    }
-  </script>
-  
-  <!-- Bootstrap CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
-  
+  <title>{{ title or site_subtitle }}</title>
+  <link rel="icon" type="image/png" href="{{ favicon_path }}">
+  <link rel="shortcut icon" type="image/png" href="{{ favicon_path }}">
+  <link rel="apple-touch-icon" href="{{ favicon_path }}">
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="{{ url_for('mobile.pwa_manifest') }}">
+  <meta name="theme-color" content="#4ca1af">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="DLA Assets">
+
+  <!-- Bootstrap CSS 5.3.3 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
   <!-- Bootstrap Icons -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
   <!-- Custom Styles -->
-      <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/styles.css', v='3.7') }}" />
-      <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/notifications.css') }}" />
-      <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/tailwind-enhancements.css') }}" />
+  <link rel="stylesheet" type="text/css"
+    href="{{ url_for('static', filename='css/bootstrap-enhancements.css', v='4.0') }}" />
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/styles.css', v='3.7') }}" />
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/notifications.css') }}" />
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/tailwind-enhancements.css') }}" />
 </head>
+
 <body>
   <!-- Mobile Menu Toggle -->
   <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Toggle navigation menu">
     ☰
   </button>
-  
+
   <div class="sidebar">
     <div class="sidebar-header">
-      <a href="/" class="logo">
-        <img src="/static/asset.png" alt="Vanuatu Bureau of Statistics logo">
+      <a href="{{ url_for('index') }}" class="logo">
+        <img src="{{ logo_path or url_for('static', filename='dla-logo.png') }}"
+          alt="{{ site_title }} logo">
       </a>
       <div class="brand">
-        <h1>Asset Management</h1>
-        <div class="sub">Vanuatu Bureau of Statistics</div>
+        <h1>{{ site_subtitle }}</h1>
+        <div class="sub">{{ site_title }}</div>
       </div>
     </div>
     <ul class="sidebar-menu">
-  <!-- Dashboard -->
-  <li class="menu-item-has-children">
-    <a href='#' class="submenu-toggle"><i>🏠</i>Dashboard <span class="arrow">▼</span></a>
-    <ul class="submenu">
-      <li><a href='/'><i>📊</i>View Dashboard</a></li>
-      <li><a href='/manage-dashboard'><i>⚙️</i>Manage Dashboard</a></li>
-    </ul>
-  </li>
-  
-  <!-- Alerts -->
-  <li class="menu-item-has-children">
-    <a href='#' class="submenu-toggle"><i>🔔</i>Alerts <span class="badge" style="background-color: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 5px;">!</span> <span class="arrow">▼</span></a>
-    <ul class="submenu">
-      <li><a href='/alerts/assets-past-due'><i>⏰</i>Assets Past Due</a></li>
-      <li><a href='/alerts/contracts-expiring'><i>📄</i>Contracts Expiring</a></li>
-      <li><a href='/alerts/leases-expiring'><i>🏢</i>Leases Expiring</a></li>
-      <li><a href='/alerts/maintenance-due'><i>🔧</i>Maintenance Due</a></li>
-      <li><a href='/alerts/maintenance-overdue'><i>⚠️</i>Maintenance Overdue</a></li>
-      <li><a href='/alerts/warranties-expiring'><i>🛡️</i>Warranties Expiring</a></li>
-    </ul>
-  </li>
-  
-  <!-- Assets Management -->
-  <li class="menu-item-has-children">
-    <a href='#' class="submenu-toggle"><i>📦</i>Assets <span class="arrow">▼</span></a>
-    <ul class="submenu">
-      <li><a href='/assets'><i>📋</i>List of Assets</a></li>
-      <li><a href='/add'><i>➕</i>Add an Asset</a></li>
-      <li><a href='/update'><i>🔄</i>Update Quantity</a></li>
-      <li><a href='/checkout'><i>📤</i>Check Out</a></li>
-      <li><a href='/checkin'><i>📥</i>Check In</a></li>
-      <li><a href='/lease'><i>📝</i>Lease</a></li>
-      <li><a href='/lease-return'><i>↩️</i>Lease Return</a></li>
-      <li><a href='/maintenance'><i>🔧</i>Maintenance</a></li>
-      <li><a href='/move'><i>🚚</i>Move</a></li>
-      <li><a href='/reserve'><i>🔖</i>Reserve</a></li>
-      <li><a href='/dispose'><i>🗑️</i>Dispose</a></li>
-    </ul>
-  </li>
-  
-  <!-- Tools -->
-  <li class="menu-item-has-children">
-    <a href='#' class="submenu-toggle"><i>🛠️</i>Tools <span class="arrow">▼</span></a>
-    <ul class="submenu">
-      <li><a href='/data-quality'><i>📊</i>Data Quality</a></li>
-      <li><a href='/import'><i>📥</i>Import Data</a></li>
+      <!-- Dashboard -->
       <li class="menu-item-has-children">
-        <a href='#' class="submenu-toggle"><i>📤</i>Export Data <span class="arrow">▼</span></a>
+        <a href='#' class="submenu-toggle"><i>🏠</i>Dashboard <span class="arrow">▼</span></a>
         <ul class="submenu">
-          <li><a href='/export/assets'><i>📦</i>Export Assets</a></li>
-          <li><a href='/export/users'><i>👤</i>Export Users</a></li>
-          <li><a href='/export/maintenance'><i>🔧</i>Export Maintenance</a></li>
-          <li><a href='/export/transactions'><i>💳</i>Export Transactions</a></li>
-          <li><a href='/export/all'><i>�</i>Export All Data</a></li>
+          <li><a href="{{ url_for('index') }}"><i>📊</i>View Dashboard</a></li>
+          <li><a href="{{ url_for('manage_dashboard') }}"><i>⚙️</i>Manage Dashboard</a></li>
         </ul>
       </li>
-      <li><a href='/document-gallery'><i>📄</i>Document Gallery</a></li>
-      <li><a href='/image-gallery'><i>🖼️</i>Image Gallery</a></li>
-    </ul>
-  </li>
-  
-  <!-- Reports -->
-  <li class="menu-item-has-children">
-    <a href='#' class="submenu-toggle"><i>📊</i>Reports <span class="arrow">▼</span></a>
-    <ul class="submenu">
-      <li><a href='/reports/automated'><i>🤖</i>Automated Report</a></li>
-      <li><a href='/reports/custom'><i>✏️</i>Custom Report</a></li>
-      <li><a href='/reports/inventory'><i>📦</i>Inventory Report</a></li>
-      <li><a href='/reports/asset'><i>🏷️</i>Asset Report</a></li>
-      <li><a href='/reports/audit'><i>🔍</i>Audit Report</a></li>
-      <li><a href='/reports/checkout'><i>📤</i>Check-out Report</a></li>
-      <li><a href='/reports/contract'><i>📄</i>Contract Report</a></li>
-      <li><a href='/reports/depreciation'><i>📉</i>Depreciation Report</a></li>
-      <li><a href='/reports/funding'><i>💵</i>Funding Report</a></li>
-      <li><a href='/reports/lease-asset'><i>📝</i>Lease Asset Report</a></li>
-      <li><a href='/reports/maintenance'><i>🔧</i>Maintenance Report</a></li>
-      <li><a href='/reports/reservation'><i>🔖</i>Reservation Report</a></li>
-      <li><a href='/reports/status'><i>📊</i>Status Report</a></li>
-      <li><a href='/reports/transaction'><i>💳</i>Transaction Report</a></li>
-      <li><a href='/reports/other'><i>📋</i>Other Report</a></li>
-    </ul>
-  </li>
-  
-  <!-- Lists -->
-  <li class="menu-item-has-children">
-    <a href='#' class="submenu-toggle"><i>📋</i>Lists <span class="arrow">▼</span></a>
-    <ul class="submenu">
-      <li><a href='/lists/assets'><i>📦</i>Lists of Assets</a></li>
-      <li><a href='/lists/maintenances'><i>🔧</i>Lists of Maintenances</a></li>
-      <li><a href='/lists/contracts'><i>📄</i>Lists of Contracts</a></li>
-    </ul>
-  </li>
-  
-  <!-- Advanced Features -->
-  <li class="menu-item-has-children">
-    <a href='#' class="submenu-toggle"><i>⚙️</i>Advanced <span class="arrow">▼</span></a>
-    <ul class="submenu">
+
+      <!-- Alerts -->
       <li class="menu-item-has-children">
-        <a href='#' class="submenu-toggle"><i>📄</i>Contracts/Licenses <span class="arrow">▼</span></a>
+        <a href='#' class="submenu-toggle"><i>🔔</i>Alerts <span class="badge"
+            style="background-color: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 5px;">!</span>
+          <span class="arrow">▼</span></a>
         <ul class="submenu">
-          <li><a href='/contracts/add'><i>➕</i>Add Contract</a></li>
-          <li><a href='/contracts/list'><i>📋</i>View All Contracts</a></li>
-          <li><a href='/contracts/renewals'><i>⏰</i>Upcoming Renewals</a></li>
-          <li><a href='/contracts/expired'><i>⚠️</i>Expired Contracts</a></li>
-          <li><a href='/contracts/licenses'><i>🔑</i>Software Licenses</a></li>
+          <li><a href="{{ url_for('alerts_assets_past_due') }}"><i>⏰</i>Assets Past Due</a></li>
+          <li><a href="{{ url_for('alerts_contracts_expiring') }}"><i>📄</i>Contracts Expiring</a></li>
+          <li><a href="{{ url_for('alerts_leases_expiring') }}"><i>🏢</i>Leases Expiring</a></li>
+          <li><a href="{{ url_for('alerts_maintenance_due') }}"><i>🔧</i>Maintenance Due</a></li>
+          <li><a href="{{ url_for('alerts_maintenance_overdue') }}"><i>⚠️</i>Maintenance Overdue</a></li>
+          <li><a href="{{ url_for('alerts_warranties_expiring') }}"><i>🛡️</i>Warranties Expiring</a></li>
         </ul>
       </li>
+
+      <!-- Assets Management -->
       <li class="menu-item-has-children">
-        <a href='#' class="submenu-toggle"><i>�</i>Asset Purchase Orders <span class="arrow">▼</span></a>
+        <a href='#' class="submenu-toggle"><i>📦</i>Assets <span class="arrow">▼</span></a>
         <ul class="submenu">
-          <li><a href='/apo/add'><i>➕</i>Add APO</a></li>
-          <li><a href='/apo/list'><i>📋</i>View All APOs</a></li>
+          <li><a href="{{ url_for('assets') }}"><i>📋</i>List of Assets</a></li>
+          <li><a href="{{ url_for('add') }}"><i>➕</i>Add an Asset</a></li>
+          <li><a href="{{ url_for('update') }}"><i>🔄</i>Update Quantity</a></li>
+          <li><a href="{{ url_for('checkout') }}"><i>📤</i>Check Out</a></li>
+          <li><a href="{{ url_for('checkin') }}"><i>📥</i>Check In</a></li>
+          <li><a href="{{ url_for('lease') }}"><i>📝</i>Lease</a></li>
+          <li><a href="{{ url_for('lease_return') }}"><i>↩️</i>Lease Return</a></li>
+          <li><a href="{{ url_for('maintenance') }}"><i>🔧</i>Maintenance</a></li>
+          <li><a href="{{ url_for('move') }}"><i>🚚</i>Move</a></li>
+          <li><a href="{{ url_for('reserve') }}"><i>🔖</i>Reserve</a></li>
+          <li><a href="{{ url_for('dispose') }}"><i>🗑️</i>Dispose</a></li>
         </ul>
       </li>
-      <li><a href='/funding'><i>💵</i>Funding</a></li>
-    </ul>
-  </li>
-  
-  <!-- Setup & Configuration -->
-  <li class="menu-item-has-children">
-    <a href='#' class="submenu-toggle"><i>🔧</i>Setup/Configuration <span class="arrow">▼</span></a>
-    <ul class="submenu">
-      <li><a href='/users'><i>�</i>Users</a></li>
-      <li><a href='/groups'><i>🔗</i>Groups</a></li>
-      <li><a href='/employees'><i>👨‍�</i>Employees</a></li>
-      <li><a href='/customers'><i>�</i>Customers</a></li>
-      <li><a href='/suppliers'><i>🏢</i>Suppliers</a></li>
-      <li><a href='/company-info'><i>🏢</i>Company Info</a></li>
-      <li><a href='/locations'><i>📍</i>Locations</a></li>
-      <li><a href='/departments'><i>🏛️</i>Departments/Cost Centers</a></li>
-      <li><a href='/categories'><i>🏷️</i>Categories</a></li>
-      <li><a href='/subcategories'><i>📑</i>Subcategories</a></li>
-      <li><a href='/assign-group'><i>🔗</i>Assign Group</a></li>
-      <li><a href='/settings/email'><i>📧</i>Email Settings</a></li>
-      <li class="submenu-item-has-children">
-        <a href='#' class="submenu-toggle-nested"><i>💾</i>Database <span class="arrow-nested">▼</span></a>
-        <ul class="nested-submenu">
-          <li><a href='/database'><i>💾</i>Backup & Restore</a></li>
-          <li><a href='/backup-restore'><i>🔄</i>Legacy Backup/Restore</a></li>
+
+      <!-- Tools -->
+      <li class="menu-item-has-children">
+        <a href='#' class="submenu-toggle"><i>🛠️</i>Tools <span class="arrow">▼</span></a>
+        <ul class="submenu">
+          <li><a href="{{ url_for('lookup_lpo') }}"><i>🔍</i>LPO Lookup</a></li>
+          <li><a href="{{ url_for('data_quality_dashboard') }}"><i>📊</i>Data Quality</a></li>
+          <li><a href="{{ url_for('vulnerability_scan') }}"><i>🔒</i>Vulnerability Scan</a></li>
+          <li><a href="{{ url_for('import_data') }}"><i>📥</i>Import Data</a></li>
+          <li class="menu-item-has-children">
+            <a href='#' class="submenu-toggle"><i>📤</i>Export Data <span class="arrow">▼</span></a>
+            <ul class="submenu">
+              <li><a href="{{ url_for('export_assets') }}"><i>📦</i>Export Assets</a></li>
+              <li><a href="{{ url_for('export_users') }}"><i>👤</i>Export Users</a></li>
+              <li><a href="{{ url_for('export_maintenance') }}"><i>🔧</i>Export Maintenance</a></li>
+              <li><a href="{{ url_for('export_transactions') }}"><i>💳</i>Export Transactions</a></li>
+              <li><a href="{{ url_for('export_all') }}"><i>�</i>Export All Data</a></li>
+            </ul>
+          </li>
+          <li><a href="{{ url_for('document_gallery') }}"><i>📄</i>Document Gallery</a></li>
+          <li><a href="{{ url_for('image_gallery') }}"><i>🖼️</i>Image Gallery</a></li>
         </ul>
       </li>
-      <li class="submenu-item-has-children">
-        <a href='#' class="submenu-toggle-nested"><i>📝</i>Customize Forms <span class="arrow-nested">▼</span></a>
-        <ul class="nested-submenu">
-          <li><a href='/customize-assets-form'><i>📦</i>Assets Form</a></li>
-          <li><a href='/customize-customers-form'><i>👥</i>Customers Form</a></li>
-          <li><a href='/customize-maintenance-form'><i>🔧</i>Maintenance Form</a></li>
-          <li><a href='/customize-contracts-form'><i>📄</i>Contracts Form</a></li>
+
+      <!-- Reports -->
+      <li class="menu-item-has-children">
+        <a href='#' class="submenu-toggle"><i>📊</i>Reports <span class="arrow">▼</span></a>
+        <ul class="submenu">
+          <li><a href="{{ url_for('report_automated') }}"><i>🤖</i>Automated Report</a></li>
+          <li><a href="{{ url_for('report_custom') }}"><i>✏️</i>Custom Report</a></li>
+          <li><a href="{{ url_for('report_inventory') }}"><i>📦</i>Inventory Report</a></li>
+          <li><a href="{{ url_for('report_asset') }}"><i>🏷️</i>Asset Report</a></li>
+          <li><a href="{{ url_for('report_audit') }}"><i>🔍</i>Audit Report</a></li>
+          <li><a href="{{ url_for('report_checkout') }}"><i>📤</i>Check-out Report</a></li>
+          <li><a href="{{ url_for('report_contract') }}"><i>📄</i>Contract Report</a></li>
+          <li><a href="{{ url_for('report_depreciation') }}"><i>📉</i>Depreciation Report</a></li>
+          <li><a href="{{ url_for('report_funding') }}"><i>💵</i>Funding Report</a></li>
+          <li><a href="{{ url_for('report_lease_asset') }}"><i>📝</i>Lease Asset Report</a></li>
+          <li><a href="{{ url_for('report_maintenance') }}"><i>🔧</i>Maintenance Report</a></li>
+          <li><a href="{{ url_for('report_reservation') }}"><i>🔖</i>Reservation Report</a></li>
+          <li><a href="{{ url_for('report_status') }}"><i>📊</i>Status Report</a></li>
+          <li><a href="{{ url_for('report_transaction') }}"><i>💳</i>Transaction Report</a></li>
+          <li><a href="{{ url_for('report_other') }}"><i>📋</i>Other Report</a></li>
         </ul>
       </li>
-    </ul>
-  </li>
-  
-  <!-- Help & Support -->
-  <li class="menu-item-has-children">
-    <a href='#' class="submenu-toggle"><i>💡</i>Help & Support <span class="arrow">▼</span></a>
-    <ul class="submenu">
-      <li><a href='/help/user-guide'><i>📖</i>User Guide</a></li>
-      <li><a href='/help/documentation'><i>📚</i>Documentation</a></li>
-      <li><a href='/help/faq'><i>❓</i>FAQ</a></li>
-      <li><a href='/help/video-tutorials'><i>🎥</i>Video Tutorials</a></li>
-      <li><a href='/help/contact-support'><i>📧</i>Contact Support</a></li>
-      <li><a href='/help/system-info'><i>ℹ️</i>System Information</a></li>
-      <li><a href='/help/release-notes'><i>📋</i>Release Notes</a></li>
-      <li><a href='/help-support'><i>👨‍💻</i>About Developer</a></li>
-    </ul>
-  </li>
-  
-  <!-- Developer Tools (Admin Only) -->
-  {% if session.get('role') == 'Admin' %}
-  <li class="menu-item-has-children">
-    <a href='#' class="submenu-toggle"><i>🛠️</i>Developer Tools <span class="arrow">▼</span></a>
-    <ul class="submenu">
-      <li><a href='/developer/code-generator'><i>🤖</i>Code Generator</a></li>
-    </ul>
-  </li>
-  {% endif %}
+
+      <!-- Lists -->
+      <li class="menu-item-has-children">
+        <a href='#' class="submenu-toggle"><i>📋</i>Lists <span class="arrow">▼</span></a>
+        <ul class="submenu">
+          <li><a href="{{ url_for('lists_assets') }}"><i>📦</i>Lists of Assets</a></li>
+          <li><a href="{{ url_for('lists_maintenances') }}"><i>🔧</i>Lists of Maintenances</a></li>
+          <li><a href="{{ url_for('lists_contracts') }}"><i>📄</i>Lists of Contracts</a></li>
+        </ul>
+      </li>
+
+      <!-- Advanced Features -->
+      <li class="menu-item-has-children">
+        <a href='#' class="submenu-toggle"><i>⚙️</i>Advanced <span class="arrow">▼</span></a>
+        <ul class="submenu">
+          <li class="menu-item-has-children">
+            <a href='#' class="submenu-toggle"><i>�</i>Asset Management <span class="arrow">▼</span></a>
+            <ul class="submenu">
+              <li><a href="{{ url_for('asset_groups') }}"><i>📁</i>Asset Groups</a></li>
+              <li><a href="{{ url_for('asset_registry') }}"><i>📋</i>Asset Registry</a></li>
+              <li><a href="{{ url_for('asset_types') }}"><i>🏷️</i>Asset Types</a></li>
+              <li><a href="{{ url_for('asset_attributes') }}"><i>⚙️</i>Custom Attributes</a></li>
+              <li><a href="{{ url_for('asset_damage') }}"><i>⚠️</i>Damage Tracking</a></li>
+              <li><a href="{{ url_for('asset_transfers') }}"><i>🔄</i>Transfer History</a></li>
+              <li><a href="{{ url_for('manage_permissions') }}"><i>🔐</i>Manage Permissions</a></li>
+            </ul>
+          </li>
+          <li class="menu-item-has-children">
+            <a href='#' class="submenu-toggle"><i>📄</i>Contracts/Licenses <span class="arrow">▼</span></a>
+            <ul class="submenu">
+              <li><a href="{{ url_for('contracts_add') }}"><i>➕</i>Add Contract</a></li>
+              <li><a href="{{ url_for('contracts_list') }}"><i>📋</i>View All Contracts</a></li>
+              <li><a href="{{ url_for('contracts_renewals') }}"><i>⏰</i>Upcoming Renewals</a></li>
+              <li><a href="{{ url_for('contracts_expired') }}"><i>⚠️</i>Expired Contracts</a></li>
+              <li><a href="{{ url_for('contracts_licenses') }}"><i>🔑</i>Software Licenses</a></li>
+            </ul>
+          </li>
+          <li class="menu-item-has-children">
+            <a href='#' class="submenu-toggle"><i>📝</i>Asset Purchase Orders <span class="arrow">▼</span></a>
+            <ul class="submenu">
+              <li><a href="{{ url_for('apo_add') }}"><i>➕</i>Add APO</a></li>
+              <li><a href="{{ url_for('apo_list') }}"><i>📋</i>View All APOs</a></li>
+            </ul>
+          </li>
+          <li><a href="{{ url_for('funding') }}"><i>💵</i>Funding</a></li>
+        </ul>
+      </li>
+
+      <!-- Setup & Configuration -->
+      <li class="menu-item-has-children">
+        <a href='#' class="submenu-toggle"><i>🔧</i>Setup/Configuration <span class="arrow">▼</span></a>
+        <ul class="submenu">
+          <li><a href="{{ url_for('users') }}"><i>�</i>Users</a></li>
+          <li><a href="{{ url_for('groups') }}"><i>🔗</i>Groups</a></li>
+          <li><a href="{{ url_for('employees') }}"><i>👨‍�</i>Employees</a></li>
+          <li><a href='/customers'><i>�</i>Customers</a></li>
+          <li><a href='/suppliers'><i>🏢</i>Suppliers</a></li>
+          <li><a href='/company-info'><i>🏢</i>Company Info</a></li>
+          <li><a href='/locations'><i>📍</i>Locations</a></li>
+          <li><a href='/departments'><i>🏛️</i>Departments/Cost Centers</a></li>
+          <li><a href='/categories'><i>🏷️</i>Categories</a></li>
+          <li><a href='/subcategories'><i>📑</i>Subcategories</a></li>
+          <li><a href='/assign-group'><i>🔗</i>Assign Group</a></li>
+          <li><a href='/settings/email'><i>📧</i>Email Settings</a></li>
+          <li><a href='/settings/system'><i>⚙️</i>System Settings</a></li>
+          <li><a href='/settings/system'><i>🎨</i>Logo & Branding</a></li>
+          <li class="submenu-item-has-children">
+            <a href='#' class="submenu-toggle-nested"><i>💾</i>Database <span class="arrow-nested">▼</span></a>
+            <ul class="nested-submenu">
+              <li><a href='/database'><i>💾</i>Backup & Restore</a></li>
+              <li><a href='/backup-restore'><i>🔄</i>Legacy Backup/Restore</a></li>
+            </ul>
+          </li>
+          <li class="submenu-item-has-children">
+            <a href='#' class="submenu-toggle-nested"><i>📝</i>Customize Forms <span class="arrow-nested">▼</span></a>
+            <ul class="nested-submenu">
+              <li><a href='/customize-assets-form'><i>📦</i>Assets Form</a></li>
+              <li><a href='/customize-customers-form'><i>👥</i>Customers Form</a></li>
+              <li><a href='/customize-maintenance-form'><i>🔧</i>Maintenance Form</a></li>
+              <li><a href='/customize-contracts-form'><i>📄</i>Contracts Form</a></li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+
+      <!-- Help & Support -->
+      <li class="menu-item-has-children">
+        <a href='#' class="submenu-toggle"><i>💡</i>Help & Support <span class="arrow">▼</span></a>
+        <ul class="submenu">
+          <li><a href="{{ url_for('help_user_guide') }}"><i>📖</i>User Guide</a></li>
+          <li><a href="{{ url_for('help_documentation') }}"><i>📚</i>Documentation</a></li>
+          <li><a href="{{ url_for('help_faq') }}"><i>❓</i>FAQ</a></li>
+          <li><a href="{{ url_for('help_video_tutorials') }}"><i>🎥</i>Video Tutorials</a></li>
+          <li><a href="{{ url_for('help_contact_support') }}"><i>📧</i>Contact Support</a></li>
+          <li><a href="{{ url_for('help_system_info') }}"><i>ℹ️</i>System Information</a></li>
+          <li><a href="{{ url_for('help_release_notes') }}"><i>📋</i>Release Notes</a></li>
+          <li><a href="{{ url_for('help_support') }}"><i>👨‍💻</i>About Developer</a></li>
+        </ul>
+      </li>
+
+      <!-- Developer Tools (Admin Only) -->
+      {% if session.get('role') == 'Admin' %}
+      <li class="menu-item-has-children">
+        <a href='#' class="submenu-toggle"><i>🛠️</i>Developer Tools <span class="arrow">▼</span></a>
+        <ul class="submenu">
+          <li><a href="{{ url_for('code_generator') }}"><i>🤖</i>Code Generator</a></li>
+        </ul>
+      </li>
+      {% endif %}
     </ul>
   </div>
   <div class="main-content">
     <div class="topbar">
       <div class="topbar-actions">
-        <a class="btn-link" href="/assets"><i>📋</i> Asset List</a>
-        <a class="btn-link" href="/add"><i>➕</i> Add Asset</a>
+        <a class="btn-link" href="{{ url_for('assets') }}"><i>📋</i> Asset List</a>
+        <a class="btn-link" href="{{ url_for('add') }}"><i>➕</i> Add Asset</a>
       </div>
       <div class="search-bar">
-        <form method="get" action="/" style="flex:1;display:flex;position:relative;">
+        <form method="get" action="{{ url_for('assets') }}" style="flex:1;display:flex;position:relative;">
           <div class="dropdown" style="position:relative;">
-            <button type="button" class="dropdown-toggle" style="padding:10px 15px;background-color:#3498db;color:white;border:none;border-radius:5px 0 0 5px;cursor:pointer;font-size:14px;height:40px;display:flex;align-items:center;gap:5px;">
+            <button type="button" class="dropdown-toggle"
+              style="padding:10px 15px;background-color:#3498db;color:white;border:none;border-radius:5px 0 0 5px;cursor:pointer;font-size:14px;height:40px;display:flex;align-items:center;gap:5px;">
               <span>🔍</span>
               <span style="font-size:10px;">▼</span>
             </button>
-            <div class="dropdown-menu" style="display:none;position:absolute;top:100%;left:0;background:white;border:1px solid #ddd;border-radius:5px;box-shadow:0 4px 12px rgba(0,0,0,0.15);min-width:200px;z-index:1000;margin-top:5px;">
-              <a href="/assets" style="display:block;padding:10px 15px;color:#2c3e50;text-decoration:none;border-bottom:1px solid #ecf0f1;transition:background 0.2s;"><i>📋</i> List of Assets</a>
-              <a href="/add" style="display:block;padding:10px 15px;color:#2c3e50;text-decoration:none;border-bottom:1px solid #ecf0f1;transition:background 0.2s;"><i>➕</i> Add an Asset</a>
-              <a href="/update" style="display:block;padding:10px 15px;color:#2c3e50;text-decoration:none;border-bottom:1px solid #ecf0f1;transition:background 0.2s;"><i>🔄</i> Update Quantity</a>
-              <a href="/checkout" style="display:block;padding:10px 15px;color:#2c3e50;text-decoration:none;border-bottom:1px solid #ecf0f1;transition:background 0.2s;"><i>📤</i> Check Out</a>
-              <a href="/checkin" style="display:block;padding:10px 15px;color:#2c3e50;text-decoration:none;border-bottom:1px solid #ecf0f1;transition:background 0.2s;"><i>📥</i> Check In</a>
-              <a href="/lease" style="display:block;padding:10px 15px;color:#2c3e50;text-decoration:none;border-bottom:1px solid #ecf0f1;transition:background 0.2s;"><i>📝</i> Lease</a>
-              <a href="/lease-return" style="display:block;padding:10px 15px;color:#2c3e50;text-decoration:none;border-bottom:1px solid #ecf0f1;transition:background 0.2s;"><i>↩️</i> Lease Return</a>
-              <a href="/maintenance" style="display:block;padding:10px 15px;color:#2c3e50;text-decoration:none;border-bottom:1px solid #ecf0f1;transition:background 0.2s;"><i>🔧</i> Maintenance</a>
-              <a href="/move" style="display:block;padding:10px 15px;color:#2c3e50;text-decoration:none;border-bottom:1px solid #ecf0f1;transition:background 0.2s;"><i>🚚</i> Move</a>
-              <a href="/reserve" style="display:block;padding:10px 15px;color:#2c3e50;text-decoration:none;border-bottom:1px solid #ecf0f1;transition:background 0.2s;"><i>🔖</i> Reserve</a>
-              <a href="/dispose" style="display:block;padding:10px 15px;color:#2c3e50;text-decoration:none;transition:background 0.2s;"><i>🗑️</i> Dispose</a>
+            <div class="dropdown-menu"
+              style="display:none;position:absolute;top:100%;left:0;background:white;border:1px solid #ddd;border-radius:5px;box-shadow:0 4px 12px rgba(0,0,0,0.15);min-width:200px;z-index:1000;margin-top:5px;">
+              <a href="/assets"
+                style="display:block;padding:10px 15px;color:#2c3e50;text-decoration:none;border-bottom:1px solid #ecf0f1;transition:background 0.2s;"><i>📋</i>
+                List of Assets</a>
+              <a href="/add"
+                style="display:block;padding:10px 15px;color:#2c3e50;text-decoration:none;border-bottom:1px solid #ecf0f1;transition:background 0.2s;"><i>➕</i>
+                Add an Asset</a>
+              <a href="/update"
+                style="display:block;padding:10px 15px;color:#2c3e50;text-decoration:none;border-bottom:1px solid #ecf0f1;transition:background 0.2s;"><i>🔄</i>
+                Update Quantity</a>
+              <a href="/checkout"
+                style="display:block;padding:10px 15px;color:#2c3e50;text-decoration:none;border-bottom:1px solid #ecf0f1;transition:background 0.2s;"><i>📤</i>
+                Check Out</a>
+              <a href="/checkin"
+                style="display:block;padding:10px 15px;color:#2c3e50;text-decoration:none;border-bottom:1px solid #ecf0f1;transition:background 0.2s;"><i>📥</i>
+                Check In</a>
+              <a href="/lease"
+                style="display:block;padding:10px 15px;color:#2c3e50;text-decoration:none;border-bottom:1px solid #ecf0f1;transition:background 0.2s;"><i>📝</i>
+                Lease</a>
+              <a href="/lease-return"
+                style="display:block;padding:10px 15px;color:#2c3e50;text-decoration:none;border-bottom:1px solid #ecf0f1;transition:background 0.2s;"><i>↩️</i>
+                Lease Return</a>
+              <a href="/maintenance"
+                style="display:block;padding:10px 15px;color:#2c3e50;text-decoration:none;border-bottom:1px solid #ecf0f1;transition:background 0.2s;"><i>🔧</i>
+                Maintenance</a>
+              <a href="/move"
+                style="display:block;padding:10px 15px;color:#2c3e50;text-decoration:none;border-bottom:1px solid #ecf0f1;transition:background 0.2s;"><i>🚚</i>
+                Move</a>
+              <a href="/reserve"
+                style="display:block;padding:10px 15px;color:#2c3e50;text-decoration:none;border-bottom:1px solid #ecf0f1;transition:background 0.2s;"><i>🔖</i>
+                Reserve</a>
+              <a href="/dispose"
+                style="display:block;padding:10px 15px;color:#2c3e50;text-decoration:none;transition:background 0.2s;"><i>🗑️</i>
+                Dispose</a>
             </div>
           </div>
-          <input type="text" placeholder="Search assets, suppliers, or categories..." name="q" value="{{ request.args.get('q','') }}" style="flex:1;padding:10px 15px;border:1px solid #ddd;border-left:none;border-radius:0 5px 5px 0;height:40px;box-sizing:border-box;font-size:14px;">
-          <button type="submit" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:#999;cursor:pointer;font-size:18px;padding:5px;">🔍</button>
+          <input type="text" placeholder="Search assets (name, category, person, location…)" name="q"
+            value="{{ request.args.get('q','') }}"
+            style="flex:1;padding:10px 15px;border:1px solid #ddd;border-left:none;border-radius:0 5px 5px 0;height:40px;box-sizing:border-box;font-size:14px;">
+          <button type="submit"
+            style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:#999;cursor:pointer;font-size:18px;padding:5px;">🔍</button>
         </form>
       </div>
       <div class="theme-switcher">
@@ -293,137 +324,154 @@
       </div>
       <div class="user-menu">
         {% if session.get('username') %}
-          <div class="dropdown">
-            <button class="dropdown-toggle" onclick="event.stopPropagation(); this.parentElement.classList.toggle('active');">{{ session.get('username') }} ▼</button>
-            <div class="dropdown-menu">
-              <a href="/profile">👤 My Profile</a>
-              <a href="/change-profile">✏️ Change Profile</a>
-              <a href="/account-details">ℹ️ Account Details</a>
-              <div class="dropdown-divider"></div>
-              <a href="#" onclick="showKeyboardShortcuts(event)">⌨️ Keyboard Shortcuts</a>
-              <div class="dropdown-divider"></div>
-              <form method="post" action="/logout" style="display: inline; margin: 0;">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                <button type="submit" style="background: none; border: none; color: inherit; font: inherit; cursor: pointer; padding: 10px 20px; text-align: left; width: 100%; display: block;">
-                  🚪 Logout
-                </button>
-              </form>
-            </div>
+        <div class="dropdown">
+          <button class="dropdown-toggle"
+            onclick="event.stopPropagation(); this.parentElement.classList.toggle('active');">{{ session.get('username')
+            }} ▼</button>
+          <div class="dropdown-menu">
+            <a href="/profile">👤 My Profile</a>
+            <a href="/change-profile">✏️ Change Profile</a>
+            <a href="/account-details">ℹ️ Account Details</a>
+            <div class="dropdown-divider"></div>
+            <a href="#" onclick="showKeyboardShortcuts(event)">⌨️ Keyboard Shortcuts</a>
+            <div class="dropdown-divider"></div>
+            <form method="post" action="/logout" style="display: inline; margin: 0;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <button type="submit"
+                style="background: none; border: none; color: inherit; font: inherit; cursor: pointer; padding: 10px 20px; text-align: left; width: 100%; display: block;">
+                🚪 Logout
+              </button>
+            </form>
           </div>
+        </div>
         {% else %}
-          <a class="btn-link" href="/login">Login</a>
+        <a class="btn-link" href="/login">Login</a>
         {% endif %}
       </div>
     </div>
-    
+
     <!-- Keyboard Shortcuts Modal -->
-    <div id="shortcutsModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:10000;align-items:center;justify-content:center;">
-      <div style="background:white;padding:30px;border-radius:12px;max-width:500px;width:90%;box-shadow:0 10px 40px rgba(0,0,0,0.3);">
+    <div id="shortcutsModal"
+      style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:10000;align-items:center;justify-content:center;">
+      <div
+        style="background:white;padding:30px;border-radius:12px;max-width:500px;width:90%;box-shadow:0 10px 40px rgba(0,0,0,0.3);">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
           <h3 style="margin:0;color:#2c3e50;">⌨️ Keyboard Shortcuts</h3>
-          <button onclick="hideKeyboardShortcuts()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#95a5a6;">&times;</button>
+          <button onclick="hideKeyboardShortcuts()"
+            style="background:none;border:none;font-size:24px;cursor:pointer;color:#95a5a6;">&times;</button>
         </div>
         <div style="display:grid;gap:12px;">
           <div style="display:flex;justify-content:space-between;padding:10px;background:#f8f9fa;border-radius:6px;">
             <span style="color:#7f8c8d;">Add Asset</span>
-            <kbd style="background:#fff;padding:4px 8px;border-radius:4px;border:1px solid #ddd;font-family:monospace;">Alt + A</kbd>
+            <kbd
+              style="background:#fff;padding:4px 8px;border-radius:4px;border:1px solid #ddd;font-family:monospace;">Alt
+              + A</kbd>
           </div>
           <div style="display:flex;justify-content:space-between;padding:10px;background:#f8f9fa;border-radius:6px;">
             <span style="color:#7f8c8d;">Asset List</span>
-            <kbd style="background:#fff;padding:4px 8px;border-radius:4px;border:1px solid #ddd;font-family:monospace;">Alt + L</kbd>
+            <kbd
+              style="background:#fff;padding:4px 8px;border-radius:4px;border:1px solid #ddd;font-family:monospace;">Alt
+              + L</kbd>
           </div>
           <div style="display:flex;justify-content:space-between;padding:10px;background:#f8f9fa;border-radius:6px;">
             <span style="color:#7f8c8d;">Dashboard</span>
-            <kbd style="background:#fff;padding:4px 8px;border-radius:4px;border:1px solid #ddd;font-family:monospace;">Alt + H</kbd>
+            <kbd
+              style="background:#fff;padding:4px 8px;border-radius:4px;border:1px solid #ddd;font-family:monospace;">Alt
+              + H</kbd>
           </div>
           <div style="display:flex;justify-content:space-between;padding:10px;background:#f8f9fa;border-radius:6px;">
             <span style="color:#7f8c8d;">Focus Search</span>
-            <kbd style="background:#fff;padding:4px 8px;border-radius:4px;border:1px solid #ddd;font-family:monospace;">Alt + S</kbd>
+            <kbd
+              style="background:#fff;padding:4px 8px;border-radius:4px;border:1px solid #ddd;font-family:monospace;">Alt
+              + S</kbd>
           </div>
         </div>
         <div style="margin-top:20px;padding-top:20px;border-top:1px solid #ecf0f1;text-align:center;">
-          <button onclick="hideKeyboardShortcuts()" style="background:linear-gradient(135deg, #f9d423 0%, #4ca1af 50%, #2ecc71 100%);color:white;border:none;padding:10px 30px;border-radius:6px;cursor:pointer;font-weight:600;">Got it!</button>
+          <button onclick="hideKeyboardShortcuts()"
+            style="background:linear-gradient(135deg, #f9d423 0%, #4ca1af 50%, #2ecc71 100%);color:white;border:none;padding:10px 30px;border-radius:6px;cursor:pointer;font-weight:600;">Got
+            it!</button>
         </div>
       </div>
     </div>
-    
+
     <div class="container">
       {% with messages = get_flashed_messages(with_categories=True) %}
-        {% if messages %}
-          <!-- Flash messages will be shown as toast notifications by our JS -->
-          {% for category, msg in messages %}
-            <div class="flash-message d-none" data-category="{{ category }}">{{ msg }}</div>
-          {% endfor %}
-        {% endif %}
+      {% if messages %}
+      <!-- Flash messages will be shown as toast notifications by our JS -->
+      {% for category, msg in messages %}
+      <div class="flash-message d-none" data-category="{{ category }}">{{ msg }}</div>
+      {% endfor %}
+      {% endif %}
       {% endwith %}
       {% block content %}{% endblock %}
     </div>
-    
+
     <!-- Footer Signature -->
-    <footer style="background:linear-gradient(135deg, #1a1f3a 0%, #2c3e50 50%, #1e8449 100%);color:white;padding:30px 20px;margin-top:50px;border-top:4px solid #2ecc71;box-shadow:0 -4px 20px rgba(0,0,0,0.1);">
-      <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;">
+    <footer
+      style="background:linear-gradient(135deg, #1a1f3a 0%, #2c3e50 50%, #1e8449 100%);color:white;padding:30px 20px;margin-top:50px;border-top:4px solid #2ecc71;box-shadow:0 -4px 20px rgba(0,0,0,0.1);">
+      <div
+        style="max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;">
         <div style="display:flex;align-items:center;gap:15px;">
-          <img src="/static/asset.png" alt="VBOS Logo" style="width:60px;height:60px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.3);">
+          <img src="/static/dla-logo.png" alt="DLA Logo"
+            style="width:90px;height:90px;object-fit:contain;">
           <div>
-            <h3 style="margin:0;font-size:20px;font-weight:700;">Vanuatu Bureau Of Statistics</h3>
+            <h3 style="margin:0;font-size:20px;font-weight:700;">Department of Local Authorities</h3>
             <p style="margin:5px 0 0 0;font-size:14px;opacity:0.9;">Asset Management System</p>
-            <p style="margin:5px 0 0 0;font-size:13px;font-style:italic;opacity:0.85;">"Better Data, Better Decision"</p>
           </div>
         </div>
         <div style="text-align:right;">
-          <p style="margin:0;font-size:13px;opacity:0.9;">© 2025 VBOS. All rights reserved.</p>
+          <p style="margin:0;font-size:13px;opacity:0.9;">© 2025 DLA. All rights reserved.</p>
           <p style="margin:5px 0 0 0;font-size:12px;opacity:0.8;">Port Vila, Vanuatu</p>
         </div>
       </div>
     </footer>
   </div>
-  
+
   <!-- Print Header (only visible when printing) -->
   <div class="print-header-text" style="display:none;">
-    <h1>Vanuatu Bureau Of Statistics</h1>
+    <h1>Department of Local Authorities</h1>
     <p>Asset Management System</p>
-    <p class="slogan">"Better Data, Better Decision"</p>
   </div>
-  
+
   <!-- Back to Top Button -->
   <button class="back-to-top" id="backToTop" onclick="scrollToTop()" aria-label="Back to top">
     ↑
   </button>
-  
-  <!-- Loading Overlay -->
-  <div class="loading-overlay" id="loadingOverlay">
+
+  <!-- Loading Overlay (hidden by default) -->
+  <div class="loading-overlay" id="loadingOverlay" style="display: none;">
     <div class="loading-spinner"></div>
     <div class="loading-text">Loading...</div>
   </div>
-  
+
   <!-- Back to Top Button -->
   <button class="back-to-top" id="back-to-top" aria-label="Back to top">
     ↑
   </button>
-  
+
   <script>
     // Back to top button
     const backToTopBtn = document.getElementById('backToTop');
-    
-    window.addEventListener('scroll', function() {
+
+    window.addEventListener('scroll', function () {
       if (window.pageYOffset > 300) {
         backToTopBtn.classList.add('show');
       } else {
         backToTopBtn.classList.remove('show');
       }
     });
-    
+
     function scrollToTop() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-    
+
     // Form submission loading state
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
       const forms = document.querySelectorAll('form');
       const loadingOverlay = document.getElementById('loadingOverlay');
-      
+
       forms.forEach(form => {
-        form.addEventListener('submit', function(e) {
+        form.addEventListener('submit', function (e) {
           // Skip if form has onsubmit that returns false
           if (form.hasAttribute('onsubmit')) {
             const onsubmit = form.getAttribute('onsubmit');
@@ -431,12 +479,12 @@
               return;
             }
           }
-          
+
           // Show loading overlay
           if (loadingOverlay) {
             loadingOverlay.classList.add('active');
           }
-          
+
           // Disable submit buttons to prevent double submission
           const submitBtns = form.querySelectorAll('[type="submit"]');
           submitBtns.forEach(btn => {
@@ -448,32 +496,65 @@
       });
     });
   </script>
-  
+
   <script>
+    // Immediately hide loading overlay (runs before DOM is ready)
+    (function () {
+      function hideLoadingOverlay() {
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        if (loadingOverlay) {
+          loadingOverlay.style.display = 'none';
+          loadingOverlay.style.visibility = 'hidden';
+          loadingOverlay.classList.remove('active');
+          loadingOverlay.removeAttribute('class');
+        }
+        // Also remove preload-hidden from body if present
+        if (document.body) {
+          document.body.classList.remove('preload-hidden');
+        }
+      }
+
+      // Try immediately
+      hideLoadingOverlay();
+
+      // Also ensure it's hidden when DOM is ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', hideLoadingOverlay);
+      } else {
+        hideLoadingOverlay();
+      }
+
+      // Also hide on window load (after all resources loaded)
+      window.addEventListener('load', hideLoadingOverlay);
+
+      // Fallback: force hide after a short delay
+      setTimeout(hideLoadingOverlay, 100);
+    })();
+
     // Mobile menu toggle
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
       const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
       const sidebar = document.querySelector('.sidebar');
       const mainContent = document.querySelector('.main-content');
-      
+
       if (mobileMenuToggle && sidebar) {
-        mobileMenuToggle.addEventListener('click', function() {
+        mobileMenuToggle.addEventListener('click', function () {
           sidebar.classList.toggle('mobile-open');
           this.textContent = sidebar.classList.contains('mobile-open') ? '✕' : '☰';
         });
-        
+
         // Close sidebar when clicking outside on mobile
-        mainContent.addEventListener('click', function(e) {
+        mainContent.addEventListener('click', function (e) {
           if (window.innerWidth <= 768 && sidebar.classList.contains('mobile-open')) {
             sidebar.classList.remove('mobile-open');
             mobileMenuToggle.textContent = '☰';
           }
         });
-        
+
         // Close sidebar when clicking a menu item on mobile
         const menuLinks = sidebar.querySelectorAll('a');
         menuLinks.forEach(link => {
-          link.addEventListener('click', function() {
+          link.addEventListener('click', function () {
             if (window.innerWidth <= 768) {
               sidebar.classList.remove('mobile-open');
               mobileMenuToggle.textContent = '☰';
@@ -481,9 +562,9 @@
           });
         });
       }
-      
+
       // Keyboard shortcuts
-      document.addEventListener('keydown', function(e) {
+      document.addEventListener('keydown', function (e) {
         // Alt + A = Add Asset
         if (e.altKey && e.key === 'a') {
           e.preventDefault();
@@ -506,7 +587,7 @@
           if (searchInput) searchInput.focus();
         }
       });
-      
+
       // Add smooth scroll behavior
       document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
@@ -520,7 +601,7 @@
           }
         });
       });
-      
+
       // Auto-hide flash messages after 5 seconds
       const messages = document.querySelectorAll('.message');
       messages.forEach(message => {
@@ -533,7 +614,7 @@
       });
     });
   </script>
-  
+
   <script>
     // Keyboard shortcuts modal
     function showKeyboardShortcuts(e) {
@@ -541,38 +622,38 @@
       const modal = document.getElementById('shortcutsModal');
       modal.style.display = 'flex';
     }
-    
+
     function hideKeyboardShortcuts() {
       const modal = document.getElementById('shortcutsModal');
       modal.style.display = 'none';
     }
-    
+
     // Close modal on Escape key
-    document.addEventListener('keydown', function(e) {
+    document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') {
         hideKeyboardShortcuts();
       }
     });
-    
+
     // Close modal when clicking outside
-    document.getElementById('shortcutsModal')?.addEventListener('click', function(e) {
+    document.getElementById('shortcutsModal')?.addEventListener('click', function (e) {
       if (e.target === this) {
         hideKeyboardShortcuts();
       }
     });
   </script>
-  
+
   <script>
     // Theme switcher functionality
     const themeToggle = document.getElementById('theme-toggle');
     const themeMenu = document.getElementById('theme-menu');
     const themeOptions = document.querySelectorAll('.theme-option');
     const themeIcon = document.querySelector('.theme-icon');
-    
+
     // Load saved theme or default to auto
     let currentTheme = localStorage.getItem('theme') || 'auto';
     applyTheme(currentTheme);
-    
+
     // Theme option selection
     themeOptions.forEach(option => {
       option.addEventListener('click', (e) => {
@@ -583,10 +664,10 @@
         applyTheme(theme);
       });
     });
-    
+
     function applyTheme(theme) {
       const root = document.documentElement;
-      
+
       if (theme === 'auto') {
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         root.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
@@ -595,13 +676,13 @@
         root.setAttribute('data-theme', theme);
         themeIcon.textContent = theme === 'dark' ? '🌙' : '☀️';
       }
-      
+
       // Highlight active option
       themeOptions.forEach(opt => {
         opt.classList.toggle('active', opt.dataset.theme === theme);
       });
     }
-    
+
     // Listen for system theme changes in auto mode
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
       if (currentTheme === 'auto') {
@@ -612,49 +693,49 @@
   <script>
     // Sidebar submenu toggle
     document.querySelectorAll('.submenu-toggle').forEach(toggle => {
-      toggle.addEventListener('click', function(e) {
+      toggle.addEventListener('click', function (e) {
         e.preventDefault();
         const parent = this.parentElement;
         parent.classList.toggle('active');
       });
     });
-    
+
     // Nested submenu toggle
     document.querySelectorAll('.submenu-toggle-nested').forEach(toggle => {
-      toggle.addEventListener('click', function(e) {
+      toggle.addEventListener('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
         const parent = this.parentElement;
         parent.classList.toggle('active');
       });
     });
-    
+
     // Search dropdown toggle
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
       const searchDropdownToggle = document.querySelector('.search-bar .dropdown-toggle');
       const searchDropdownMenu = document.querySelector('.search-bar .dropdown-menu');
-      
+
       if (searchDropdownToggle && searchDropdownMenu) {
-        searchDropdownToggle.addEventListener('click', function(e) {
+        searchDropdownToggle.addEventListener('click', function (e) {
           e.preventDefault();
           e.stopPropagation();
           searchDropdownMenu.style.display = searchDropdownMenu.style.display === 'block' ? 'none' : 'block';
         });
-        
+
         // Close dropdown when clicking outside
-        document.addEventListener('click', function(e) {
+        document.addEventListener('click', function (e) {
           if (!e.target.closest('.search-bar .dropdown')) {
             searchDropdownMenu.style.display = 'none';
           }
         });
-        
+
         // Add hover effects to menu items
         const menuItems = searchDropdownMenu.querySelectorAll('a');
         menuItems.forEach(item => {
-          item.addEventListener('mouseenter', function() {
+          item.addEventListener('mouseenter', function () {
             this.style.backgroundColor = '#ecf0f1';
           });
-          item.addEventListener('mouseleave', function() {
+          item.addEventListener('mouseleave', function () {
             this.style.backgroundColor = 'white';
           });
         });
@@ -666,28 +747,28 @@
     const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
     const sidebar = document.querySelector('.sidebar');
     const mainContent = document.querySelector('.main-content');
-    
+
     if (mobileMenuToggle) {
-      mobileMenuToggle.addEventListener('click', function(e) {
+      mobileMenuToggle.addEventListener('click', function (e) {
         e.stopPropagation();
         sidebar.classList.toggle('mobile-open');
         this.textContent = sidebar.classList.contains('mobile-open') ? '✕' : '☰';
       });
-      
+
       // Close menu when clicking outside
-      document.addEventListener('click', function(e) {
-        if (sidebar.classList.contains('mobile-open') && 
-            !sidebar.contains(e.target) && 
-            !mobileMenuToggle.contains(e.target)) {
+      document.addEventListener('click', function (e) {
+        if (sidebar.classList.contains('mobile-open') &&
+          !sidebar.contains(e.target) &&
+          !mobileMenuToggle.contains(e.target)) {
           sidebar.classList.remove('mobile-open');
           mobileMenuToggle.textContent = '☰';
         }
       });
-      
+
       // Close menu when clicking a menu link
       const menuLinks = sidebar.querySelectorAll('a');
       menuLinks.forEach(link => {
-        link.addEventListener('click', function() {
+        link.addEventListener('click', function () {
           if (window.innerWidth <= 768) {
             sidebar.classList.remove('mobile-open');
             mobileMenuToggle.textContent = '☰';
@@ -699,7 +780,7 @@
   <script>
     // Back to top button functionality
     const backToTopButton = document.getElementById('back-to-top');
-    
+
     if (backToTopButton) {
       // Show button when scrolling down
       window.addEventListener('scroll', () => {
@@ -709,7 +790,7 @@
           backToTopButton.style.display = 'none';
         }
       });
-      
+
       // Scroll to top on click
       backToTopButton.addEventListener('click', () => {
         window.scrollTo({
@@ -719,11 +800,33 @@
       });
     }
   </script>
-  
-  <!-- Bootstrap Bundle with Popper -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
-  
+
+  <!-- Bootstrap Bundle with Popper 5.3.3 -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+    crossorigin="anonymous"></script>
+
+  <!-- Bootstrap Enhancements -->
+  <script src="{{ url_for('static', filename='js/bootstrap-enhancements.js', v='4.0') }}"></script>
+
   <!-- Notification System -->
   <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+
+  <!-- PWA Support -->
+  <script src="{{ url_for('static', filename='js/pwa-main.js') }}"></script>
+
+  <script>
+    // PWA Install Button
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      window.deferredPrompt = e;
+      // Show install button if needed
+      const installBtn = document.getElementById('pwa-install-btn');
+      if (installBtn) {
+        installBtn.style.display = 'block';
+      }
+    });
+  </script>
 </body>
+
 </html>

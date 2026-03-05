@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="mobile-photo-gallery">
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3>{{ asset_name }} - Photos</h3>
+            <a href="{{ url_for('mobile.asset_details', asset_name=asset_name) }}" class="btn btn-secondary btn-sm">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+        </div>
+
+        <!-- Camera Upload -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <form id="quick-photo-form" method="POST"
+                    action="{{ url_for('mobile.upload_asset_photo', asset_name=asset_name) }}"
+                    enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <div class="input-group">
+                        <input type="file" name="photo" class="form-control" accept="image/*" capture="environment"
+                            required id="photo-input">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-camera"></i> Take/Upload Photo
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Photo Grid -->
+        {% if photos %}
+        <div class="row g-2">
+            {% for photo in photos %}
+            <div class="col-6 col-md-4 col-lg-3">
+                <div class="card photo-card">
+                    <img src="{{ photo.url }}" class="card-img-top" alt="{{ photo.name }}"
+                        onclick="viewPhoto('{{ photo.url }}', '{{ photo.name }}')"
+                        style="cursor: pointer; height: 200px; object-fit: cover;">
+                    <div class="card-body p-2">
+                        <small class="text-muted d-block">{{ photo.modified }}</small>
+                        <small class="text-muted">{{ (photo.size / 1024)|round(1) }} KB</small>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> No photos yet. Take a photo using the button above!
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Photo Viewer Modal -->
+<div class="modal fade" id="photoViewerModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="photoViewerTitle">Photo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="photoViewerImage" src="" class="img-fluid" alt="Photo">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Handle photo upload via AJAX
+    document.getElementById('quick-photo-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Uploading...';
+
+        fetch(this.action, {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.error);
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Upload failed');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            });
+    });
+
+    // View photo in modal
+    function viewPhoto(url, name) {
+        document.getElementById('photoViewerImage').src = url;
+        document.getElementById('photoViewerTitle').textContent = name;
+        const modal = new bootstrap.Modal(document.getElementById('photoViewerModal'));
+        modal.show();
+    }
+</script>
+
+<style>
+    .mobile-photo-gallery {
+        padding: 15px;
+    }
+
+    .photo-card {
+        transition: transform 0.2s;
+    }
+
+    .photo-card:hover {
+        transform: scale(1.05);
+    }
+
+    @media (max-width: 768px) {
+        .mobile-photo-gallery h3 {
+            font-size: 1.1rem;
+        }
+    }
+</style>
+{% endblock %}

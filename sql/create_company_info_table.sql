@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS company_info (
     updated_by VARCHAR(100)
 );
 
--- Insert default company info for Vanuatu Bureau Of Statistics
+-- Insert default company info for Department of Local Authorities
 INSERT INTO company_info (
     name, 
     legal_name, 
@@ -39,10 +39,10 @@ INSERT INTO company_info (
     currency,
     timezone
 ) VALUES (
-    'Vanuatu Bureau Of Statistics',
+    'Department of Local Authorities',
     'Vanuatu National Statistics Office',
     'VBOS',
-    'The Vanuatu Bureau of Statistics is the principal statistical agency of the Government of Vanuatu, responsible for collecting, analyzing, and disseminating official statistics.',
+    'The Department of Local Authorities is responsible for managing and overseeing local government operations, providing support and coordination to municipalities and district councils.',
     'PMB 9019',
     'Port Vila',
     'Vanuatu',

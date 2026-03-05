@@ -1,0 +1,55 @@
+==============================================
+LOGIN PAGE BRANDING - EDITABLE ELEMENTS
+==============================================
+
+You can now edit ALL THREE elements shown in the login image:
+
+1. LOGO IMAGE
+   - Upload new logo via System Settings
+   - Formats: PNG, JPG, GIF, SVG
+   - Recommended: 200x200px square image
+   - Current: /static/asset.png
+
+2. SYSTEM NAME (Top text)
+   - "Asset Management System"
+   - Editable in: Organization Name field
+   - Displayed prominently on login page
+
+3. ORGANIZATION NAME (Bottom text)
+   - "Vanuatu Bureau Of Statistics"  
+   - Editable in: System Name field
+   - Shown below system name
+
+==============================================
+HOW TO EDIT:
+==============================================
+
+METHOD 1: Dashboard Button (Quickest)
+- Login as Admin
+- Click "Logo & Branding" button on dashboard
+
+METHOD 2: Navigation Menu
+- Go to: Setup/Configuration → System Settings
+
+METHOD 3: Direct URL
+- Navigate to: /settings/system
+
+==============================================
+WHAT HAPPENS WHEN YOU SAVE:
+==============================================
+
+✓ Login page updates immediately
+✓ Navigation bar updates
+✓ All page headers update
+✓ System-wide branding changes
+✓ Live preview shows exact appearance
+
+==============================================
+ACCESS REQUIREMENTS:
+==============================================
+
+Role Required: Admin only
+Current Admin: admin
+Current Password: Admin@2024
+
+==============================================

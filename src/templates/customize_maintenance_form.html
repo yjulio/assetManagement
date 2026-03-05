@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h2 class="mb-0"><i class="bi bi-sliders"></i> Customize Maintenance Form</h2>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Configure which fields appear on the maintenance form and their properties.
+                    </p>
+
+                    <form method="post">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+                        <div class="alert alert-info" role="alert">
+                            <i class="bi bi-info-circle"></i> <strong>Note:</strong> Check the boxes to enable fields on
+                            the maintenance form. Required fields cannot be disabled.
+                        </div>
+
+                        <!-- Asset Selection Section -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0"><i class="bi bi-box"></i> Asset Selection Fields</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Field Name</th>
+                                                <th>Enabled</th>
+                                                <th>Required</th>
+                                                <th>Description</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td><strong>Asset Name</strong></td>
+                                                <td>
+                                                    <input type="checkbox" name="field_asset_name" checked disabled
+                                                        class="form-check-input">
+                                                    <input type="hidden" name="field_asset_name" value="on">
+                                                </td>
+                                                <td><span class="badge bg-danger">Required</span></td>
+                                                <td>Select the asset to maintain</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Scheduled Date</strong></td>
+                                                <td>
+                                                    <input type="checkbox" name="field_scheduled_date" {{ 'checked' if
+                                                        form_config.get('field_scheduled_date', True) }}
+                                                        class="form-check-input">
+                                                </td>
+                                                <td><span class="badge bg-warning">Optional</span></td>
+                                                <td>When the maintenance is scheduled</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Maintenance Details Section -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0"><i class="bi bi-tools"></i> Maintenance Details Fields</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Field Name</th>
+                                                <th>Enabled</th>
+                                                <th>Required</th>
+                                                <th>Description</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td><strong>Maintenance Type</strong></td>
+                                                <td>
+                                                    <input type="checkbox" name="field_maintenance_type" {{ 'checked' if
+                                                        form_config.get('field_maintenance_type', True) }}
+                                                        class="form-check-input">
+                                                </td>
+                                                <td><span class="badge bg-warning">Optional</span></td>
+                                                <td>Type of maintenance (Preventive, Corrective, etc.)</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Description</strong></td>
+                                                <td>
+                                                    <input type="checkbox" name="field_description" {{ 'checked' if
+                                                        form_config.get('field_description', True) }}
+                                                        class="form-check-input">
+                                                </td>
+                                                <td><span class="badge bg-warning">Optional</span></td>
+                                                <td>Detailed description of maintenance work</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Performed By</strong></td>
+                                                <td>
+                                                    <input type="checkbox" name="field_performed_by" {{ 'checked' if
+                                                        form_config.get('field_performed_by', True) }}
+                                                        class="form-check-input">
+                                                </td>
+                                                <td><span class="badge bg-warning">Optional</span></td>
+                                                <td>Person or company performing maintenance</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Cost</strong></td>
+                                                <td>
+                                                    <input type="checkbox" name="field_cost" {{ 'checked' if
+                                                        form_config.get('field_cost', True) }} class="form-check-input">
+                                                </td>
+                                                <td><span class="badge bg-warning">Optional</span></td>
+                                                <td>Cost of maintenance</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Status</strong></td>
+                                                <td>
+                                                    <input type="checkbox" name="field_status" {{ 'checked' if
+                                                        form_config.get('field_status', True) }}
+                                                        class="form-check-input">
+                                                </td>
+                                                <td><span class="badge bg-warning">Optional</span></td>
+                                                <td>Current status (Scheduled, In Progress, Completed)</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Priority</strong></td>
+                                                <td>
+                                                    <input type="checkbox" name="field_priority" {{ 'checked' if
+                                                        form_config.get('field_priority', True) }}
+                                                        class="form-check-input">
+                                                </td>
+                                                <td><span class="badge bg-warning">Optional</span></td>
+                                                <td>Priority level (Low, Medium, High, Critical)</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Notes</strong></td>
+                                                <td>
+                                                    <input type="checkbox" name="field_notes" {{ 'checked' if
+                                                        form_config.get('field_notes', True) }}
+                                                        class="form-check-input">
+                                                </td>
+                                                <td><span class="badge bg-warning">Optional</span></td>
+                                                <td>Additional notes and comments</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Additional Options -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0"><i class="bi bi-gear"></i> Additional Options</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-check mb-3">
+                                    <input type="checkbox" name="enable_recurring" {{ 'checked' if
+                                        form_config.get('enable_recurring', True) }} class="form-check-input"
+                                        id="enable_recurring">
+                                    <label class="form-check-label" for="enable_recurring">
+                                        <strong>Enable Recurring Maintenance</strong><br>
+                                        <small class="text-muted">Allow users to set up recurring maintenance
+                                            schedules</small>
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input type="checkbox" name="enable_file_upload" {{ 'checked' if
+                                        form_config.get('enable_file_upload', True) }} class="form-check-input"
+                                        id="enable_file_upload">
+                                    <label class="form-check-label" for="enable_file_upload">
+                                        <strong>Enable File Upload</strong><br>
+                                        <small class="text-muted">Allow users to attach documents and images</small>
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input type="checkbox" name="enable_notifications" {{ 'checked' if
+                                        form_config.get('enable_notifications', True) }} class="form-check-input"
+                                        id="enable_notifications">
+                                    <label class="form-check-label" for="enable_notifications">
+                                        <strong>Enable Email Notifications</strong><br>
+                                        <small class="text-muted">Send email alerts for maintenance reminders</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="bi bi-check-circle"></i> Save Configuration
+                            </button>
+                            <a href="/maintenance" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Back to Maintenance Form
+                            </a>
+                            <button type="button" class="btn btn-outline-danger"
+                                onclick="if(confirm('Reset to default configuration?')) document.getElementById('reset-form').submit();">
+                                <i class="bi bi-arrow-counterclockwise"></i> Reset to Defaults
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Hidden reset form -->
+                    <form id="reset-form" method="post" action="/customize-maintenance-form/reset"
+                        style="display:none;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .table th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+    }
+
+    .form-check-input {
+        cursor: pointer;
+        width: 1.5em;
+        height: 1.5em;
+    }
+
+    .form-check-input:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
+</style>
+
+{% endblock %}

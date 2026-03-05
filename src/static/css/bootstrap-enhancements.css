@@ -1,0 +1,790 @@
+/**
+ * Bootstrap Enhancements & Custom Styles
+ * Modern UI/UX improvements for Asset Management System
+ */
+
+/* ============================================
+   CSS VARIABLES & THEME
+   ============================================ */
+:root {
+    /* Primary Colors */
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --warning-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    --info-gradient: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+
+    /* Accent Colors */
+    --accent-blue: #667eea;
+    --accent-purple: #764ba2;
+    --accent-pink: #f5576c;
+    --accent-cyan: #00f2fe;
+    --accent-green: #2ecc71;
+
+    /* Neutral Colors */
+    --dark-bg: #1a1f3a;
+    --light-bg: #f8f9fa;
+    --card-bg: #ffffff;
+    --text-dark: #2c3e50;
+    --text-light: #7f8c8d;
+
+    /* Shadows */
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.08);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.16);
+    --shadow-xl: 0 12px 36px rgba(0, 0, 0, 0.2);
+
+    /* Transitions */
+    --transition-fast: 0.15s ease-in-out;
+    --transition-normal: 0.3s ease-in-out;
+    --transition-slow: 0.5s ease-in-out;
+}
+
+/* ============================================
+   ENHANCED BUTTONS
+   ============================================ */
+.btn {
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    transition: all var(--transition-normal);
+    border-radius: 8px;
+    padding: 10px 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.btn:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+/* Gradient Buttons */
+.btn-gradient-primary {
+    background: var(--primary-gradient);
+    color: white;
+    border: none;
+}
+
+.btn-gradient-secondary {
+    background: var(--secondary-gradient);
+    color: white;
+    border: none;
+}
+
+.btn-gradient-success {
+    background: var(--success-gradient);
+    color: white;
+    border: none;
+}
+
+.btn-gradient-warning {
+    background: var(--warning-gradient);
+    color: white;
+    border: none;
+}
+
+/* Icon Buttons */
+.btn-icon {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.btn-icon-lg {
+    width: 50px;
+    height: 50px;
+    font-size: 1.25rem;
+}
+
+/* ============================================
+   ENHANCED CARDS
+   ============================================ */
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-normal);
+    background: var(--card-bg);
+    overflow: hidden;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.card-header {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    border-bottom: 2px solid rgba(102, 126, 234, 0.2);
+    font-weight: 600;
+    padding: 1.25rem;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+/* Gradient Cards */
+.card-gradient {
+    background: var(--primary-gradient);
+    color: white;
+}
+
+.card-gradient .card-title,
+.card-gradient .card-text {
+    color: white;
+}
+
+/* Stat Cards */
+.stat-card {
+    border-left: 4px solid var(--accent-blue);
+    transition: all var(--transition-normal);
+}
+
+.stat-card:hover {
+    border-left-width: 6px;
+    background: linear-gradient(90deg, rgba(102, 126, 234, 0.05) 0%, transparent 100%);
+}
+
+.stat-card-success {
+    border-left-color: var(--accent-green);
+}
+
+.stat-card-warning {
+    border-left-color: #f39c12;
+}
+
+.stat-card-danger {
+    border-left-color: var(--accent-pink);
+}
+
+/* ============================================
+   ENHANCED FORMS
+   ============================================ */
+.form-control,
+.form-select {
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+    padding: 0.75rem 1rem;
+    transition: all var(--transition-fast);
+    font-size: 0.95rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
+    transform: translateY(-1px);
+}
+
+.form-label {
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    letter-spacing: 0.3px;
+}
+
+/* Floating Labels */
+.form-floating>.form-control {
+    border-radius: 8px;
+}
+
+.form-floating>label {
+    color: var(--text-light);
+}
+
+/* Input Groups */
+.input-group {
+    box-shadow: var(--shadow-sm);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.input-group-text {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    border: 2px solid #e9ecef;
+    border-right: none;
+    color: var(--accent-blue);
+    font-weight: 600;
+}
+
+/* ============================================
+   ENHANCED TABLES
+   ============================================ */
+.table {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+.table thead th {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    border: none;
+    padding: 1rem;
+}
+
+.table tbody tr {
+    transition: all var(--transition-fast);
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.table tbody tr:hover {
+    background: linear-gradient(90deg, rgba(102, 126, 234, 0.05) 0%, transparent 100%);
+    transform: scale(1.01);
+    box-shadow: var(--shadow-sm);
+}
+
+.table tbody td {
+    padding: 1rem;
+    vertical-align: middle;
+}
+
+/* Striped Table Enhancement */
+.table-striped tbody tr:nth-of-type(odd) {
+    background: rgba(102, 126, 234, 0.03);
+}
+
+/* ============================================
+   ENHANCED BADGES
+   ============================================ */
+.badge {
+    padding: 0.5em 0.875em;
+    border-radius: 6px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    font-size: 0.8rem;
+}
+
+.badge-gradient {
+    background: var(--primary-gradient);
+    color: white;
+}
+
+.badge-pill {
+    border-radius: 50px;
+    padding: 0.5em 1em;
+}
+
+/* ============================================
+   ENHANCED ALERTS
+   ============================================ */
+.alert {
+    border: none;
+    border-radius: 10px;
+    border-left: 4px solid;
+    box-shadow: var(--shadow-sm);
+    padding: 1.25rem;
+}
+
+.alert-primary {
+    background: linear-gradient(90deg, rgba(102, 126, 234, 0.1) 0%, rgba(102, 126, 234, 0.05) 100%);
+    border-left-color: var(--accent-blue);
+    color: var(--accent-blue);
+}
+
+.alert-success {
+    background: linear-gradient(90deg, rgba(46, 204, 113, 0.1) 0%, rgba(46, 204, 113, 0.05) 100%);
+    border-left-color: var(--accent-green);
+    color: #27ae60;
+}
+
+.alert-warning {
+    background: linear-gradient(90deg, rgba(243, 156, 18, 0.1) 0%, rgba(243, 156, 18, 0.05) 100%);
+    border-left-color: #f39c12;
+    color: #d68910;
+}
+
+.alert-danger {
+    background: linear-gradient(90deg, rgba(245, 87, 108, 0.1) 0%, rgba(245, 87, 108, 0.05) 100%);
+    border-left-color: var(--accent-pink);
+    color: #c0392b;
+}
+
+.alert-info {
+    background: linear-gradient(90deg, rgba(52, 152, 219, 0.1) 0%, rgba(52, 152, 219, 0.05) 100%);
+    border-left-color: #3498db;
+    color: #2980b9;
+}
+
+/* ============================================
+   ENHANCED MODALS
+   ============================================ */
+.modal-content {
+    border: none;
+    border-radius: 16px;
+    box-shadow: var(--shadow-xl);
+    overflow: hidden;
+}
+
+.modal-header {
+    background: var(--primary-gradient);
+    color: white;
+    border-bottom: none;
+    padding: 1.5rem;
+}
+
+.modal-header .btn-close {
+    filter: brightness(0) invert(1);
+}
+
+.modal-title {
+    font-weight: 700;
+    font-size: 1.25rem;
+}
+
+.modal-body {
+    padding: 2rem;
+}
+
+.modal-footer {
+    border-top: 1px solid #e9ecef;
+    padding: 1.5rem;
+    background: #f8f9fa;
+}
+
+/* ============================================
+   ENHANCED NAVIGATION
+   ============================================ */
+.nav-pills .nav-link {
+    border-radius: 8px;
+    padding: 0.75rem 1.25rem;
+    transition: all var(--transition-normal);
+    font-weight: 500;
+}
+
+.nav-pills .nav-link:hover {
+    background: rgba(102, 126, 234, 0.1);
+    transform: translateX(4px);
+}
+
+.nav-pills .nav-link.active {
+    background: var(--primary-gradient);
+    box-shadow: var(--shadow-md);
+}
+
+/* Tabs */
+.nav-tabs {
+    border-bottom: 2px solid #e9ecef;
+}
+
+.nav-tabs .nav-link {
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: var(--text-light);
+    font-weight: 500;
+    padding: 1rem 1.5rem;
+    transition: all var(--transition-fast);
+}
+
+.nav-tabs .nav-link:hover {
+    border-bottom-color: var(--accent-blue);
+    color: var(--accent-blue);
+}
+
+.nav-tabs .nav-link.active {
+    color: var(--accent-blue);
+    border-bottom-color: var(--accent-blue);
+    background: none;
+}
+
+/* ============================================
+   ENHANCED DROPDOWNS
+   ============================================ */
+.dropdown-menu {
+    border: none;
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    padding: 0.5rem;
+    animation: dropdownSlide 0.3s ease-out;
+}
+
+@keyframes dropdownSlide {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dropdown-item {
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    transition: all var(--transition-fast);
+    font-weight: 500;
+}
+
+.dropdown-item:hover {
+    background: linear-gradient(90deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.05) 100%);
+    color: var(--accent-blue);
+    transform: translateX(4px);
+}
+
+.dropdown-item:active {
+    background: var(--primary-gradient);
+    color: white;
+}
+
+.dropdown-divider {
+    margin: 0.5rem 0;
+    border-top-color: rgba(102, 126, 234, 0.2);
+}
+
+/* ============================================
+   ENHANCED PAGINATION
+   ============================================ */
+.pagination {
+    gap: 0.5rem;
+}
+
+.page-link {
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    color: var(--accent-blue);
+    font-weight: 500;
+    transition: all var(--transition-fast);
+    box-shadow: var(--shadow-sm);
+}
+
+.page-link:hover {
+    background: var(--primary-gradient);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.page-item.active .page-link {
+    background: var(--primary-gradient);
+    box-shadow: var(--shadow-md);
+}
+
+.page-item.disabled .page-link {
+    opacity: 0.5;
+}
+
+/* ============================================
+   ENHANCED PROGRESS BARS
+   ============================================ */
+.progress {
+    height: 1.5rem;
+    border-radius: 10px;
+    background: #e9ecef;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+
+.progress-bar {
+    background: var(--primary-gradient);
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: width 0.6s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-bar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg,
+            rgba(255, 255, 255, 0.2) 25%,
+            transparent 25%,
+            transparent 50%,
+            rgba(255, 255, 255, 0.2) 50%,
+            rgba(255, 255, 255, 0.2) 75%,
+            transparent 75%,
+            transparent);
+    background-size: 30px 30px;
+    animation: progressAnimation 1s linear infinite;
+}
+
+@keyframes progressAnimation {
+    0% {
+        background-position: 0 0;
+    }
+
+    100% {
+        background-position: 30px 30px;
+    }
+}
+
+/* ============================================
+   ENHANCED SPINNERS
+   ============================================ */
+.spinner-border {
+    border-width: 3px;
+}
+
+.spinner-gradient {
+    border-top-color: var(--accent-blue);
+    border-right-color: var(--accent-purple);
+    border-bottom-color: var(--accent-pink);
+    border-left-color: var(--accent-cyan);
+}
+
+/* ============================================
+   ENHANCED TOOLTIPS & POPOVERS
+   ============================================ */
+.tooltip-inner {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    font-weight: 500;
+}
+
+.popover {
+    border: none;
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+}
+
+.popover-header {
+    background: var(--primary-gradient);
+    color: white;
+    border: none;
+    border-radius: 12px 12px 0 0;
+    font-weight: 600;
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+.text-gradient {
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 700;
+}
+
+.bg-gradient-primary {
+    background: var(--primary-gradient);
+}
+
+.bg-gradient-secondary {
+    background: var(--secondary-gradient);
+}
+
+.bg-gradient-success {
+    background: var(--success-gradient);
+}
+
+.shadow-custom-sm {
+    box-shadow: var(--shadow-sm);
+}
+
+.shadow-custom-md {
+    box-shadow: var(--shadow-md);
+}
+
+.shadow-custom-lg {
+    box-shadow: var(--shadow-lg);
+}
+
+.shadow-custom-xl {
+    box-shadow: var(--shadow-xl);
+}
+
+.rounded-custom {
+    border-radius: 12px;
+}
+
+.rounded-custom-lg {
+    border-radius: 16px;
+}
+
+/* Hover Effects */
+.hover-lift {
+    transition: all var(--transition-normal);
+}
+
+.hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.hover-scale {
+    transition: all var(--transition-normal);
+}
+
+.hover-scale:hover {
+    transform: scale(1.05);
+}
+
+/* ============================================
+   ANIMATION CLASSES
+   ============================================ */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+.animate-fadeIn {
+    animation: fadeIn 0.5s ease-out;
+}
+
+.animate-slideInUp {
+    animation: slideInUp 0.6s ease-out;
+}
+
+.animate-slideInRight {
+    animation: slideInRight 0.6s ease-out;
+}
+
+.animate-pulse {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+/* Stagger animations for lists */
+.stagger-item {
+    opacity: 0;
+    animation: slideInUp 0.6s ease-out forwards;
+}
+
+.stagger-item:nth-child(1) {
+    animation-delay: 0.1s;
+}
+
+.stagger-item:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.stagger-item:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+.stagger-item:nth-child(4) {
+    animation-delay: 0.4s;
+}
+
+.stagger-item:nth-child(5) {
+    animation-delay: 0.5s;
+}
+
+.stagger-item:nth-child(6) {
+    animation-delay: 0.6s;
+}
+
+/* ============================================
+   RESPONSIVE ENHANCEMENTS
+   ============================================ */
+@media (max-width: 768px) {
+    .card {
+        margin-bottom: 1rem;
+    }
+
+    .modal-dialog {
+        margin: 0.5rem;
+    }
+
+    .table {
+        font-size: 0.875rem;
+    }
+
+    .btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+    }
+}
+
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+@media print {
+
+    .btn,
+    .dropdown,
+    .modal,
+    .nav-tabs {
+        display: none !important;
+    }
+
+    .card {
+        box-shadow: none;
+        border: 1px solid #dee2e6;
+    }
+
+    .table {
+        box-shadow: none;
+    }
+}

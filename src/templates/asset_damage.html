@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-header">
+  <h1><i class="bi bi-shield-exclamation"></i> Asset Damage / Lost / Theft Report</h1>
+  <p>Report damaged, lost or stolen assets for record keeping and insurance purposes</p>
+</div>
+
+<!-- Report Form -->
+<div class="form-card" style="margin-bottom:30px;">
+  <h2 style="margin-bottom:20px;">📝 File a Report</h2>
+  <form method="POST" action="/asset-damage/submit" class="form-grid">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-group">
+      <label>Report Type *</label>
+      <select name="report_type" required>
+        <option value="">-- Select Type --</option>
+        <option value="damage">🔨 Damage</option>
+        <option value="lost">🔍 Lost</option>
+        <option value="theft">🚨 Theft</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Incident Date *</label>
+      <input type="date" name="incident_date" required value="{{ today }}">
+    </div>
+    <div class="form-group">
+      <label>Asset *</label>
+      <select name="asset_name" required>
+        <option value="">-- Select Asset --</option>
+        {% for asset in assets %}
+        <option value="{{ asset.name }}">{{ asset.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Quantity Affected</label>
+      <input type="number" name="quantity" value="1" min="1">
+    </div>
+    <div class="form-group">
+      <label>Reported By *</label>
+      <input type="text" name="reported_by" required value="{{ session.get('username','') }}" placeholder="Full name">
+    </div>
+    <div class="form-group">
+      <label>Department</label>
+      <select name="department">
+        <option value="">-- Select Department --</option>
+        {% for dept in departments %}
+        <option value="{{ dept.name }}">{{ dept.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Location of Incident</label>
+      <input type="text" name="location" placeholder="Where it happened">
+    </div>
+    <div class="form-group">
+      <label>Estimated Value (VT)</label>
+      <input type="number" name="estimated_value" step="0.01" min="0" value="0" placeholder="0.00">
+    </div>
+    <div class="form-group" style="grid-column:1/-1;">
+      <label>Description of Incident *</label>
+      <textarea name="description" rows="4" required placeholder="Describe in detail what happened..."></textarea>
+    </div>
+    <div class="form-group" style="grid-column:1/-1;">
+      <label>Follow-up Action Required</label>
+      <textarea name="action_required" rows="2" placeholder="What action is needed?"></textarea>
+    </div>
+    <div class="form-group" style="grid-column:1/-1;text-align:right;">
+      <button type="submit" class="btn-primary" style="background:#e74c3c;">🚨 Submit Report</button>
+    </div>
+  </form>
+</div>
+
+<!-- Reports List -->
+<div class="table-card">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+    <h2>Damage / Lost / Theft Records</h2>
+    <a href="/asset-damage?export=csv" class="btn-secondary">📥 Export</a>
+  </div>
+  {% if reports %}
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr><th>#</th><th>Date</th><th>Type</th><th>Asset</th><th>Qty</th><th>Value (VT)</th><th>Dept</th><th>Status</th><th>Reported By</th></tr>
+      </thead>
+      <tbody>
+        {% for r in reports %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{{ r.incident_date }}</td>
+          <td>
+            {% if r.report_type == 'damage' %}
+            <span class="badge" style="background:#e67e22;color:#fff;">🔨 Damage</span>
+            {% elif r.report_type == 'lost' %}
+            <span class="badge" style="background:#f39c12;color:#fff;">🔍 Lost</span>
+            {% else %}
+            <span class="badge" style="background:#e74c3c;color:#fff;">🚨 Theft</span>
+            {% endif %}
+          </td>
+          <td><strong>{{ r.asset_name }}</strong></td>
+          <td>{{ r.quantity }}</td>
+          <td>{{ '{:,.2f}'.format(r.estimated_value) if r.estimated_value else '-' }}</td>
+          <td>{{ r.department or '-' }}</td>
+          <td>
+            {% if r.status == 'open' %}
+            <span class="badge" style="background:#e74c3c;color:#fff;">Open</span>
+            {% elif r.status == 'resolved' %}
+            <span class="badge" style="background:#27ae60;color:#fff;">Resolved</span>
+            {% else %}
+            <span class="badge" style="background:#3498db;color:#fff;">{{ r.status }}</span>
+            {% endif %}
+          </td>
+          <td>{{ r.reported_by }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p style="text-align:center;padding:40px;color:#999;">No damage/lost/theft reports on file.</p>
+  {% endif %}
+</div>
+{% endblock %}

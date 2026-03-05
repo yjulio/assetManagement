@@ -16,7 +16,7 @@ os.environ['FLASK_DEBUG'] = 'true'
 
 try:
     from config import DB_CONFIG as DATABASE_CONFIG
-except:
+except Exception:
     # Fallback simple config
     DATABASE_CONFIG = {
         'host': 'localhost',

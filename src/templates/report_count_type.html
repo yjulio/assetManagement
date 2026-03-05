@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-header">
+  <h1><i class="bi bi-bar-chart"></i> Report – Asset Count by Type</h1>
+  <p>Breakdown of asset quantities grouped by type/category</p>
+</div>
+
+<div style="display:flex;justify-content:flex-end;margin-bottom:15px;">
+  <a href="/report-count-type?export=csv" class="btn-secondary">📥 Export CSV</a>
+</div>
+
+<!-- Chart Placeholder -->
+<div class="table-card" style="margin-bottom:30px;">
+  <h2>Asset Distribution by Type</h2>
+  <canvas id="typeChart" style="max-height:300px;"></canvas>
+</div>
+
+<!-- Table -->
+<div class="table-card">
+  <h2>Count Table</h2>
+  {% if by_type %}
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr><th>#</th><th>Asset Type / Category</th><th>Count</th><th>Total Qty</th><th>Total Value (VT)</th><th>% of Total</th></tr>
+      </thead>
+      <tbody>
+        {% for row in by_type %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td><strong>{{ row.category or 'Uncategorized' }}</strong></td>
+          <td>{{ row.count }}</td>
+          <td>{{ row.total_qty }}</td>
+          <td>{{ '{:,.2f}'.format(row.total_value) }}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div style="background:#e0e0e0;border-radius:4px;height:8px;flex:1;">
+                <div style="background:#3498db;border-radius:4px;height:8px;width:{{ row.pct|round(1) }}%;"></div>
+              </div>
+              <span>{{ row.pct|round(1) }}%</span>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr style="font-weight:bold;background:#f8f9fa;">
+          <td colspan="2">TOTAL</td>
+          <td>{{ total_count }}</td>
+          <td>{{ total_qty }}</td>
+          <td>VT {{ '{:,.2f}'.format(total_value) }}</td>
+          <td>100%</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  {% else %}
+  <p style="text-align:center;padding:40px;color:#999;">No asset data available.</p>
+  {% endif %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const ctx = document.getElementById('typeChart').getContext('2d');
+new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: {{ labels|tojson }},
+    datasets: [{
+      label: 'Asset Count',
+      data: {{ counts|tojson }},
+      backgroundColor: ['#3498db','#e74c3c','#27ae60','#f39c12','#8e44ad','#1abc9c','#e67e22','#2ecc71','#9b59b6','#34495e'],
+      borderRadius: 6
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+  }
+});
+</script>
+{% endblock %}

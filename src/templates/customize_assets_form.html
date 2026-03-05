@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="mb-0"><i class="bi bi-sliders"></i> Customize Assets Form</h2>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Configure which fields appear on the assets form and their properties.</p>
+
+                    <div class="alert alert-info" role="alert">
+                        <i class="bi bi-info-circle"></i> <strong>Form Customization Available</strong><br>
+                        This feature allows you to customize which fields appear when adding or editing assets.
+                    </div>
+
+                    <div class="list-group mb-4">
+                        <div class="list-group-item">
+                            <h5 class="mb-1">Standard Fields (Always Visible)</h5>
+                            <ul class="mt-2">
+                                <li>Asset Name (Required)</li>
+                                <li>Quantity (Required)</li>
+                                <li>Category</li>
+                                <li>Price</li>
+                                <li>Description</li>
+                            </ul>
+                        </div>
+                        <div class="list-group-item">
+                            <h5 class="mb-1">Extended Fields (Can be Configured)</h5>
+                            <ul class="mt-2">
+                                <li>Brand/Manufacturer</li>
+                                <li>Model Number</li>
+                                <li>Serial Number</li>
+                                <li>Purchase Date</li>
+                                <li>Warranty Information</li>
+                                <li>Department</li>
+                                <li>Location</li>
+                                <li>Supplier</li>
+                                <li>Condition</li>
+                                <li>Depreciation Settings</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning" role="alert">
+                        <i class="bi bi-construction"></i> <strong>Feature Under Development</strong><br>
+                        Full form customization interface is coming soon. For now, all fields are available on the
+                        assets form.
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <a href="/assets" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to Assets
+                        </a>
+                        <a href="/add" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Add New Asset
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

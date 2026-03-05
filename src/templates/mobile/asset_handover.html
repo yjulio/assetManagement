@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="mobile-handover">
+    <div class="container" style="max-width: 600px;">
+        <h3 class="mb-4">🤝 Asset Handover</h3>
+
+        <!-- Asset Info -->
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <strong>Asset Information</strong>
+            </div>
+            <div class="card-body">
+                <h5>{{ asset_name }}</h5>
+                <p class="mb-1"><strong>Category:</strong> {{ asset.get('category', 'N/A') }}</p>
+                <p class="mb-1"><strong>Serial:</strong> {{ asset.get('serial_number', 'N/A') }}</p>
+                <p class="mb-0"><strong>Location:</strong> {{ asset.get('location', 'N/A') }}</p>
+            </div>
+        </div>
+
+        <!-- Handover Form -->
+        <form id="handover-form" method="POST" action="{{ url_for('mobile.submit_handover', asset_name=asset_name) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+            <div class="card mb-3">
+                <div class="card-header">
+                    <strong>Recipient Information</strong>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="recipient_name" class="form-label">Full Name *</label>
+                        <input type="text" class="form-control" id="recipient_name" name="recipient_name" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="recipient_email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="recipient_email" name="recipient_email">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes / Conditions</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3"
+                            placeholder="Any conditions, damages, or special notes..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Digital Signature -->
+            <div class="card mb-3">
+                <div class="card-header bg-warning">
+                    <strong>Digital Signature *</strong>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-2">
+                        Please sign below to confirm receipt of the asset
+                    </p>
+
+                    <!-- Signature Pad -->
+                    <div class="signature-container">
+                        <canvas id="signature-pad" class="signature-pad"></canvas>
+                    </div>
+
+                    <input type="hidden" name="signature" id="signature-data">
+
+                    <div class="d-flex gap-2 mt-2">
+                        <button type="button" class="btn btn-sm btn-secondary" id="clear-signature">
+                            <i class="bi bi-eraser"></i> Clear
+                        </button>
+                        <small class="text-muted my-auto">Sign with your finger or stylus</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit -->
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-success btn-lg" id="submit-btn">
+                    <i class="bi bi-check-circle"></i> Complete Handover
+                </button>
+                <a href="{{ url_for('mobile.asset_details', asset_name=asset_name) }}"
+                    class="btn btn-outline-secondary">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Signature Pad Library -->
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+
+<style>
+    .mobile-handover {
+        padding: 20px 15px;
+    }
+
+    .signature-container {
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        background: #fff;
+        touch-action: none;
+    }
+
+    .signature-pad {
+        width: 100%;
+        height: 200px;
+        cursor: crosshair;
+    }
+
+    @media (max-width: 768px) {
+        .mobile-handover h3 {
+            font-size: 1.3rem;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Initialize Signature Pad
+        const canvas = document.getElementById('signature-pad');
+        const signaturePad = new SignaturePad(canvas, {
+            backgroundColor: 'rgb(255, 255, 255)',
+            penColor: 'rgb(0, 0, 0)'
+        });
+
+        // Resize canvas to fit container
+        function resizeCanvas() {
+            const ratio = Math.max(window.devicePixelRatio || 1, 1);
+            canvas.width = canvas.offsetWidth * ratio;
+            canvas.height = canvas.offsetHeight * ratio;
+            canvas.getContext("2d").scale(ratio, ratio);
+            signaturePad.clear();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Clear signature
+        document.getElementById('clear-signature').addEventListener('click', function () {
+            signaturePad.clear();
+        });
+
+        // Handle form submission
+        document.getElementById('handover-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            // Validate signature
+            if (signaturePad.isEmpty()) {
+                alert('Please provide a signature');
+                return;
+            }
+
+            // Get signature as base64
+            const signatureData = signaturePad.toDataURL('image/png');
+            document.getElementById('signature-data').value = signatureData;
+
+            // Submit via AJAX
+            const formData = new FormData(this);
+            const submitBtn = document.getElementById('submit-btn');
+            const originalText = submitBtn.innerHTML;
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Processing...';
+
+            fetch(this.action, {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        window.location.href = data.redirect;
+                    } else {
+                        alert('Error: ' + data.error);
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalText;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Handover failed. Please try again.');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                });
+        });
+    });
+</script>
+{% endblock %}

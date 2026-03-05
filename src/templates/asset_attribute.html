@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-list-check"></i> Asset Attributes</h1>
+    <p>Define custom attributes and fields for asset records</p>
+</div>
+
+<!-- Add Form -->
+<div class="form-card" style="margin-bottom:30px;">
+    <h2 style="margin-bottom:20px;">➕ Add Asset Attribute</h2>
+    <form method="POST" action="/asset-attribute/add" class="form-grid">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="form-group">
+            <label>Attribute Name *</label>
+            <input type="text" name="name" required placeholder="e.g., Serial Number">
+        </div>
+        <div class="form-group">
+            <label>Data Type *</label>
+            <select name="data_type">
+                <option value="text">Text</option>
+                <option value="number">Number</option>
+                <option value="date">Date</option>
+                <option value="boolean">Yes/No</option>
+                <option value="dropdown">Dropdown</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Default Value</label>
+            <input type="text" name="default_value" placeholder="Optional default value">
+        </div>
+        <div class="form-group">
+            <label>Required Field?</label>
+            <select name="is_required">
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Description</label>
+            <textarea name="description" rows="2" placeholder="What this attribute is used for"></textarea>
+        </div>
+        <div class="form-group" style="grid-column:1/-1;text-align:right;">
+            <button type="submit" class="btn-primary">💾 Save Attribute</button>
+        </div>
+    </form>
+</div>
+
+<!-- Table -->
+<div class="table-card">
+    <h2>Asset Attributes</h2>
+    {% if attributes %}
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Attribute Name</th>
+                    <th>Data Type</th>
+                    <th>Required</th>
+                    <th>Default</th>
+                    <th>Description</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for attr in attributes %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><strong>{{ attr.name }}</strong></td>
+                    <td><span class="badge badge-info">{{ attr.data_type }}</span></td>
+                    <td>
+                        {% if attr.is_required %}
+                        <span class="badge" style="background:#e74c3c;color:#fff;">Required</span>
+                        {% else %}
+                        <span class="badge" style="background:#95a5a6;color:#fff;">Optional</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ attr.default_value or '-' }}</td>
+                    <td>{{ attr.description or '-' }}</td>
+                    <td class="actions">
+                        <form method="POST" action="/asset-attribute/delete/{{ attr.id }}"
+                            onsubmit="return confirm('Delete this attribute?');" style="display:inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <button type="submit" class="btn-action btn-delete" title="Delete">🗑️</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p style="text-align:center;padding:40px;color:#999;">No attributes defined. Add your first attribute above.</p>
+    {% endif %}
+</div>
+{% endblock %}

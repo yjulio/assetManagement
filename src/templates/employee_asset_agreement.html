@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-header">
+  <h1><i class="bi bi-file-earmark-person"></i> Employee Asset Agreement</h1>
+  <p>Record and manage employee acknowledgment for assigned assets</p>
+</div>
+
+<!-- New Agreement Form -->
+<div class="form-card" style="margin-bottom:30px;">
+  <h2 style="margin-bottom:20px;">📝 New Asset Agreement</h2>
+  <form method="POST" action="/employee-asset-agreement/add" class="form-grid">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-group">
+      <label>Employee Name *</label>
+      <input type="text" name="employee_name" required placeholder="Full Name">
+    </div>
+    <div class="form-group">
+      <label>Employee ID</label>
+      <input type="text" name="employee_id" placeholder="Employee ID / Staff No.">
+    </div>
+    <div class="form-group">
+      <label>Department</label>
+      <select name="department">
+        <option value="">-- Select Department --</option>
+        {% for dept in departments %}
+        <option value="{{ dept.name }}">{{ dept.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Asset *</label>
+      <select name="asset_name" required>
+        <option value="">-- Select Asset --</option>
+        {% for asset in assets %}
+        <option value="{{ asset.name }}">{{ asset.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Quantity</label>
+      <input type="number" name="quantity" value="1" min="1">
+    </div>
+    <div class="form-group">
+      <label>Issue Date *</label>
+      <input type="date" name="issue_date" required value="{{ today }}">
+    </div>
+    <div class="form-group">
+      <label>Expected Return Date</label>
+      <input type="date" name="return_date">
+    </div>
+    <div class="form-group">
+      <label>Asset Condition</label>
+      <select name="condition">
+        <option value="Good">Good</option>
+        <option value="Fair">Fair</option>
+        <option value="Poor">Poor</option>
+      </select>
+    </div>
+    <div class="form-group" style="grid-column:1/-1;">
+      <label>Notes / Terms</label>
+      <textarea name="notes" rows="3" placeholder="Agreement terms or special notes..."></textarea>
+    </div>
+    <div class="form-group" style="grid-column:1/-1;text-align:right;">
+      <button type="submit" class="btn-primary">📄 Create Agreement</button>
+    </div>
+  </form>
+</div>
+
+<!-- Agreements List -->
+<div class="table-card">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+    <h2>Agreements List</h2>
+    <a href="/employee-asset-agreement?export=csv" class="btn-secondary">📥 Export CSV</a>
+  </div>
+  {% if agreements %}
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr><th>#</th><th>Employee</th><th>Dept</th><th>Asset</th><th>Qty</th><th>Issue Date</th><th>Return Date</th><th>Condition</th><th>Status</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for a in agreements %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td><strong>{{ a.employee_name }}</strong><br><small>{{ a.employee_id or '' }}</small></td>
+          <td>{{ a.department or '-' }}</td>
+          <td>{{ a.asset_name }}</td>
+          <td>{{ a.quantity }}</td>
+          <td>{{ a.issue_date }}</td>
+          <td>{{ a.return_date or 'Indefinite' }}</td>
+          <td>{{ a.condition or '-' }}</td>
+          <td>
+            {% if a.status == 'active' %}
+            <span class="badge" style="background:#27ae60;color:#fff;">Active</span>
+            {% elif a.status == 'returned' %}
+            <span class="badge" style="background:#3498db;color:#fff;">Returned</span>
+            {% else %}
+            <span class="badge" style="background:#95a5a6;color:#fff;">{{ a.status }}</span>
+            {% endif %}
+          </td>
+          <td class="actions">
+            <a href="/employee-asset-agreement/print/{{ a.id }}" class="btn-action" title="Print" target="_blank">🖨️</a>
+            <form method="POST" action="/employee-asset-agreement/close/{{ a.id }}" style="display:inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <button type="submit" class="btn-action" title="Mark Returned" onclick="return confirm('Mark as returned?')">✅</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p style="text-align:center;padding:40px;color:#999;">No agreements found. Create the first one above.</p>
+  {% endif %}
+</div>
+{% endblock %}

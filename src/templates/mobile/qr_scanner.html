@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="mobile-scanner">
+    <h2>📱 QR Code / Barcode Scanner</h2>
+    <p>Scan asset QR codes or barcodes to quickly access asset information</p>
+
+    <div class="scanner-container" style="max-width: 600px; margin: 20px auto;">
+        <!-- Scanner UI -->
+        <div id="scanner-section" class="card">
+            <div class="card-body">
+                <div id="reader" style="width: 100%; min-height: 300px;"></div>
+
+                <div id="scanner-status" class="alert alert-info mt-3" style="display:none;"></div>
+
+                <div class="mt-3">
+                    <button id="start-scan-btn" class="btn btn-primary btn-lg w-100">
+                        <i class="bi bi-camera"></i> Start Scanning
+                    </button>
+                    <button id="stop-scan-btn" class="btn btn-danger btn-lg w-100" style="display:none;">
+                        <i class="bi bi-stop-circle"></i> Stop Scanning
+                    </button>
+                </div>
+
+                <!-- Manual Entry -->
+                <div class="mt-4">
+                    <hr>
+                    <h5>Manual Entry</h5>
+                    <form id="manual-entry-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="manual-code"
+                                placeholder="Enter asset tag or barcode manually" required>
+                            <button type="submit" class="btn btn-secondary">
+                                <i class="bi bi-search"></i> Search
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Result Display -->
+        <div id="scan-result" class="card mt-3" style="display:none;">
+            <div class="card-body">
+                <h5>Scan Result</h5>
+                <div id="result-content"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- QR Scanner Library -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+<style>
+    .mobile-scanner {
+        padding: 20px;
+    }
+
+    .scanner-container {
+        background: #fff;
+        border-radius: 8px;
+        padding: 20px;
+    }
+
+    #reader {
+        border: 2px dashed #ddd;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    #reader video {
+        width: 100%;
+        height: auto;
+    }
+
+    @media (max-width: 768px) {
+        .mobile-scanner {
+            padding: 10px;
+        }
+
+        .scanner-container {
+            padding: 10px;
+        }
+    }
+</style>
+
+<script>
+    let html5QrcodeScanner = null;
+    let isScanning = false;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const startBtn = document.getElementById('start-scan-btn');
+        const stopBtn = document.getElementById('stop-scan-btn');
+        const statusDiv = document.getElementById('scanner-status');
+        const resultDiv = document.getElementById('scan-result');
+        const resultContent = document.getElementById('result-content');
+
+        // Start scanning
+        startBtn.addEventListener('click', function () {
+            if (isScanning) return;
+
+            html5QrcodeScanner = new Html5Qrcode("reader");
+
+            Html5Qrcode.getCameras().then(cameras => {
+                if (cameras && cameras.length) {
+                    const cameraId = cameras[0].id;
+
+                    html5QrcodeScanner.start(
+                        cameraId,
+                        {
+                            fps: 10,
+                            qrbox: { width: 250, height: 250 }
+                        },
+                        onScanSuccess,
+                        onScanFailure
+                    ).then(() => {
+                        isScanning = true;
+                        startBtn.style.display = 'none';
+                        stopBtn.style.display = 'block';
+                        statusDiv.textContent = 'Scanning... Point camera at QR code or barcode';
+                        statusDiv.style.display = 'block';
+                    }).catch(err => {
+                        alert('Error starting scanner: ' + err);
+                    });
+                } else {
+                    alert('No cameras found on this device');
+                }
+            }).catch(err => {
+                alert('Error accessing cameras: ' + err);
+            });
+        });
+
+        // Stop scanning
+        stopBtn.addEventListener('click', function () {
+            if (html5QrcodeScanner && isScanning) {
+                html5QrcodeScanner.stop().then(() => {
+                    isScanning = false;
+                    startBtn.style.display = 'block';
+                    stopBtn.style.display = 'none';
+                    statusDiv.style.display = 'none';
+                }).catch(err => {
+                    console.error('Error stopping scanner:', err);
+                });
+            }
+        });
+
+        // Handle scan success
+        function onScanSuccess(decodedText, decodedResult) {
+            console.log('Scan result:', decodedText);
+
+            // Stop scanner
+            if (html5QrcodeScanner && isScanning) {
+                html5QrcodeScanner.stop();
+                isScanning = false;
+                startBtn.style.display = 'block';
+                stopBtn.style.display = 'none';
+            }
+
+            // Process scan result
+            processScanResult(decodedText);
+        }
+
+        function onScanFailure(error) {
+            // Ignore scan failures (continuous scanning)
+        }
+
+        // Process scan result
+        function processScanResult(data) {
+            fetch('{{ url_for("mobile.scan_result") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    data: data,
+                    csrf_token: '{{ csrf_token }}'
+                })
+            })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        window.location.href = result.redirect;
+                    } else {
+                        resultContent.innerHTML = `
+          <div class="alert alert-warning">
+            <strong>Asset not found</strong><br>
+            Scanned code: ${data}
+          </div>
+        `;
+                        resultDiv.style.display = 'block';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error processing scan result');
+                });
+        }
+
+        // Manual entry form
+        document.getElementById('manual-entry-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const code = document.getElementById('manual-code').value;
+            if (code) {
+                processScanResult(code);
+            }
+        });
+    });
+</script>
+{% endblock %}

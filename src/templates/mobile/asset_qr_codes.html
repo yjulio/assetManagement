@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="qr-codes-page">
+    <div class="container-fluid">
+        <h2 class="mb-4">📱 Asset QR Codes</h2>
+        <p>Generate and print QR codes for all assets. Scan these codes with the mobile app for quick access.</p>
+
+        <!-- Actions -->
+        <div class="mb-3">
+            <button class="btn btn-primary" onclick="window.print()">
+                <i class="bi bi-printer"></i> Print All QR Codes
+            </button>
+            <a href="{{ url_for('mobile.qr_scanner') }}" class="btn btn-success">
+                <i class="bi bi-camera"></i> Open Scanner
+            </a>
+        </div>
+
+        <!-- QR Code Grid -->
+        <div class="row g-3">
+            {% for asset_name, asset in assets.items() %}
+            <div class="col-6 col-md-4 col-lg-3 qr-code-card">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <img src="{{ url_for('mobile.generate_qr', asset_name=asset_name) }}"
+                            alt="QR Code for {{ asset_name }}" class="img-fluid mb-2" style="max-width: 150px;">
+                        <h6 class="card-title">{{ asset_name }}</h6>
+                        <p class="card-text small text-muted mb-1">{{ asset.get('category', '') }}</p>
+                        <p class="card-text small text-muted">{{ asset.get('asset_tag', '') }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .qr-codes-page {
+        padding: 20px;
+    }
+
+    .qr-code-card {
+        page-break-inside: avoid;
+    }
+
+    @media print {
+
+        .btn,
+        nav,
+        .sidebar {
+            display: none !important;
+        }
+
+        .qr-code-card {
+            page-break-inside: avoid;
+        }
+
+        .card {
+            border: 1px solid #000;
+        }
+    }
+</style>
+{% endblock %}

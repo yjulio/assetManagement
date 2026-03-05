@@ -6,15 +6,25 @@
  
 
 from flask import Flask, request, redirect, url_for, flash, session, render_template, send_from_directory, jsonify
+from werkzeug.middleware.proxy_fix import ProxyFix
 from AssetManagement import InventorySystem
 from config import FLASK_CONFIG, DB_CONFIG, BACKUP_CONFIG
 from utils.data_quality import DataQualityCleaner
+from utils.navigation import get_navigation_menu
+from db.connection import init_connection_pool, get_connection as get_pooled_connection
+from missing_routes import create_missing_routes
 import html
 import os
 from datetime import datetime, date
+from urllib.parse import unquote
 import mysql.connector
 from mysql.connector import Error
 import secrets
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 try:
     import pandas as pd
@@ -38,7 +48,10 @@ def validate_csrf_token():
     
     session_token = session.get('csrf_token')
     
+    # Debug logging in development
     if not form_token or not session_token or form_token != session_token:
+        if FLASK_CONFIG.get('debug', False):
+            logger.warning(f"CSRF validation failed - Form token present: {bool(form_token)}, Session token present: {bool(session_token)}, Match: {form_token == session_token if form_token and session_token else False}")
         return False
     return True
 
@@ -60,17 +73,71 @@ def get_db_connection():
 
 # Upload configuration
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), '..', 'uploads')
-ALLOWED_EXTENSIONS = {'csv', 'xlsx', 'xls'}
+ALLOWED_EXTENSIONS = {'csv', 'xlsx', 'xls', 'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'svg', 'ico', 'tiff', 'tif'}
+ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'svg', 'ico', 'tiff', 'tif', 'jfif', 'pjpeg', 'pjp', 'avif', 'apng'}
 
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
+# Create assets subdirectory for asset images
+ASSETS_FOLDER = os.path.join(UPLOAD_FOLDER, 'assets')
+if not os.path.exists(ASSETS_FOLDER):
+    os.makedirs(ASSETS_FOLDER)
+
 
 app = Flask(__name__)
+
+# Trust proxy headers when behind reverse proxy (nginx, apache, etc.)
+# This is needed for HTTPS session cookies to work properly
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max upload size
 app.secret_key = FLASK_CONFIG.get('secret_key', 'change_this_to_a_random_secret')
+
+# Session configuration to fix CSRF token issues
+# Automatically detect if running behind HTTPS proxy
+app.config['SESSION_COOKIE_SECURE'] = os.getenv('HTTPS', 'off') == 'on' or os.getenv('SESSION_COOKIE_SECURE', 'false').lower() == 'true'
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_NAME'] = 'asset_session'
+app.config['PERMANENT_SESSION_LIFETIME'] = 86400  # 24 hours in seconds
+app.config['SESSION_REFRESH_EACH_REQUEST'] = True
+
+# Initialize database connection pool
+logger.info("Initializing database connection pool...")
+try:
+    if init_connection_pool(DB_CONFIG):
+        logger.info("Database connection pool initialized successfully")
+    else:
+        logger.warning("Database connection pool initialization returned False")
+except Exception as e:
+    logger.error(f"Failed to initialize database connection pool: {e}")
+
 system = InventorySystem()
+
+# Ensure database connection is alive before each request
+@app.before_request
+def ensure_db_connection():
+    """Check and restore database connection before each request"""
+    try:
+        system.ensure_connection()
+    except Exception as e:
+        app.logger.error(f"Failed to ensure database connection: {e}")
+
+
+@app.errorhandler(500)
+def handle_500(err):
+    """Log full traceback on 500 and show friendly error page."""
+    import traceback
+    tb = traceback.format_exc()
+    logger.exception("Internal Server Error: %s\n%s", err, tb)
+    try:
+        flash('An unexpected error occurred. Please try again or contact support.', 'error')
+        return redirect(url_for('index'))
+    except Exception:
+        return f'<h1>Internal Server Error</h1><pre>{html.escape(tb)}</pre>', 500
+
 
 # Inject CSRF token into all templates (simple session-based protection)
 @app.context_processor
@@ -80,6 +147,104 @@ def inject_csrf_token():
         token = secrets.token_urlsafe(32)
         session['csrf_token'] = token
     return dict(csrf_token=token)
+
+# Inject system settings into all templates
+@app.context_processor
+def inject_system_settings():
+    """Inject site title, logo, and other system settings into all templates"""
+    try:
+        settings = system.get_all_system_settings()
+        logo_setting = settings.get('logo_path', {})
+        logo_path_base = logo_setting.get('value', '/static/asset.png')
+        
+        # Use updated timestamp for cache busting if available, otherwise use current time
+        logo_updated = logo_setting.get('updated_at', '')
+        if logo_updated:
+            import hashlib
+            # Create a short hash from the timestamp for cache busting
+            cache_version = hashlib.md5(str(logo_updated).encode()).hexdigest()[:8]
+        else:
+            import time
+            cache_version = str(int(time.time()))
+        
+        return dict(
+            site_title=settings.get('site_title', {}).get('value', 'Department of Local Authorities'),
+            site_subtitle=settings.get('site_subtitle', {}).get('value', 'Asset Management System'),
+            logo_path=f"{logo_path_base}?v={cache_version}",
+            logo_path_base=logo_path_base,
+            favicon_path=settings.get('favicon_path', {}).get('value', '/static/asset.png')
+        )
+    except Exception as e:
+        app.logger.error(f"Error loading system settings: {e}")
+        import time
+        return dict(
+            site_title='Department of Local Authorities',
+            site_subtitle='Asset Management System',
+            logo_path=f'/static/asset.png?v={int(time.time())}',
+            logo_path_base='/static/asset.png',
+            favicon_path='/static/asset.png'
+        )
+
+# Inject navigation menu into all templates
+@app.context_processor
+def inject_navigation():
+    """Inject role-based navigation menu into templates"""
+    user_roles = session.get('groups', [])
+    if not user_roles and not session.get('username'):
+        user_roles = ['viewer']  # Default for non-logged-in users
+    elif not user_roles:
+        user_roles = ['User']  # Default for logged-in users without groups
+    return dict(navigation_menu=get_navigation_menu(user_roles))
+
+# Register blueprints for modular routes
+
+def allowed_image_file(filename):
+    """Check if file has allowed image extension"""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_IMAGE_EXTENSIONS
+
+def save_asset_image(file, asset_name, image_number):
+    """
+    Save uploaded asset image and return relative path
+    Returns: relative path like '/uploads/assets/asset_name_1.jpg' or None
+    """
+    if file and file.filename and allowed_image_file(file.filename):
+        try:
+            filename = secure_filename(file.filename)
+            extension = filename.rsplit('.', 1)[1].lower()
+            # Create unique filename: assetname_imagenum_timestamp.ext
+            safe_asset_name = secure_filename(asset_name.replace(' ', '_'))
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            new_filename = f"{safe_asset_name}_{image_number}_{timestamp}.{extension}"
+            filepath = os.path.join(ASSETS_FOLDER, new_filename)
+            file.save(filepath)
+            # Return relative path for database storage
+            return f"/uploads/assets/{new_filename}"
+        except Exception as e:
+            app.logger.error(f"Error saving image: {e}")
+            return None
+    return None
+
+try:
+    from routes.main import main_bp, init_main_routes
+    from routes.auth import auth_bp, init_auth_routes
+    from routes.gallery import gallery_bp, init_gallery_routes
+    from routes.mobile import mobile_bp, init_mobile_routes
+    
+    # Initialize blueprint dependencies
+    init_main_routes(system, get_db_connection)
+    init_auth_routes(system, validate_csrf_token, ALLOWED_EXTENSIONS)
+    init_gallery_routes(system, validate_csrf_token)
+    init_mobile_routes(system, validate_csrf_token)
+    
+    # Register blueprints
+    app.register_blueprint(main_bp)
+    app.register_blueprint(auth_bp, url_prefix='/auth')
+    app.register_blueprint(gallery_bp)
+    app.register_blueprint(mobile_bp, url_prefix='/mobile')
+    
+    logger.info("Blueprints registered successfully")
+except Exception as e:
+    logger.warning(f"Could not register blueprints: {e}")
 
 def calculate_depreciation(purchase_price, purchase_date_str, salvage_value, useful_life_years, method='straight_line'):
     """Calculate current asset value based on depreciation"""
@@ -112,7 +277,7 @@ def calculate_depreciation(purchase_price, purchase_date_str, salvage_value, use
             current_value = purchase_price
         
         return max(current_value, salvage_value)
-    except:
+    except Exception:
         return purchase_price
 
 def header(title="Asset Management System"):
@@ -238,6 +403,32 @@ def index():
                          dashboard_widgets=dashboard_widgets,
                          dashboard_charts=dashboard_charts)
 
+def _add_logo_to_excel_buffer(buffer):
+    """Add company logo at top left of first sheet. Returns buffer (possibly new) with logo if available."""
+    from utils.export_utils import get_export_logo_path
+    logo_fs_path = get_export_logo_path(app.root_path, system)
+    if not logo_fs_path:
+        return buffer
+    try:
+        import openpyxl
+        from openpyxl.drawing.image import Image as XLImage
+        from io import BytesIO
+        buffer.seek(0)
+        wb = openpyxl.load_workbook(buffer)
+        ws = wb.active
+        ws.insert_rows(1, 5)
+        img = XLImage(logo_fs_path)
+        img.width, img.height = 120, 60
+        ws.add_image(img, 'A1')
+        out = BytesIO()
+        wb.save(out)
+        out.seek(0)
+        return out
+    except Exception:
+        buffer.seek(0)
+        return buffer
+
+
 @app.route("/dashboard/export/<format_type>")
 @login_required
 def dashboard_export(format_type):
@@ -282,17 +473,28 @@ def dashboard_export(format_type):
         try:
             from reportlab.lib import colors
             from reportlab.lib.pagesizes import letter, A4
-            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
+            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak, Image
             from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
             from reportlab.lib.units import inch
             from io import BytesIO
             from flask import make_response
-            
+            from utils.export_utils import get_export_logo_path
+
             buffer = BytesIO()
             doc = SimpleDocTemplate(buffer, pagesize=A4)
             elements = []
             styles = getSampleStyleSheet()
-            
+
+            # Logo at top left
+            logo_fs_path = get_export_logo_path(app.root_path, system)
+            if logo_fs_path:
+                try:
+                    logo_img = Image(logo_fs_path, width=1.5*inch, height=0.75*inch)
+                    elements.append(logo_img)
+                    elements.append(Spacer(1, 12))
+                except Exception:
+                    pass
+
             # Title
             title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=24, textColor=colors.HexColor('#2c3e50'), spaceAfter=30)
             title = Paragraph('Asset Management Dashboard', title_style)
@@ -371,19 +573,18 @@ def dashboard_export(format_type):
             import pandas as pd
             from io import BytesIO
             from flask import make_response
-            
+
             buffer = BytesIO()
             with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
                 # Dashboard summary sheet
                 summary_df = pd.DataFrame(list(dashboard_data.items()), columns=['Metric', 'Value'])
                 summary_df.to_excel(writer, sheet_name='Dashboard Summary', index=False)
-                
                 # Asset details sheet
                 if asset_details:
                     assets_df = pd.DataFrame(asset_details)
                     assets_df.to_excel(writer, sheet_name='Asset Details', index=False)
-            
-            buffer.seek(0)
+
+            buffer = _add_logo_to_excel_buffer(buffer)
             response = make_response(buffer.read())
             response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             response.headers['Content-Disposition'] = f'attachment; filename=dashboard_{timestamp}.xlsx'
@@ -431,7 +632,7 @@ def dashboard_export(format_type):
         return redirect(url_for('index'))
 
 @app.route("/add", methods=["GET", "POST"])
-@require_group('Admin', 'manager')
+@require_group('Admin', 'Asset Officer')
 def add():
     if request.method == "POST":
         if not validate_csrf_token():
@@ -510,12 +711,32 @@ def add():
                 flash('⚠️ Salvage value must be a valid number (e.g., 100.00).', 'warning')
                 return redirect(url_for('add'))
             
+            # Extract new fields
+            responsible_officer = (request.form.get('responsible_officer') or '').strip() or None
+            province_name = (request.form.get('province_name') or '').strip() or None
+            island = (request.form.get('island') or '').strip() or None
+            unit_section = (request.form.get('unit_section') or '').strip() or None
+            asset_category = (request.form.get('asset_category') or '').strip() or None
+            lpo_number = (request.form.get('lpo_number') or '').strip() or None
+            asset_condition = (request.form.get('asset_condition') or 'Good').strip()
+            asset_tag = (request.form.get('asset_tag') or '').strip() or None
+            
+            # Handle image uploads
+            image_1 = save_asset_image(request.files.get('image_1'), name, 1) if 'image_1' in request.files else None
+            image_2 = save_asset_image(request.files.get('image_2'), name, 2) if 'image_2' in request.files else None
+            image_3 = save_asset_image(request.files.get('image_3'), name, 3) if 'image_3' in request.files else None
+            image_4 = save_asset_image(request.files.get('image_4'), name, 4) if 'image_4' in request.files else None
+            image_5 = save_asset_image(request.files.get('image_5'), name, 5) if 'image_5' in request.files else None
+            
             system.add_item(name, quantity, price, description, low_stock_threshold, category, supplier, 
                           department, funding_source, location, model, brand, serial_number, purchase_date,
-                          depreciation_method, useful_life_years, salvage_value)
+                          depreciation_method, useful_life_years, salvage_value,
+                          responsible_officer, province_name, island, unit_section, asset_category,
+                          lpo_number, asset_condition, asset_tag,
+                          image_1, image_2, image_3, image_4, image_5)
             
-            flash(f"✅ Successfully added asset '{name}'! Quantity: {quantity}, Price: ${price:.2f}", 'success')
-            return redirect(url_for('index'))
+            flash(f"✅ Successfully saved asset '{name}'! Quantity: {quantity}, Price: ${price:.2f}. View the asset to download the filled Asset Entry Form (PDF).", 'success')
+            return redirect(url_for('view_asset', asset_name=name))
             
         except Exception as e:
             error_msg = str(e).lower()
@@ -529,8 +750,107 @@ def add():
     
     return render_template('add.html', title='Add Asset', suppliers=sorted(system.suppliers.keys()))
 
+
+@app.route("/search", methods=["GET"])
+@login_required
+def search_by_name():
+    """Search by person name: show all assets and transactions registered under that name."""
+    search_query = (request.args.get('q') or '').strip()
+    assets_by_officer = []
+    transactions_by_person = []
+    if search_query:
+        q_like = f"%{search_query}%"
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            # Assets where responsible_officer matches
+            cursor.execute(
+                "SELECT * FROM inventory WHERE LOWER(COALESCE(responsible_officer,'')) LIKE LOWER(%s) ORDER BY name",
+                (q_like,)
+            )
+            assets_by_officer = cursor.fetchall()
+            # Transactions (checkout/checkin) where person matches
+            cursor.execute("""
+                SELECT id, asset_name, action, quantity, person, department, location, notes, username, created_at
+                FROM asset_transactions
+                WHERE LOWER(COALESCE(person,'')) LIKE LOWER(%s)
+                ORDER BY created_at DESC
+            """, (q_like,))
+            transactions_by_person = cursor.fetchall()
+            cursor.close()
+            conn.close()
+        except Exception as e:
+            logger.exception("Search by name failed: %s", e)
+    return render_template(
+        'search_results.html',
+        title='Search by name',
+        search_query=search_query,
+        assets_by_officer=assets_by_officer,
+        transactions_by_person=transactions_by_person,
+    )
+
+
+@app.route("/assets", methods=["GET"])
+@login_required
+def assets():
+    """Display list of all assets"""
+    search_query = request.args.get('q', '').lower()
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Fetch all assets from database
+        cursor.execute("SELECT * FROM inventory")
+        assets_list = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        # Apply search filter if provided
+        if search_query:
+            assets_list = [asset for asset in assets_list 
+                          if search_query in asset.get('name', '').lower() 
+                          or search_query in (asset.get('category', '').lower()) 
+                          or search_query in (asset.get('supplier', '').lower())
+                          or search_query in (asset.get('location', '').lower())
+                          or search_query in (asset.get('department', '').lower())
+                          or search_query in (asset.get('responsible_officer', '').lower() if asset.get('responsible_officer') else '')
+                          or search_query in (asset.get('lpo_number', '').lower() if asset.get('lpo_number') else '')]
+        
+        # Calculate current value for each asset with depreciation
+        for asset in assets_list:
+            if asset.get('purchase_date') and asset.get('depreciation_method') and asset.get('depreciation_method') != 'none':
+                current_value = calculate_depreciation(
+                    asset.get('price', 0),
+                    asset.get('purchase_date'),
+                    asset.get('salvage_value', 0),
+                    asset.get('useful_life_years', 5),
+                    asset.get('depreciation_method', 'straight_line')
+                )
+                asset['current_value'] = current_value
+            else:
+                asset['current_value'] = asset.get('price', 0)
+        
+        # Sort by name
+        assets_list.sort(key=lambda x: x.get('name', ''))
+        
+        return render_template('assets.html', 
+                             title='Asset List', 
+                             assets=assets_list,
+                             total_assets=len(assets_list),
+                             search_query=search_query)
+    except Exception as e:
+        app.logger.error(f"Error fetching assets: {e}")
+        flash(f'⚠️ Error loading assets: {str(e)}', 'error')
+        return render_template('assets.html', 
+                             title='Asset List', 
+                             assets=[],
+                             total_assets=0,
+                             search_query=search_query)
+
 @app.route("/update", methods=["GET", "POST"])
-@require_group('Admin', 'manager')
+@require_group('Admin', 'Asset Officer')
 def update():
     if request.method == "POST":
         if not validate_csrf_token():
@@ -543,7 +863,7 @@ def update():
     return render_template('update.html', title='Update Quantity')
 
 @app.route("/suppliers", methods=["GET", "POST"])
-@require_group('Admin', 'manager')
+@require_group('Admin', 'Asset Officer', 'Finance Officer')
 def suppliers():
     if request.method == "POST":
         if not validate_csrf_token():
@@ -591,6 +911,7 @@ def users():
         username = request.form.get('username','').strip()
         email = request.form.get('email','').strip()
         password = request.form.get('password','')
+        group = request.form.get('group','').strip()
         if username:
             # require admin to create users
             username_session = session.get('username')
@@ -599,12 +920,19 @@ def users():
                 return redirect(url_for('users'))
             pw_hash = generate_password_hash(password) if password else None
             system.add_user(username, email, pw_hash)
-            flash(f'User "{username}" added successfully', 'success')
+            # Assign user to selected group/role
+            if group and group in system.groups:
+                system.assign_user_to_group(username, group)
+                flash(f'User "{username}" added successfully with role "{group}"', 'success')
+            else:
+                flash(f'User "{username}" added successfully (no role assigned)', 'warning')
         return redirect(url_for('users'))
     users_list = sorted([(uname, {'email': u.get('email',''), 'groups': u.get('groups', set())}) for uname, u in system.users.items()], key=lambda x: x[0])
     # For Jinja, groups can be set; Jinja can iterate sets but order may vary; acceptable for now
     users_ns = [(uname, type('Obj', (), d)) for uname, d in users_list]
-    return render_template('users.html', title='Users', users=users_ns)
+    # Pass groups to template for role selection dropdown
+    groups_list = sorted([(n, {'description': g.get('description','')}) for n, g in system.groups.items()], key=lambda x: x[0])
+    return render_template('users.html', title='Users', users=users_ns, groups=groups_list)
 
 @app.route('/users/delete/<username>', methods=['POST'])
 @require_group('Admin')
@@ -676,39 +1004,54 @@ def login():
         return redirect(url_for('index'))
     
     if request.method == 'POST':
+        # TEMPORARY: Log CSRF token details for debugging
+        form_token = request.form.get('csrf_token')
+        session_token = session.get('csrf_token')
+        logger.info(f"Login attempt - Form token: {bool(form_token)}, Session token: {bool(session_token)}, Match: {form_token == session_token if form_token and session_token else 'N/A'}")
+        
         if not validate_csrf_token():
-            error = 'Invalid security token. Please try again.'
+            error = 'Invalid security token. Please refresh the page (Ctrl+F5) and try again.'
             groups_list = sorted(system.groups.keys())
-            return render_template('landing.html', error=error, groups=groups_list)
+            logger.warning(f"CSRF token validation failed for login attempt")
+            return render_template('login.html', error=error, groups=groups_list)
         
         username = request.form.get('username','').strip()
         password = request.form.get('password','')
         group = request.form.get('group','').strip()
         
+        logger.info(f"Login attempt: username='{username}', group='{group}', password_length={len(password)}")
+        
         if not username or not password or not group:
             error = 'Please fill in all fields.'
             groups_list = sorted(system.groups.keys())
-            return render_template('landing.html', error=error, groups=groups_list)
+            logger.warning(f"Login failed: Missing fields - username:{bool(username)}, password:{bool(password)}, group:{bool(group)}")
+            return render_template('login.html', error=error, groups=groups_list)
         
         user = system.users.get(username)
         if not user:
             error = 'Invalid username or password.'
             groups_list = sorted(system.groups.keys())
-            return render_template('landing.html', error=error, groups=groups_list)
+            logger.warning(f"Login failed: User '{username}' not found in system.users")
+            return render_template('login.html', error=error, groups=groups_list)
+        
+        logger.info(f"User '{username}' found. Has password_hash: {bool(user.get('password_hash'))}, User groups: {user.get('groups', set())}")
         
         # Check if user belongs to the selected group
         user_groups = user.get('groups', set())
         if group not in user_groups:
             error = f'This account does not have {group} privileges.'
             groups_list = sorted(system.groups.keys())
-            return render_template('landing.html', error=error, groups=groups_list)
+            logger.warning(f"Login failed: User '{username}' does not have group '{group}'. User groups: {user_groups}")
+            return render_template('login.html', error=error, groups=groups_list)
         
         pw_hash = user.get('password_hash')
         if pw_hash and check_password_hash(pw_hash, password):
+            logger.info(f"Login successful for user '{username}' with group '{group}'")
+            session.permanent = True  # Make session persistent
             session['username'] = username
             session['group'] = group
             session['groups'] = list(user_groups)  # Store all user groups
-            flash(f'Welcome to VBOS Asset Management System, {username}!', 'success')
+            flash(f'Welcome to Department of Local Authorities Asset Management System, {username}!', 'success')
             # Redirect to the page they were trying to access, or dashboard
             next_page = request.args.get('next')
             if next_page and next_page.startswith('/'):
@@ -717,11 +1060,54 @@ def login():
         else:
             error = 'Invalid username or password.'
             groups_list = sorted(system.groups.keys())
-            return render_template('landing.html', error=error, groups=groups_list)
+            logger.warning(f"Login failed: Password verification failed for user '{username}'")
+            return render_template('login.html', error=error, groups=groups_list)
     
-    # GET request - show landing page with login form
+    # GET request - show login form
     groups_list = sorted(system.groups.keys())
-    return render_template('landing.html', groups=groups_list)
+    return render_template('login.html', groups=groups_list)
+
+# TEMPORARY DEBUG LOGIN (Remove in production!)
+@app.route('/debug-login', methods=['GET', 'POST'])
+def debug_login():
+    """Temporary login route without CSRF for debugging"""
+    if request.method == 'POST':
+        username = request.form.get('username','').strip()
+        password = request.form.get('password','')
+        group = request.form.get('group','').strip()
+        
+        if not username or not password or not group:
+            error = 'Please fill in all fields.'
+            groups_list = sorted(system.groups.keys())
+            return render_template('debug_login.html', error=error, groups=groups_list)
+        
+        user = system.users.get(username)
+        if not user:
+            error = 'Invalid username or password.'
+            groups_list = sorted(system.groups.keys())
+            return render_template('debug_login.html', error=error, groups=groups_list)
+        
+        user_groups = user.get('groups', set())
+        if group not in user_groups:
+            error = f'This account does not have {group} privileges.'
+            groups_list = sorted(system.groups.keys())
+            return render_template('debug_login.html', error=error, groups=groups_list)
+        
+        pw_hash = user.get('password_hash')
+        if pw_hash and check_password_hash(pw_hash, password):
+            session.permanent = True
+            session['username'] = username
+            session['group'] = group
+            session['groups'] = list(user_groups)
+            flash(f'Welcome (Debug Login), {username}!', 'success')
+            return redirect(url_for('index'))
+        else:
+            error = 'Invalid username or password.'
+            groups_list = sorted(system.groups.keys())
+            return render_template('debug_login.html', error=error, groups=groups_list)
+    
+    groups_list = sorted(system.groups.keys())
+    return render_template('debug_login.html', groups=groups_list)
 
 @app.route('/uploads/<path:filename>')
 def uploaded_file(filename):
@@ -784,37 +1170,55 @@ def change_profile():
         if not validate_csrf_token():
             flash('Invalid CSRF token. Please try again.', 'error')
             return redirect(url_for('change_profile'))
-        name = request.form.get('name','').strip()
-        email = request.form.get('email','').strip()
-        password = request.form.get('password','')
-        # Update name in DB and cache
-        system.users[user['username']]['name'] = name
-        system.cursor.execute("UPDATE users SET name=%s WHERE username=%s", (name, user['username']))
-        # Update email in DB and cache
-        system.users[user['username']]['email'] = email
-        system.cursor.execute("UPDATE users SET email=%s WHERE username=%s", (email, user['username']))
-        # Update password if provided
-        if password:
-            from werkzeug.security import generate_password_hash
-            pw_hash = generate_password_hash(password)
-            system.users[user['username']]['password_hash'] = pw_hash
-            system.cursor.execute("UPDATE users SET password_hash=%s WHERE username=%s", (pw_hash, user['username']))
-        # Handle profile picture upload
-        if 'profile_picture' in request.files:
-            pic = request.files['profile_picture']
-            if pic and pic.filename:
-                import os
-                ext = os.path.splitext(pic.filename)[1].lower()
-                if ext in ['.jpg','.jpeg','.png','.gif','.bmp']:
-                    filename = f"profile_{user['username']}{ext}"
-                    save_path = os.path.join(app.static_folder, filename)
-                    pic.save(save_path)
-                    url_path = f"/static/{filename}"
-                    system.users[user['username']]['profile_picture'] = url_path
-                    system.cursor.execute("UPDATE users SET profile_picture=%s WHERE username=%s", (url_path, user['username']))
-        system.conn.commit()
-        flash('Profile updated', 'success')
-        return redirect(url_for('profile'))
+        
+        try:
+            name = request.form.get('name','').strip()
+            email = request.form.get('email','').strip()
+            password = request.form.get('password','')
+            
+            # Update name in DB and cache
+            system.users[user['username']]['name'] = name
+            system.cursor.execute("UPDATE users SET name=%s WHERE username=%s", (name, user['username']))
+            
+            # Update email in DB and cache
+            system.users[user['username']]['email'] = email
+            system.cursor.execute("UPDATE users SET email=%s WHERE username=%s", (email, user['username']))
+            
+            # Update password if provided
+            if password:
+                from werkzeug.security import generate_password_hash
+                pw_hash = generate_password_hash(password)
+                system.users[user['username']]['password_hash'] = pw_hash
+                system.cursor.execute("UPDATE users SET password_hash=%s WHERE username=%s", (pw_hash, user['username']))
+            
+            # Handle profile picture upload
+            if 'profile_picture' in request.files:
+                pic = request.files['profile_picture']
+                if pic and pic.filename:
+                    import os
+                    ext = os.path.splitext(pic.filename)[1].lower()
+                    if ext in ['.jpg','.jpeg','.png','.gif','.bmp']:
+                        filename = f"profile_{user['username']}{ext}"
+                        save_path = os.path.join(app.static_folder, filename)
+                        pic.save(save_path)
+                        url_path = f"/static/{filename}"
+                        system.users[user['username']]['profile_picture'] = url_path
+                        system.cursor.execute("UPDATE users SET profile_picture=%s WHERE username=%s", (url_path, user['username']))
+            
+            system.conn.commit()
+            flash('Profile updated successfully', 'success')
+            return redirect(url_for('profile'))
+        except mysql.connector.Error as e:
+            system.conn.rollback()
+            flash('Database error: Unable to update profile. Please try again.', 'error')
+            app.logger.error(f'Database error in change_profile: {e}')
+            return redirect(url_for('change_profile'))
+        except Exception as e:
+            system.conn.rollback()
+            flash('An error occurred while updating your profile. Please try again.', 'error')
+            app.logger.error(f'Error in change_profile: {e}')
+            return redirect(url_for('change_profile'))
+    
     return render_template('change_profile.html', title='Change Profile', user=user)
 
 @app.route('/account-details')
@@ -2080,6 +2484,20 @@ def enrich_data():
     return redirect(url_for('data_quality_dashboard'))
 
 
+# ---- Security Vulnerability Scan ----
+@app.route('/security/vulnerabilities')
+@login_required
+@require_group(['Admin', 'Asset Officer'])
+def vulnerability_scan():
+    """Security vulnerability scan dashboard"""
+    return render_template('vulnerability_scan.html', 
+                         title='Security Vulnerability Scan',
+                         site_title=system.system_settings.get('site_title', {}).get('value', 'Asset Management System'),
+                         site_subtitle=system.system_settings.get('site_subtitle', {}).get('value', 'Asset Management System'),
+                         logo_path=system.system_settings.get('logo_path', {}).get('value', url_for('static', filename='images/logo.png')),
+                         favicon_path=system.system_settings.get('favicon_path', {}).get('value', url_for('static', filename='images/favicon.ico')))
+
+
 # ---- Advances submenu routes ----
 @app.route('/contracts')
 @login_required
@@ -3116,17 +3534,129 @@ def funding():
 @app.route('/customize-assets-form')
 @require_group('Admin')
 def customize_assets_form():
-    return render_template('page.html', title='Customize Assets Form', heading='Customize Assets Form', description='Configure fields and layout for the assets form.')
+    return render_template('customize_assets_form.html', title='Customize Assets Form')
 
 @app.route('/customize-customers-form')
 @require_group('Admin')
 def customize_customers_form():
-    return render_template('page.html', title='Customize Customers Form', heading='Customize Customers Form', description='Configure fields and layout for the customers form.')
+    return render_template('page.html', title='Customize Customers Form', heading='Customize Customers Form', description='Configure fields and layout for the customers form. This feature is under development.')
 
-@app.route('/customize-maintenance-form')
+@app.route('/customize-maintenance-form', methods=['GET', 'POST'])
 @require_group('Admin')
 def customize_maintenance_form():
-    return render_template('page.html', title='Customize Maintenance Form', heading='Customize Maintenance Form', description='Configure fields and layout for the maintenance form.')
+    if request.method == 'POST':
+        if not validate_csrf_token():
+            flash('Invalid CSRF token. Please try again.', 'error')
+            return redirect(url_for('customize_maintenance_form'))
+        
+        try:
+            username = session.get('username')
+            
+            # Get form configuration from checkboxes
+            form_fields = [
+                'field_scheduled_date',
+                'field_maintenance_type',
+                'field_description',
+                'field_performed_by',
+                'field_cost',
+                'field_status',
+                'field_priority',
+                'field_notes',
+                'enable_recurring',
+                'enable_file_upload',
+                'enable_notifications'
+            ]
+            
+            # Create or update settings
+            for field in form_fields:
+                value = 'on' if request.form.get(field) else 'off'
+                setting_key = f'maintenance_form_{field}'
+                
+                # Check if setting exists
+                system.cursor.execute(
+                    "SELECT setting_key FROM system_settings WHERE setting_key = %s",
+                    (setting_key,)
+                )
+                if system.cursor.fetchone():
+                    # Update existing
+                    system.update_system_setting(setting_key, value, username)
+                else:
+                    # Insert new
+                    system.cursor.execute(
+                        "INSERT INTO system_settings (setting_key, setting_value, setting_type, updated_by) VALUES (%s, %s, %s, %s)",
+                        (setting_key, value, 'boolean', username)
+                    )
+            
+            system.conn.commit()
+            flash('Maintenance form configuration saved successfully', 'success')
+            return redirect(url_for('customize_maintenance_form'))
+            
+        except Exception as e:
+            system.conn.rollback()
+            app.logger.error(f'Error saving maintenance form config: {e}')
+            flash('An error occurred while saving configuration. Please try again.', 'error')
+            return redirect(url_for('customize_maintenance_form'))
+    
+    # GET request - load current configuration
+    try:
+        form_config = {}
+        system.cursor.execute(
+            "SELECT setting_key, setting_value FROM system_settings WHERE setting_key LIKE 'maintenance_form_%'"
+        )
+        for key, value in system.cursor.fetchall():
+            # Remove 'maintenance_form_' prefix
+            field_key = key.replace('maintenance_form_', '')
+            form_config[field_key] = (value == 'on')
+        
+        # Set defaults if not configured
+        default_fields = {
+            'field_scheduled_date': True,
+            'field_maintenance_type': True,
+            'field_description': True,
+            'field_performed_by': True,
+            'field_cost': True,
+            'field_status': True,
+            'field_priority': True,
+            'field_notes': True,
+            'enable_recurring': True,
+            'enable_file_upload': True,
+            'enable_notifications': True
+        }
+        
+        for field, default in default_fields.items():
+            if field not in form_config:
+                form_config[field] = default
+        
+        return render_template('customize_maintenance_form.html', 
+                             title='Customize Maintenance Form',
+                             form_config=form_config)
+    except Exception as e:
+        app.logger.error(f'Error loading maintenance form config: {e}')
+        flash('Error loading configuration. Using defaults.', 'warning')
+        return render_template('customize_maintenance_form.html',
+                             title='Customize Maintenance Form',
+                             form_config={})
+
+@app.route('/customize-maintenance-form/reset', methods=['POST'])
+@require_group('Admin')
+def reset_maintenance_form():
+    if not validate_csrf_token():
+        flash('Invalid CSRF token. Please try again.', 'error')
+        return redirect(url_for('customize_maintenance_form'))
+    
+    try:
+        # Delete all maintenance form settings
+        system.cursor.execute(
+            "DELETE FROM system_settings WHERE setting_key LIKE 'maintenance_form_%'"
+        )
+        system.conn.commit()
+        flash('Maintenance form configuration reset to defaults', 'success')
+    except Exception as e:
+        system.conn.rollback()
+        app.logger.error(f'Error resetting maintenance form config: {e}')
+        flash('An error occurred while resetting configuration.', 'error')
+    
+    return redirect(url_for('customize_maintenance_form'))
 
 @app.route('/customize-contracts-form')
 @require_group('Admin')
@@ -3197,71 +3727,241 @@ def import_data():
     return render_template('import.html', title='Import Data')
 
 
-
-# --- Asset listing route ---
-@app.route('/assets')
-def assets():
-    # Only allow logged-in users to view asset list
-    if not session.get('username'):
-        flash('Please log in to view assets', 'warning')
-        return redirect(url_for('login'))
-    
-    # Add depreciation calculation to each asset
-    assets_with_depreciation = []
-    for name, d in system.inventory.items():
-        asset_copy = dict(d)
-        current_value = calculate_depreciation(
-            d.get('price', 0),
-            d.get('purchase_date'),
-            d.get('salvage_value', 0),
-            d.get('useful_life_years', 5),
-            d.get('depreciation_method', 'straight_line')
-        )
-        asset_copy['current_value'] = current_value
-        assets_with_depreciation.append((name, type('Obj', (), asset_copy)))
-    
-    assets_with_depreciation.sort(key=lambda x: x[0])
-    return render_template('assets.html', title='Asset List', assets=assets_with_depreciation, calculate_depreciation=calculate_depreciation)
-
-
 @app.route('/view-asset/<asset_name>')
-@login_required
+@require_group('Admin', 'Asset Officer', 'Finance Officer')
 def view_asset(asset_name):
+    try:
+        # Normalize: decode URL encoding and strip (e.g. "Test%201" -> "Test 1")
+        asset_name = unquote(asset_name).strip() if asset_name else ""
+        if not asset_name:
+            flash('Invalid asset name', 'error')
+            return redirect(url_for('assets'))
+        # Look up asset (exact match first, then try normalized: strip and collapse spaces)
+        if asset_name not in system.inventory:
+            def normalize(s):
+                return ' '.join((s or '').strip().split())
+            norm = normalize(asset_name)
+            candidate = next((k for k in system.inventory if normalize(k) == norm), None)
+            if candidate is not None:
+                asset_name = candidate
+            else:
+                flash(f'Asset "{asset_name}" not found', 'error')
+                return redirect(url_for('assets'))
+
+        raw_asset = system.inventory[asset_name]
+        # Build template-safe asset dict (avoid Decimal/date/None issues in Jinja)
+        def safe_float(v, default=0):
+            if v is None:
+                return default
+            try:
+                return float(v)
+            except (TypeError, ValueError):
+                return default
+
+        def safe_int(v, default=0):
+            if v is None:
+                return default
+            try:
+                return int(v)
+            except (TypeError, ValueError):
+                return default
+
+        def safe_str(v, default=''):
+            if v is None:
+                return default
+            if hasattr(v, 'isoformat'):  # date/datetime
+                return v.isoformat() if v else default
+            return str(v).strip() or default
+
+        asset = {}
+        for k, v in raw_asset.items():
+            if k in ('price', 'salvage_value'):
+                asset[k] = safe_float(v)
+            elif k in ('quantity', 'low_stock_threshold', 'useful_life_years'):
+                asset[k] = safe_int(v)
+            else:
+                asset[k] = safe_str(v)
+
+        price = asset.get('price', 0)
+        current_value = price
+        depreciation_info = None
+        dep_method = (raw_asset.get('depreciation_method') or '').strip().lower()
+        if dep_method and dep_method != 'none':
+            try:
+                current_value = calculate_depreciation(
+                    price,
+                    raw_asset.get('purchase_date'),
+                    safe_float(raw_asset.get('salvage_value')),
+                    safe_int(raw_asset.get('useful_life_years'), 5),
+                    raw_asset.get('depreciation_method')
+                )
+                depreciation_amount = price - current_value
+                depreciation_percentage = (depreciation_amount / price * 100) if price > 0 else 0
+                depreciation_info = {
+                    'amount': depreciation_amount,
+                    'percentage': depreciation_percentage,
+                    'current_value': current_value
+                }
+            except Exception as e:
+                logger.exception("Depreciation calculation failed for asset %s: %s", asset_name, e)
+
+        dep_method_display = (str(raw_asset.get('depreciation_method') or '').replace('_', ' ').title()) or '-'
+
+        # Get asset photos: from uploads/assets/<name>/photos/ and from DB (image_1..image_5)
+        photo_dir = os.path.join(app.root_path, '..', 'uploads', 'assets', asset_name, 'photos')
+        photos = []
+        if photo_dir and os.path.exists(photo_dir):
+            for filename in os.listdir(photo_dir):
+                if os.path.isfile(os.path.join(photo_dir, filename)):
+                    try:
+                        url = url_for('mobile.view_asset_photo', asset_name=asset_name, filename=filename)
+                    except Exception:
+                        url = f'/mobile/asset/{asset_name}/photos/{filename}'
+                    photos.append({'name': filename, 'url': url})
+        for i in range(1, 6):
+            path = raw_asset.get(f'image_{i}')
+            if path and isinstance(path, str) and path.strip():
+                url = path if path.startswith('/') else '/' + path
+                photos.append({'name': f'Image {i}', 'url': url})
+
+        return render_template('view_asset.html',
+                             asset_name=asset_name,
+                             asset=asset,
+                             current_value=current_value,
+                             depreciation_info=depreciation_info,
+                             dep_method_display=dep_method_display,
+                             photos=photos)
+    except Exception as e:
+        logger.exception("view_asset failed: %s", e)
+        flash(f'Error loading asset: {str(e)}', 'error')
+        return redirect(url_for('assets'))
+
+
+def _resolve_asset_name_for_pdf(asset_name):
+    """Normalize and resolve asset_name (unquote, match inventory key). Returns (resolved_name, None) or (None, redirect_response)."""
+    asset_name = unquote(asset_name).strip() if asset_name else ""
+    if not asset_name:
+        return None, redirect(url_for('assets'))
+    if asset_name not in system.inventory:
+        def _norm(s):
+            return ' '.join((s or '').strip().split())
+        candidate = next((k for k in system.inventory if _norm(k) == _norm(asset_name)), None)
+        if candidate is not None:
+            asset_name = candidate
+        else:
+            return None, redirect(url_for('assets'))
+    return asset_name, None
+
+
+@app.route('/view-asset/<asset_name>/filled-entry-form-pdf')
+@login_required
+@require_group('Admin', 'Asset Officer', 'Finance Officer')
+def view_asset_filled_pdf(asset_name):
+    """Return the filled Asset Entry Form PDF for embedding (Content-Disposition: inline)."""
+    resolved, err_resp = _resolve_asset_name_for_pdf(asset_name)
+    if err_resp is not None:
+        flash('Invalid or unknown asset', 'error')
+        return err_resp
+    from utils.pdf_form_fill import fill_asset_entry_form_pdf, get_template_path
+    from flask import make_response
+    template_path = get_template_path(app.root_path)
+    pdf_bytes, err = fill_asset_entry_form_pdf(resolved, system.inventory[resolved], template_path)
+    if err:
+        return make_response(f'PDF could not be generated: {err}', 404, {'Content-Type': 'text/plain'})
+    response = make_response(pdf_bytes)
+    response.headers['Content-Type'] = 'application/pdf'
+    safe_name = resolved.replace(' ', '_').replace('/', '-')[:80]
+    response.headers['Content-Disposition'] = f'inline; filename=Asset_Entry_Form_{safe_name}.pdf'
+    return response
+
+
+@app.route('/view-asset/<asset_name>/export-entry-form-pdf')
+@login_required
+@require_group('Admin', 'Asset Officer', 'Finance Officer')
+def export_asset_entry_form_pdf(asset_name):
+    """Fill the official Asset Entry Form PDF with this asset's data and return it as download."""
+    resolved, err_resp = _resolve_asset_name_for_pdf(asset_name)
+    if err_resp is not None:
+        flash('Invalid or unknown asset', 'error')
+        return err_resp
+    from utils.pdf_form_fill import fill_asset_entry_form_pdf, get_template_path
+    template_path = get_template_path(app.root_path)
+    pdf_bytes, err = fill_asset_entry_form_pdf(resolved, system.inventory[resolved], template_path)
+    if err:
+        flash(f'Could not generate PDF: {err}', 'warning')
+        return redirect(url_for('view_asset', asset_name=resolved))
+    from flask import make_response
+    response = make_response(pdf_bytes)
+    response.headers['Content-Type'] = 'application/pdf'
+    safe_name = resolved.replace(' ', '_').replace('/', '-')[:80]
+    response.headers['Content-Disposition'] = f'attachment; filename=Asset_Entry_Form_{safe_name}.pdf'
+    return response
+
+
+@app.route('/asset-entry-form-template')
+@login_required
+@require_group('Admin', 'Asset Officer', 'Finance Officer')
+def view_asset_entry_form_template():
+    """Serve the blank Asset Entry Form PDF (from static/asset_entry_form.pdf)."""
+    from utils.pdf_form_fill import get_template_path
+    from flask import send_file
+    template_path = get_template_path(app.root_path)
+    if not os.path.isfile(template_path):
+        flash('Asset Entry Form template not found. Place asset_entry_form.pdf in static/ or src/static/forms/', 'warning')
+        return redirect(url_for('assets'))
+    return send_file(
+        template_path,
+        mimetype='application/pdf',
+        as_attachment=False,
+        download_name='Asset_Entry_Form_blank.pdf'
+    )
+
+
+def _save_asset_photo_to_folder(file, asset_name, image_number):
+    """Save uploaded image to uploads/assets/<asset_name>/photos/ for view-asset display. Returns filename or None."""
+    if not file or not file.filename or not allowed_image_file(file.filename):
+        return None
+    try:
+        # Match view_asset photo_dir: uploads/assets/<asset_name>/photos
+        photo_dir = os.path.join(ASSETS_FOLDER, asset_name, 'photos')
+        os.makedirs(photo_dir, exist_ok=True)
+        ext = file.filename.rsplit('.', 1)[1].lower()
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        new_filename = f"image_{image_number}_{timestamp}.{ext}"
+        filepath = os.path.join(photo_dir, new_filename)
+        file.save(filepath)
+        return new_filename
+    except Exception as e:
+        app.logger.error("Error saving asset photo: %s", e)
+        return None
+
+
+@app.route('/view-asset/<asset_name>/upload-images', methods=['POST'])
+@login_required
+@require_group('Admin', 'Asset Officer', 'Finance Officer')
+def upload_asset_images(asset_name):
+    """Upload images for an existing asset (from Asset Details page)."""
     if asset_name not in system.inventory:
         flash(f'Asset "{asset_name}" not found', 'error')
         return redirect(url_for('assets'))
-    
-    asset = system.inventory[asset_name]
-    
-    # Calculate current value if depreciation is enabled
-    current_value = asset['price']
-    depreciation_info = None
-    
-    if asset.get('depreciation_method') and asset['depreciation_method'] != 'none':
-        current_value = calculate_depreciation(
-            asset['price'],
-            asset.get('purchase_date'),
-            asset.get('salvage_value', 0),
-            asset.get('useful_life_years', 5),
-            asset['depreciation_method']
-        )
-        depreciation_amount = asset['price'] - current_value
-        depreciation_percentage = (depreciation_amount / asset['price'] * 100) if asset['price'] > 0 else 0
-        depreciation_info = {
-            'amount': depreciation_amount,
-            'percentage': depreciation_percentage,
-            'current_value': current_value
-        }
-    
-    return render_template('view_asset.html', 
-                         asset_name=asset_name, 
-                         asset=asset,
-                         current_value=current_value,
-                         depreciation_info=depreciation_info)
+    if not validate_csrf_token():
+        flash('Invalid request. Please try again.', 'error')
+        return redirect(url_for('view_asset', asset_name=asset_name))
+    count = 0
+    for i in range(1, 6):
+        key = f'image_{i}'
+        if key in request.files and request.files[key].filename:
+            if _save_asset_photo_to_folder(request.files[key], asset_name, i):
+                count += 1
+    if count:
+        flash(f'Successfully uploaded {count} image(s).', 'success')
+    else:
+        flash('No valid images to upload (use image files, max 5MB each).', 'warning')
+    return redirect(url_for('view_asset', asset_name=asset_name))
 
 
 @app.route('/assign-asset/<asset_name>', methods=['GET', 'POST'])
-@require_group('Admin', 'manager')
+@require_group('Admin', 'Asset Officer')
 def assign_asset(asset_name):
     if asset_name not in system.inventory:
         flash(f'Asset "{asset_name}" not found', 'error')
@@ -3343,7 +4043,7 @@ def assign_asset(asset_name):
 
 
 @app.route('/edit-asset/<asset_name>', methods=['GET', 'POST'])
-@require_group('Admin', 'manager')
+@require_group('Admin', 'Asset Officer')
 def edit_asset(asset_name):
     if asset_name not in system.inventory:
         flash(f'Asset "{asset_name}" not found', 'error')
@@ -3419,7 +4119,7 @@ def edit_asset(asset_name):
 
 
 @app.route('/delete-asset/<asset_name>', methods=['POST'])
-@require_group('Admin', 'manager')
+@require_group('Admin', 'Asset Officer')
 def delete_asset(asset_name):
     try:
         system.remove_item(asset_name)
@@ -3430,7 +4130,7 @@ def delete_asset(asset_name):
 
 
 @app.route('/delete-selected-assets', methods=['POST'])
-@require_group('Admin', 'manager')
+@require_group('Admin', 'Asset Officer')
 def delete_selected_assets():
     selected_assets = request.form.getlist('selected_assets')
     if not selected_assets:
@@ -3529,6 +4229,32 @@ def alerts_assets_past_due():
     return render_template('alerts_assets_past_due.html', 
                          title='Assets Past Due', 
                          past_due_assets=past_due_assets)
+
+
+@app.route('/lookup/lpo', methods=['GET'])
+@login_required
+def lookup_lpo():
+    """Lookup assets by LPO number"""
+    lpo_query = request.args.get('lpo', '').strip()
+    assets_found = []
+    
+    if lpo_query:
+        # Search for assets with matching LPO number
+        for name, data in system.inventory.items():
+            lpo_number = data.get('lpo_number', '')
+            if lpo_number and lpo_query.lower() in lpo_number.lower():
+                asset = data.copy()
+                asset['name'] = name
+                assets_found.append(asset)
+        
+        # Sort by asset name
+        assets_found.sort(key=lambda x: x['name'])
+    
+    return render_template('lookup_lpo.html', 
+                         title='LPO Lookup', 
+                         lpo_query=lpo_query,
+                         assets=assets_found,
+                         total_found=len(assets_found))
 
 
 @app.route('/alerts/contracts-expiring')
@@ -3797,7 +4523,7 @@ def report_custom():
 
 
 @app.route('/reports/inventory')
-@login_required
+@require_group('Admin', 'Finance Officer', 'Asset Officer')
 def report_inventory():
     assets_with_values = []
     for name, d in system.inventory.items():
@@ -3824,7 +4550,7 @@ def report_inventory():
 
 
 @app.route('/reports/asset')
-@login_required
+@require_group('Admin', 'Finance Officer', 'Asset Officer')
 def report_asset():
     assets_detailed = []
     for name, d in system.inventory.items():
@@ -3895,7 +4621,7 @@ def report_audit():
             GROUP BY action
         """)
         transaction_stats = system.cursor.fetchall()
-    except:
+    except Exception:
         transaction_stats = []
     
     # Calculate totals
@@ -3986,7 +4712,7 @@ def report_contract():
 
 
 @app.route('/reports/depreciation')
-@login_required
+@require_group('Admin', 'Finance Officer')
 def report_depreciation():
     depreciation_data = []
     total_purchase_value = 0
@@ -4032,7 +4758,7 @@ def report_depreciation():
 
 
 @app.route('/reports/funding')
-@login_required
+@require_group('Admin', 'Finance Officer')
 def report_funding():
     # Get funding information from assets
     funding_data = []
@@ -4147,7 +4873,7 @@ def report_maintenance():
             cost_str = row[3] if row[3] else '0'
             try:
                 cost = float(cost_str.replace('Cost: VT', '').replace('VT', '').strip())
-            except:
+            except Exception:
                 cost = 0
             
             maintenance_data.append({
@@ -4222,21 +4948,27 @@ def report_status():
     total_assets = len(system.inventory)
     total_users = len(system.users)
     total_suppliers = len(system.suppliers)
-    total_value = sum(
-        calculate_depreciation(
-            d.get('price', 0),
-            d.get('purchase_date'),
-            d.get('salvage_value', 0),
-            d.get('useful_life_years', 5),
-            d.get('depreciation_method', 'straight_line')
-        ) * d.get('quantity', 0)
-        for d in system.inventory.values()
-    )
-    
+    total_value = 0
+    try:
+        for d in system.inventory.values():
+            try:
+                val = calculate_depreciation(
+                    d.get('price', 0),
+                    d.get('purchase_date'),
+                    d.get('salvage_value', 0),
+                    d.get('useful_life_years', 5),
+                    d.get('depreciation_method', 'straight_line')
+                ) * d.get('quantity', 0)
+                total_value += val
+            except Exception:
+                total_value += (d.get('price', 0) or 0) * (d.get('quantity', 0) or 0)
+    except Exception:
+        total_value = sum((d.get('price', 0) or 0) * (d.get('quantity', 0) or 0) for d in system.inventory.values())
+
     # Low stock items
-    low_stock = [(name, d) for name, d in system.inventory.items() 
+    low_stock = [(name, d) for name, d in system.inventory.items()
                  if d.get('quantity', 0) < d.get('low_stock_threshold', 5)]
-    
+
     # Recent activity
     try:
         system.cursor.execute("""
@@ -4246,9 +4978,9 @@ def report_status():
             GROUP BY action
         """)
         recent_activity = dict(system.cursor.fetchall())
-    except:
+    except Exception:
         recent_activity = {}
-    
+
     status_data = {
         'total_assets': total_assets,
         'total_users': total_users,
@@ -4256,9 +4988,10 @@ def report_status():
         'total_value': total_value,
         'low_stock_count': len(low_stock),
         'low_stock_items': low_stock[:5],  # Top 5
-        'recent_activity': recent_activity
+        'recent_activity': recent_activity,
+        'report_generated': datetime.now()
     }
-    
+
     return render_template('report_status.html', title='Status Report', status=status_data)
 
 
@@ -4340,7 +5073,7 @@ def report_other():
             {'asset': row[0], 'action': row[1], 'quantity': row[2], 'date': row[3]}
             for row in transactions
         ]
-    except:
+    except Exception:
         pass
     
     return render_template('report_other.html', title='Other Report', data=data)
@@ -4404,7 +5137,7 @@ def export_assets():
             cursor = conn.cursor(dictionary=True)
             
             # Build query based on filter
-            query = "SELECT * FROM assets"
+            query = "SELECT * FROM inventory"
             if filter_type != 'all':
                 query += f" WHERE status = %s"
                 cursor.execute(query, (filter_type,))
@@ -4446,8 +5179,8 @@ def export_assets():
                 output = BytesIO()
                 with pd.ExcelWriter(output, engine='openpyxl') as writer:
                     df.to_excel(writer, index=False, sheet_name='Assets')
+                output = _add_logo_to_excel_buffer(output)
                 output.seek(0)
-                
                 response = make_response(output.read())
                 response.headers["Content-Disposition"] = f"attachment; filename=assets_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
                 response.headers["Content-type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -4509,8 +5242,8 @@ def export_users():
                 output = BytesIO()
                 with pd.ExcelWriter(output, engine='openpyxl') as writer:
                     df.to_excel(writer, index=False, sheet_name='Users')
+                output = _add_logo_to_excel_buffer(output)
                 output.seek(0)
-                
                 response = make_response(output.read())
                 response.headers["Content-Disposition"] = f"attachment; filename=users_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
                 response.headers["Content-type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -4575,8 +5308,8 @@ def export_maintenance():
                 output = BytesIO()
                 with pd.ExcelWriter(output, engine='openpyxl') as writer:
                     df.to_excel(writer, index=False, sheet_name='Maintenance')
+                output = _add_logo_to_excel_buffer(output)
                 output.seek(0)
-                
                 response = make_response(output.read())
                 response.headers["Content-Disposition"] = f"attachment; filename=maintenance_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
                 response.headers["Content-type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -4646,8 +5379,8 @@ def export_transactions():
                 output = BytesIO()
                 with pd.ExcelWriter(output, engine='openpyxl') as writer:
                     df.to_excel(writer, index=False, sheet_name='Transactions')
+                output = _add_logo_to_excel_buffer(output)
                 output.seek(0)
-                
                 response = make_response(output.read())
                 response.headers["Content-Disposition"] = f"attachment; filename=transactions_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
                 response.headers["Content-type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -4699,8 +5432,8 @@ def export_all():
                         if data:
                             df = pd.DataFrame(data)
                             df.to_excel(writer, index=False, sheet_name=table_name[:31])  # Excel sheet name limit
+                output = _add_logo_to_excel_buffer(output)
                 output.seek(0)
-                
                 response = make_response(output.read())
                 response.headers["Content-Disposition"] = f"attachment; filename=full_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
                 response.headers["Content-type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -4862,6 +5595,70 @@ Asset Management System
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@app.route('/settings/system', methods=['GET', 'POST'])
+@login_required
+@require_group('Admin')
+def system_settings():
+    """Manage system settings like logo and title"""
+    if request.method == 'POST':
+        if not validate_csrf_token():
+            flash('Invalid CSRF token. Please try again.', 'error')
+            return redirect(url_for('system_settings'))
+        
+        try:
+            username = session.get('username')
+            
+            # Update site title
+            site_title = request.form.get('site_title', '').strip()
+            if site_title:
+                system.update_system_setting('site_title', site_title, username)
+            
+            # Update site subtitle
+            site_subtitle = request.form.get('site_subtitle', '').strip()
+            if site_subtitle:
+                system.update_system_setting('site_subtitle', site_subtitle, username)
+            
+            # Handle logo upload
+            if 'logo_file' in request.files:
+                logo_file = request.files['logo_file']
+                if logo_file and logo_file.filename:
+                    import os
+                    from werkzeug.utils import secure_filename
+                    
+                    filename = secure_filename(logo_file.filename)
+                    ext = os.path.splitext(filename)[1].lower()
+                    
+                    # Accept all common image formats
+                    allowed_logo_formats = ['.jpg', '.jpeg', '.png', '.gif', '.svg', '.bmp', '.webp', 
+                                          '.ico', '.tiff', '.tif', '.jfif', '.pjpeg', '.pjp', '.avif', '.apng']
+                    
+                    if ext in allowed_logo_formats:
+                        # Save with a consistent name
+                        new_filename = f"logo{ext}"
+                        save_path = os.path.join(app.static_folder, new_filename)
+                        logo_file.save(save_path)
+                        logo_path = f"/static/{new_filename}"
+                        system.update_system_setting('logo_path', logo_path, username)
+                        system.update_system_setting('favicon_path', logo_path, username)
+                        flash('✅ Logo updated successfully!', 'success')
+                    else:
+                        flash('⚠️ Invalid file format. Please upload an image file (jpg, png, gif, svg, bmp, webp, ico, tiff, etc.)', 'warning')
+            
+            flash('System settings updated successfully', 'success')
+            return redirect(url_for('system_settings'))
+        
+        except Exception as e:
+            app.logger.error(f'Error updating system settings: {e}')
+            flash('An error occurred while updating settings. Please try again.', 'error')
+            return redirect(url_for('system_settings'))
+    
+    # GET request - display settings form
+    settings = system.get_all_system_settings()
+    return render_template('system_settings.html', 
+                          title='System Settings',
+                          settings=settings)
+
+
 @app.route('/ux-demo')
 def ux_demo():
     """Demo page showcasing all UX features"""
@@ -4951,6 +5748,417 @@ def generate_code():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+
+# ============================================================================
+# ADVANCED ASSET MANAGEMENT ROUTES
+# ============================================================================
+
+# Asset Groups Management
+@app.route('/asset-groups', methods=['GET'])
+@login_required
+def asset_groups():
+    """Display and manage asset groups"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM asset_groups ORDER BY name")
+        groups = cursor.fetchall() or []
+        cursor.close()
+        conn.close()
+    except Exception:
+        groups = []
+    
+    return render_template('asset_group.html', title='Asset Groups', groups=groups)
+
+@app.route('/asset-group/add', methods=['POST'])
+@require_group('Admin', 'Asset Officer')
+def asset_group_add():
+    """Add new asset group"""
+    if not validate_csrf_token():
+        flash('Invalid security token', 'error')
+        return redirect(url_for('asset_groups'))
+    
+    name = request.form.get('name', '').strip()
+    code = request.form.get('code', '').strip().upper()
+    description = request.form.get('description', '').strip()
+    parent_id = request.form.get('parent_id') or None
+    
+    if not name:
+        flash('Group name is required', 'error')
+        return redirect(url_for('asset_groups'))
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO asset_groups (name, code, parent_id, description, is_active, created_at)
+            VALUES (%s, %s, %s, %s, TRUE, NOW())
+        """, (name, code, parent_id, description))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        flash(f'Asset group "{name}" created successfully', 'success')
+    except Exception as e:
+        flash(f'Error creating asset group: {str(e)}', 'error')
+    
+    return redirect(url_for('asset_groups'))
+
+# Asset Registry
+@app.route('/asset-registry', methods=['GET'])
+@login_required
+def asset_registry():
+    """Complete asset registry with filtering"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get filter parameters
+        department = request.args.get('department', '')
+        category = request.args.get('category', '')
+        location = request.args.get('location', '')
+        
+        # Build query
+        query = "SELECT * FROM inventory WHERE 1=1"
+        params = []
+        
+        if department:
+            query += " AND department = %s"
+            params.append(department)
+        if category:
+            query += " AND category = %s"
+            params.append(category)
+        if location:
+            query += " AND location = %s"
+            params.append(location)
+        
+        query += " ORDER BY name"
+        
+        cursor.execute(query, params)
+        assets = cursor.fetchall() or []
+        
+        # Get unique values for filters
+        cursor.execute("SELECT DISTINCT department FROM inventory WHERE department IS NOT NULL ORDER BY department")
+        departments = [row['department'] for row in cursor.fetchall()]
+        
+        cursor.execute("SELECT DISTINCT category FROM inventory WHERE category IS NOT NULL ORDER BY category")
+        categories = [row['category'] for row in cursor.fetchall()]
+        
+        cursor.execute("SELECT DISTINCT location FROM inventory WHERE location IS NOT NULL ORDER BY location")
+        locations = [row['location'] for row in cursor.fetchall()]
+        
+        cursor.close()
+        conn.close()
+        
+        total_value = sum(asset.get('price', 0) * asset.get('quantity', 0) for asset in assets)
+        
+        return render_template('asset_registry.html',
+                             title='Asset Registry',
+                             assets=assets,
+                             total_assets=len(assets),
+                             total_value=total_value,
+                             total_departments=len(departments),
+                             total_categories=len(categories),
+                             departments=departments,
+                             categories=categories,
+                             locations=locations)
+    except Exception as e:
+        flash(f'Error loading asset registry: {str(e)}', 'error')
+        return render_template('asset_registry.html',
+                             title='Asset Registry',
+                             assets=[],
+                             total_assets=0,
+                             total_value=0,
+                             total_departments=0,
+                             total_categories=0,
+                             departments=[],
+                             categories=[],
+                             locations=[])
+
+# Asset Attributes
+@app.route('/asset-attributes', methods=['GET'])
+@login_required
+def asset_attributes():
+    """Manage custom asset attributes"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM asset_attributes ORDER BY attribute_name")
+        attributes = cursor.fetchall() or []
+        cursor.close()
+        conn.close()
+    except Exception:
+        attributes = []
+    
+    return render_template('asset_attribute.html', title='Asset Attributes', attributes=attributes)
+
+@app.route('/asset-attribute/add', methods=['POST'])
+@require_group('Admin')
+def asset_attribute_add():
+    """Add custom asset attribute"""
+    if not validate_csrf_token():
+        flash('Invalid security token', 'error')
+        return redirect(url_for('asset_attributes'))
+    
+    name = request.form.get('attribute_name', '').strip()
+    data_type = request.form.get('data_type', 'text')
+    is_required = request.form.get('is_required') == 'on'
+    
+    if not name:
+        flash('Attribute name is required', 'error')
+        return redirect(url_for('asset_attributes'))
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO asset_attributes (attribute_name, data_type, is_required, created_at)
+            VALUES (%s, %s, %s, NOW())
+        """, (name, data_type, is_required))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        flash(f'Attribute "{name}" added successfully', 'success')
+    except Exception as e:
+        flash(f'Error adding attribute: {str(e)}', 'error')
+    
+    return redirect(url_for('asset_attributes'))
+
+# Asset Damage Tracking
+@app.route('/asset-damage', methods=['GET'])
+@login_required
+def asset_damage():
+    """Track asset damage and repairs"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT * FROM asset_damage 
+            ORDER BY reported_date DESC
+        """)
+        damages = cursor.fetchall() or []
+        cursor.close()
+        conn.close()
+    except Exception:
+        damages = []
+    
+    return render_template('asset_damage.html', title='Asset Damage', damages=damages)
+
+@app.route('/asset-damage/add', methods=['POST'])
+@require_group('Admin', 'Asset Officer')
+def asset_damage_add():
+    """Report asset damage"""
+    if not validate_csrf_token():
+        flash('Invalid security token', 'error')
+        return redirect(url_for('asset_damage'))
+    
+    asset_name = request.form.get('asset_name', '').strip()
+    damage_type = request.form.get('damage_type', '').strip()
+    description = request.form.get('description', '').strip()
+    reported_by = session.get('username')
+    
+    if not asset_name or not damage_type:
+        flash('Asset name and damage type are required', 'error')
+        return redirect(url_for('asset_damage'))
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO asset_damage (asset_name, damage_type, description, reported_by, reported_date, status)
+            VALUES (%s, %s, %s, %s, NOW(), 'Open')
+        """, (asset_name, damage_type, description, reported_by))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        flash('Damage report submitted successfully', 'success')
+    except Exception as e:
+        flash(f'Error reporting damage: {str(e)}', 'error')
+    
+    return redirect(url_for('asset_damage'))
+
+# Asset Transfers
+@app.route('/asset-transfers', methods=['GET'])
+@login_required
+def asset_transfers():
+    """View asset transfer history"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT * FROM asset_transfers 
+            ORDER BY transfer_date DESC
+            LIMIT 100
+        """)
+        transfers = cursor.fetchall() or []
+        cursor.close()
+        conn.close()
+    except Exception:
+        transfers = []
+    
+    return render_template('asset_transfers.html', title='Asset Transfers', transfers=transfers)
+
+@app.route('/asset-transfer/add', methods=['POST'])
+@require_group('Admin', 'Asset Officer')
+def asset_transfer_add():
+    """Record asset transfer"""
+    if not validate_csrf_token():
+        flash('Invalid security token', 'error')
+        return redirect(url_for('asset_transfers'))
+    
+    asset_name = request.form.get('asset_name', '').strip()
+    from_location = request.form.get('from_location', '').strip()
+    to_location = request.form.get('to_location', '').strip()
+    transferred_by = session.get('username')
+    notes = request.form.get('notes', '').strip()
+    
+    if not asset_name or not to_location:
+        flash('Asset name and destination are required', 'error')
+        return redirect(url_for('asset_transfers'))
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO asset_transfers (asset_name, from_location, to_location, transferred_by, transfer_date, notes)
+            VALUES (%s, %s, %s, %s, NOW(), %s)
+        """, (asset_name, from_location, to_location, transferred_by, notes))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        flash('Asset transfer recorded successfully', 'success')
+    except Exception as e:
+        flash(f'Error recording transfer: {str(e)}', 'error')
+    
+    return redirect(url_for('asset_transfers'))
+
+# Asset Types
+@app.route('/asset-types', methods=['GET'])
+@login_required
+def asset_types():
+    """Manage asset types/categories"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM asset_types ORDER BY type_name")
+        types = cursor.fetchall() or []
+        cursor.close()
+        conn.close()
+    except Exception:
+        types = []
+    
+    return render_template('asset_types.html', title='Asset Types', types=types)
+
+@app.route('/asset-type/add', methods=['POST'])
+@require_group('Admin', 'Asset Officer')
+def asset_type_add():
+    """Add new asset type"""
+    if not validate_csrf_token():
+        flash('Invalid security token', 'error')
+        return redirect(url_for('asset_types'))
+    
+    type_name = request.form.get('type_name', '').strip()
+    description = request.form.get('description', '').strip()
+    
+    if not type_name:
+        flash('Type name is required', 'error')
+        return redirect(url_for('asset_types'))
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO asset_types (type_name, description, created_at)
+            VALUES (%s, %s, NOW())
+        """, (type_name, description))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        flash(f'Asset type "{type_name}" added successfully', 'success')
+    except Exception as e:
+        flash(f'Error adding asset type: {str(e)}', 'error')
+    
+    return redirect(url_for('asset_types'))
+
+# Permissions Management
+@app.route('/manage-permissions', methods=['GET'])
+@require_group('Admin')
+def manage_permissions():
+    """Manage user permissions and roles"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get all users with their groups
+        cursor.execute("""
+            SELECT u.id, u.username, u.email, GROUP_CONCAT(g.name) as groups
+            FROM users u
+            LEFT JOIN user_groups ug ON u.id = ug.user_id
+            LEFT JOIN groups g ON ug.group_id = g.id
+            GROUP BY u.id, u.username, u.email
+            ORDER BY u.username
+        """)
+        users = cursor.fetchall() or []
+        
+        # Get all groups
+        cursor.execute("SELECT * FROM groups ORDER BY name")
+        groups = cursor.fetchall() or []
+        
+        cursor.close()
+        conn.close()
+        
+        return render_template('manage_permissions.html',
+                             title='Manage Permissions',
+                             users=users,
+                             groups=groups)
+    except Exception as e:
+        flash(f'Error loading permissions: {str(e)}', 'error')
+        return render_template('manage_permissions.html',
+                             title='Manage Permissions',
+                             users=[],
+                             groups=[])
+
+@app.route('/permissions/update', methods=['POST'])
+@require_group('Admin')
+def permissions_update():
+    """Update user permissions"""
+    if not validate_csrf_token():
+        flash('Invalid security token', 'error')
+        return redirect(url_for('manage_permissions'))
+    
+    user_id = request.form.get('user_id')
+    group_ids = request.form.getlist('group_ids')
+    
+    if not user_id:
+        flash('User ID is required', 'error')
+        return redirect(url_for('manage_permissions'))
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Remove existing group assignments
+        cursor.execute("DELETE FROM user_groups WHERE user_id = %s", (user_id,))
+        
+        # Add new group assignments
+        for group_id in group_ids:
+            cursor.execute("""
+                INSERT INTO user_groups (user_id, group_id)
+                VALUES (%s, %s)
+            """, (user_id, group_id))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        flash('Permissions updated successfully', 'success')
+    except Exception as e:
+        flash(f'Error updating permissions: {str(e)}', 'error')
+    
+    return redirect(url_for('manage_permissions'))
+
+
+# Register all missing routes from navigation menu
+create_missing_routes(app)
+logger.info("All navigation routes have been registered")
 
 if __name__ == "__main__":
     # Use configuration from config.py (supports environment variables)

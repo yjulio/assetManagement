@@ -1,140 +1,286 @@
 {% extends 'base.html' %}
 {% block content %}
-  <div class="fade-in">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h2 class="mb-0">
-        <i class="bi bi-box-seam text-primary me-2"></i>Asset List
-      </h2>
-    </div>
-    
-    <div class="card shadow-sm border-0 mb-3">
-      <div class="card-body">
-        <div class="d-flex flex-wrap gap-2 align-items-center">
-          <button id="selectAllBtn" onclick="toggleSelectAll()" class="btn btn-primary">
-            <i class="bi bi-check-all me-2"></i>Select All
-          </button>
-          <button onclick="deleteSelected()" class="btn btn-danger">
-            <i class="bi bi-trash3 me-2"></i>Delete Selected
-          </button>
-          <span id="selectedCount" class="badge bg-secondary fs-6 ms-2">0 selected</span>
-        </div>
-      </div>
-    </div>
+<style>
+  /* Compact asset list: fit more on screen without scrolling */
+  .asset-list-page .page-header-row { margin-bottom: 0.75rem; }
+  .asset-list-page .card.mb-3 { margin-bottom: 0.75rem !important; }
+  .asset-list-page .card-body { padding: 0.5rem 0.75rem; }
+  .asset-list-page h2 { font-size: 1.35rem !important; margin-bottom: 0; }
+  .asset-list-page h2 .badge { font-size: 0.85rem; }
+  .asset-list-page .table { font-size: 0.8rem; margin-bottom: 0; }
+  .asset-list-page .table thead th {
+    font-size: 0.7rem;
+    padding: 0.35rem 0.4rem;
+    font-weight: 600;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+  .asset-list-page .table tbody td {
+    padding: 0.35rem 0.4rem;
+    font-size: 0.8rem;
+    vertical-align: middle;
+  }
+  .asset-list-page .table tbody td strong { font-size: 0.85rem; }
+  .asset-list-page .table .badge { font-size: 0.7rem; padding: 0.2em 0.4em; }
+  .asset-list-page .btn-sm { font-size: 0.75rem; padding: 0.2rem 0.4rem; }
+  .asset-list-page .btn-group .btn-sm i { font-size: 0.9rem; }
+  .asset-list-page .form-control { font-size: 0.9rem; padding: 0.35rem 0.5rem; }
+  .asset-list-page #selectedCount { font-size: 0.8rem !important; padding: 0.25rem 0.5rem; }
+  .asset-list-page .btn { font-size: 0.9rem; padding: 0.35rem 0.6rem; }
+  .asset-list-page .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .asset-list-page .table thead th:first-child,
+  .asset-list-page .table tbody td:first-child { width: 36px; }
+  .asset-list-page .table small { font-size: 0.7rem; }
+  /* Increase container size: use full viewport height for the table area */
+  .main-content:has(.asset-list-page) {
+    padding: 10px 20px;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    box-sizing: border-box;
+  }
+  .main-content:has(.asset-list-page) .topbar {
+    padding: 8px 20px;
+    margin-bottom: 8px;
+    flex-shrink: 0;
+  }
+  .main-content:has(.asset-list-page) .asset-list-page {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .asset-list-page .asset-table-container {
+    flex: 1;
+    min-height: 60vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .asset-list-page .asset-table-container .table-responsive {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+  }
+  .badge.bg-warning:hover {
+    background-color: #ff9800 !important;
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(255, 193, 7, 0.4);
+    transition: all 0.2s ease;
+  }
+</style>
 
-    <form id="bulkActionForm" method="post">
-      <div class="table-responsive">
-        <table class="table table-hover table-striped align-middle">
-      <thead class="table-dark">
-        <tr>
-          <th style="width:40px;"><input type="checkbox" id="selectAll" class="form-check-input" onchange="toggleSelectAll()"></th>
-          <th>Name</th>
-          <th>Quantity</th>
-          <th>Purchase Price</th>
-          <th>Current Value</th>
-          <th>Category</th>
-          <th>Model</th>
-          <th>Brand</th>
-          <th>Serial Number</th>
-          <th>Purchase Date</th>
-          <th>Depreciation</th>
-          <th>Location</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-      {% for name, d in assets %}
-        <tr>
-          <td><input type="checkbox" class="form-check-input asset-checkbox" name="selected_assets" value="{{ name }}" onchange="updateSelectedCount()"></td>
-          <td><strong>{{ name }}</strong></td>
-          <td><span class="badge bg-info">{{ d.quantity }}</span></td>
-          <td>VT{{ '%.2f'|format(d.price) }}</td>
-          <td>
-            <span class="text-success fw-bold">VT{{ '%.2f'|format(d.current_value) }}</span>
-            {% if d.purchase_date and d.depreciation_method != 'none' %}
-              {% set depreciation_percent = ((d.price - d.current_value) / d.price * 100) if d.price > 0 else 0 %}
-              <br><small class="text-muted">({{ '%.1f'|format(depreciation_percent) }}% depreciated)</small>
-            {% endif %}
-          </td>
-          <td><span class="badge bg-secondary">{{ d.category }}</span></td>
-          <td>{{ d.model or '-' }}</td>
-          <td>{{ d.brand or '-' }}</td>
-          <td>{{ d.serial_number or '-' }}</td>
-          <td>{{ d.purchase_date or '-' }}</td>
-          <td>
-            {% if d.depreciation_method == 'straight_line' %}
-              <span class="badge bg-primary">Straight Line</span>
-            {% elif d.depreciation_method == 'declining_balance' %}
-              <span class="badge" style="background:#9b59b6;">Declining Balance</span>
-            {% else %}
-              <span class="badge bg-secondary">None</span>
-            {% endif %}
-            {% if d.useful_life_years %}
-              <br><small class="text-muted">{{ d.useful_life_years }}yr life</small>
-            {% endif %}
-          </td>
-          <td>{{ d.location or '-' }}</td>
-          <td>
-            <div class="btn-group" role="group">
-              <a href="{{ url_for('view_asset', asset_name=name) }}" class="btn btn-sm btn-outline-primary" title="View Details">
-                <i class="bi bi-eye"></i>
-              </a>
-              <a href="{{ url_for('assign_asset', asset_name=name) }}" class="btn btn-sm btn-outline-warning" title="Assign Asset">
-                <i class="bi bi-person-check"></i>
-              </a>
-              <a href="{{ url_for('edit_asset', asset_name=name) }}" class="btn btn-sm btn-outline-info" title="Edit Asset">
-                <i class="bi bi-pencil"></i>
-              </a>
-              <form method="post" action="{{ url_for('delete_asset', asset_name=name) }}" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete {{ name }}?');">
-                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Asset">
-                  <i class="bi bi-trash"></i>
-                </button>
-              </form>
-            </div>
-          </td>
-        </tr>
-      {% endfor %}
-      </tbody>
-    </table>
-      </div>
-  </form>
+<div class="fade-in asset-list-page">
+  <div class="d-flex justify-content-between align-items-center page-header-row">
+    <h2 class="mb-0">
+      <i class="bi bi-box-seam text-primary me-2"></i>Asset List
+      <span class="badge bg-primary fs-6">{{ total_assets }}</span>
+    </h2>
+    <a href="{{ url_for('add') }}" class="btn btn-success">
+      <i class="bi bi-plus-circle me-2"></i>Add New Asset
+    </a>
   </div>
 
-  <script>
-    function toggleSelectAll() {
-      const selectAllCheckbox = document.getElementById('selectAll');
-      const checkboxes = document.querySelectorAll('.asset-checkbox');
-      checkboxes.forEach(checkbox => {
-        checkbox.checked = selectAllCheckbox.checked;
-      });
-      updateSelectedCount();
+  <!-- Search Bar -->
+  <div class="card shadow-sm border-0 mb-3">
+    <div class="card-body">
+      <form method="get" action="{{ url_for('assets') }}" class="row g-3">
+        <div class="col-md-10">
+          <input type="text" name="q" class="form-control"
+            placeholder="Search assets by name, category, supplier, location, department, responsible officer, or LPO number..."
+            value="{{ search_query or '' }}">
+        </div>
+        <div class="col-md-2">
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-search me-2"></i>Search
+          </button>
+        </div>
+      </form>
+      {% if search_query %}
+      <div class="mt-2">
+        <a href="{{ url_for('assets') }}" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-x-circle me-1"></i>Clear Search
+        </a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if assets %}
+  <div class="card shadow-sm border-0 mb-3">
+    <div class="card-body">
+      <div class="d-flex flex-wrap gap-2 align-items-center">
+        <button id="selectAllBtn" onclick="toggleSelectAll()" class="btn btn-primary">
+          <i class="bi bi-check-all me-2"></i>Select All
+        </button>
+        <button onclick="deleteSelected()" class="btn btn-danger">
+          <i class="bi bi-trash3 me-2"></i>Delete Selected
+        </button>
+        <span id="selectedCount" class="badge bg-secondary fs-6 ms-2">0 selected</span>
+      </div>
+    </div>
+  </div>
+
+  <form id="bulkActionForm" method="post" class="asset-table-container">
+    <div class="table-responsive">
+      <table class="table table-hover table-striped align-middle">
+        <thead class="table-dark">
+          <tr>
+            <th style="width:40px;"><input type="checkbox" id="selectAll" class="form-check-input"
+                onchange="toggleSelectAll()"></th>
+            <th>Name</th>
+            <th>Quantity</th>
+            <th>LPO Number</th>
+            <th>Purchase Price</th>
+            <th>Current Value</th>
+            <th>Category</th>
+            <th>Model</th>
+            <th>Brand</th>
+            <th>Serial Number</th>
+            <th>Purchase Date</th>
+            <th>Depreciation</th>
+            <th>Location</th>
+            <th>Responsible Officer</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for asset in assets %}
+          <tr>
+            <td><input type="checkbox" class="form-check-input asset-checkbox" name="selected_assets"
+                value="{{ asset.name }}" onchange="updateSelectedCount()"></td>
+            <td><strong>{{ asset.name }}</strong></td>
+            <td><span class="badge bg-info">{{ asset.quantity }}</span></td>
+            <td>{% if asset.lpo_number %}<span class="badge bg-success">{{ asset.lpo_number }}</span>{% else %}<span
+                class="text-muted">-</span>{% endif %}</td>
+            <td>VT{{ '%.2f'|format(asset.price) }}</td>
+            <td>
+              <span class="text-success fw-bold">VT{{ '%.2f'|format(asset.get('current_value', asset.price)) }}</span>
+              {% if asset.purchase_date and asset.depreciation_method != 'none' %}
+              {% set depreciation_percent = ((asset.price - asset.get('current_value', asset.price)) / asset.price *
+              100) if asset.price > 0 else 0 %}
+              <br><small class="text-muted">({{ '%.1f'|format(depreciation_percent) }}% depreciated)</small>
+              {% endif %}
+            </td>
+            <td><span class="badge bg-secondary">{{ asset.category }}</span></td>
+            <td>{{ asset.model or '-' }}</td>
+            <td>{{ asset.brand or '-' }}</td>
+            <td>{{ asset.serial_number or '-' }}</td>
+            <td>{{ asset.purchase_date or '-' }}</td>
+            <td>
+              {% if asset.depreciation_method == 'straight_line' %}
+              <span class="badge bg-primary">Straight Line</span>
+              {% elif asset.depreciation_method == 'declining_balance' %}
+              <span class="badge" style="background:#9b59b6;">Declining Balance</span>
+              {% else %}
+              <span class="badge bg-secondary">None</span>
+              {% endif %}
+              {% if asset.useful_life_years %}
+              <br><small class="text-muted">{{ asset.useful_life_years }}yr life</small>
+              {% endif %}
+            </td>
+            <td>{{ asset.location or '-' }}</td>
+            <td>
+              {% if asset.responsible_officer %}
+              <a href="{{ url_for('assets', q=asset.responsible_officer) }}" class="text-decoration-none"
+                title="View all assets for {{ asset.responsible_officer }}">
+                <span class="badge bg-warning text-dark" style="cursor: pointer;">
+                  <i class="bi bi-person-badge me-1"></i>{{ asset.responsible_officer }}
+                </span>
+              </a>
+              {% else %}
+              <span class="text-muted">-</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="btn-group" role="group">
+                <a href="{{ url_for('view_asset', asset_name=asset.name) }}" class="btn btn-sm btn-outline-primary"
+                  title="View Details">
+                  <i class="bi bi-eye"></i>
+                </a>
+                <a href="{{ url_for('assign_asset', asset_name=asset.name) }}" class="btn btn-sm btn-outline-warning"
+                  title="Assign Asset">
+                  <i class="bi bi-person-check"></i>
+                </a>
+                <a href="{{ url_for('edit_asset', asset_name=asset.name) }}" class="btn btn-sm btn-outline-info"
+                  title="Edit Asset">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <a href="{{ url_for('export_asset_entry_form_pdf', asset_name=asset.name) }}" class="btn btn-sm btn-outline-danger"
+                  title="Download Asset Entry Form (PDF)" target="_blank" rel="noopener">
+                  <i class="bi bi-file-earmark-pdf"></i>
+                </a>
+                <form method="post" action="{{ url_for('delete_asset', asset_name=asset.name) }}"
+                  style="display:inline;"
+                  onsubmit="return confirm('Are you sure you want to delete {{ asset.name }}?');">
+                  <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Asset">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </form>
+  {% else %}
+  <!-- No assets found message -->
+  <div class="card shadow-sm border-0">
+    <div class="card-body text-center py-5">
+      <i class="bi bi-inbox display-1 text-muted mb-3"></i>
+      <h4 class="text-muted">No Assets Found</h4>
+      {% if search_query %}
+      <p class="text-muted">No assets match your search "{{ search_query }}"</p>
+      <a href="{{ url_for('assets') }}" class="btn btn-outline-primary">View All Assets</a>
+      {% else %}
+      <p class="text-muted">Get started by adding your first asset to the inventory</p>
+      <a href="{{ url_for('add') }}" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-2"></i>Add New Asset
+      </a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+  function toggleSelectAll() {
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.asset-checkbox');
+    checkboxes.forEach(checkbox => {
+      checkbox.checked = selectAllCheckbox.checked;
+    });
+    updateSelectedCount();
+  }
+
+  function updateSelectedCount() {
+    const checkboxes = document.querySelectorAll('.asset-checkbox:checked');
+    const count = checkboxes.length;
+    document.getElementById('selectedCount').textContent = count + ' selected';
+
+    // Update "Select All" checkbox state
+    const allCheckboxes = document.querySelectorAll('.asset-checkbox');
+    const selectAllCheckbox = document.getElementById('selectAll');
+    selectAllCheckbox.checked = count === allCheckboxes.length && count > 0;
+  }
+
+  function deleteSelected() {
+    const checkboxes = document.querySelectorAll('.asset-checkbox:checked');
+    if (checkboxes.length === 0) {
+      alert('Please select at least one asset to delete');
+      return;
     }
 
-    function updateSelectedCount() {
-      const checkboxes = document.querySelectorAll('.asset-checkbox:checked');
-      const count = checkboxes.length;
-      document.getElementById('selectedCount').textContent = count + ' selected';
-      
-      // Update "Select All" checkbox state
-      const allCheckboxes = document.querySelectorAll('.asset-checkbox');
-      const selectAllCheckbox = document.getElementById('selectAll');
-      selectAllCheckbox.checked = count === allCheckboxes.length && count > 0;
-    }
+    const assetNames = Array.from(checkboxes).map(cb => cb.value);
+    const confirmMsg = `Are you sure you want to delete ${checkboxes.length} asset(s)?\n\n${assetNames.join(', ')}`;
 
-    function deleteSelected() {
-      const checkboxes = document.querySelectorAll('.asset-checkbox:checked');
-      if (checkboxes.length === 0) {
-        alert('Please select at least one asset to delete');
-        return;
-      }
-      
-      const assetNames = Array.from(checkboxes).map(cb => cb.value);
-      const confirmMsg = `Are you sure you want to delete ${checkboxes.length} asset(s)?\n\n${assetNames.join(', ')}`;
-      
-      if (confirm(confirmMsg)) {
-        const form = document.getElementById('bulkActionForm');
-        form.action = '{{ url_for("delete_selected_assets") }}';
-        form.submit();
-      }
+    if (confirm(confirmMsg)) {
+      const form = document.getElementById('bulkActionForm');
+      form.action = '{{ url_for("delete_selected_assets") }}';
+      form.submit();
     }
-  </script>
+  }
+</script>
 {% endblock %}

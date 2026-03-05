@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-header">
+  <h1><i class="bi bi-clock-history"></i> Activity Logs</h1>
+  <p>System-wide audit trail of all user actions and asset operations</p>
+</div>
+
+<!-- Filter -->
+<div class="form-card" style="margin-bottom:20px;">
+  <form method="GET" action="/activity-logs" style="display:flex;gap:15px;flex-wrap:wrap;align-items:flex-end;">
+    <div class="form-group" style="margin:0;flex:1;min-width:160px;">
+      <label>Action Type</label>
+      <select name="action">
+        <option value="">All Actions</option>
+        <option value="checkout"  {% if request.args.get('action')=='checkout'  %}selected{% endif %}>Check-Out</option>
+        <option value="checkin"   {% if request.args.get('action')=='checkin'   %}selected{% endif %}>Check-In</option>
+        <option value="add"       {% if request.args.get('action')=='add'       %}selected{% endif %}>Add Asset</option>
+        <option value="move"      {% if request.args.get('action')=='move'      %}selected{% endif %}>Move</option>
+        <option value="dispose"   {% if request.args.get('action')=='dispose'   %}selected{% endif %}>Dispose</option>
+        <option value="maintenance" {% if request.args.get('action')=='maintenance' %}selected{% endif %}>Maintenance</option>
+        <option value="login"     {% if request.args.get('action')=='login'     %}selected{% endif %}>Login</option>
+        <option value="logout"    {% if request.args.get('action')=='logout'    %}selected{% endif %}>Logout</option>
+      </select>
+    </div>
+    <div class="form-group" style="margin:0;flex:1;min-width:160px;">
+      <label>User</label>
+      <select name="user">
+        <option value="">All Users</option>
+        {% for user in users %}
+        <option value="{{ user }}" {% if request.args.get('user')==user %}selected{% endif %}>{{ user }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group" style="margin:0;flex:1;min-width:160px;">
+      <label>From Date</label>
+      <input type="date" name="from_date" value="{{ request.args.get('from_date','') }}">
+    </div>
+    <div class="form-group" style="margin:0;flex:1;min-width:160px;">
+      <label>To Date</label>
+      <input type="date" name="to_date" value="{{ request.args.get('to_date','') }}">
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button type="submit" class="btn-primary">🔍 Filter</button>
+      <a href="/activity-logs" class="btn-secondary">🔄 Reset</a>
+      <a href="/activity-logs?{{ request.query_string.decode() }}&export=csv" class="btn-secondary">📥 CSV</a>
+    </div>
+  </form>
+</div>
+
+<!-- Stats -->
+<div class="dashboard" style="margin-bottom:20px;">
+  <div class="card">
+    <div class="card-icon" style="background:linear-gradient(135deg,#667eea,#764ba2);">📋</div>
+    <div class="card-content"><h3>{{ total_logs }}</h3><p>Total Log Entries</p></div>
+  </div>
+  <div class="card">
+    <div class="card-icon" style="background:linear-gradient(135deg,#f093fb,#f5576c);">👤</div>
+    <div class="card-content"><h3>{{ active_users }}</h3><p>Active Users</p></div>
+  </div>
+  <div class="card">
+    <div class="card-icon" style="background:linear-gradient(135deg,#4facfe,#00f2fe);">📅</div>
+    <div class="card-content"><h3>{{ today_logs }}</h3><p>Today's Actions</p></div>
+  </div>
+</div>
+
+<!-- Log Table -->
+<div class="table-card">
+  <h2>Activity Log</h2>
+  {% if logs %}
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr><th>#</th><th>Timestamp</th><th>User</th><th>Action</th><th>Asset</th><th>Details</th></tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td><small>{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') if log.created_at else '-' }}</small></td>
+          <td><strong>{{ log.username or '-' }}</strong></td>
+          <td>
+            {% if log.action == 'checkout' %}
+            <span class="badge" style="background:#e67e22;color:#fff;">📤 Check-Out</span>
+            {% elif log.action == 'checkin' %}
+            <span class="badge" style="background:#27ae60;color:#fff;">📥 Check-In</span>
+            {% elif log.action == 'add' %}
+            <span class="badge" style="background:#3498db;color:#fff;">➕ Add</span>
+            {% elif log.action == 'move' %}
+            <span class="badge" style="background:#9b59b6;color:#fff;">🚚 Move</span>
+            {% elif log.action == 'dispose' %}
+            <span class="badge" style="background:#e74c3c;color:#fff;">🗑️ Dispose</span>
+            {% elif log.action == 'maintenance' %}
+            <span class="badge" style="background:#f39c12;color:#fff;">🔧 Maintenance</span>
+            {% elif log.action == 'login' %}
+            <span class="badge" style="background:#1abc9c;color:#fff;">🔑 Login</span>
+            {% elif log.action == 'logout' %}
+            <span class="badge" style="background:#95a5a6;color:#fff;">👋 Logout</span>
+            {% else %}
+            <span class="badge badge-info">{{ log.action }}</span>
+            {% endif %}
+          </td>
+          <td>{{ log.asset_name or '-' }}</td>
+          <td>
+            {% if log.notes %}
+            <span title="{{ log.notes }}" style="cursor:help;">{{ log.notes[:60] }}{% if log.notes|length > 60 %}…{% endif %}</span>
+            {% else %}
+            <small style="color:#999;">Qty: {{ log.quantity or 1 }} | {{ log.department or log.location or '' }}</small>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p style="text-align:center;padding:40px;color:#999;">No activity logs found.</p>
+  {% endif %}
+</div>
+{% endblock %}

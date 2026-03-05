@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-header">
+  <h1><i class="bi bi-cart-check"></i> Report – Purchasing</h1>
+  <p>Summary of asset purchases, procurement costs, and supplier breakdown</p>
+</div>
+
+<!-- Summary -->
+<div class="dashboard" style="margin-bottom:30px;">
+  <div class="card">
+    <div class="card-icon" style="background:linear-gradient(135deg,#667eea,#764ba2);">🛒</div>
+    <div class="card-content"><h3>{{ total_purchased }}</h3><p>Assets Purchased</p></div>
+  </div>
+  <div class="card">
+    <div class="card-icon" style="background:linear-gradient(135deg,#f093fb,#f5576c);">💰</div>
+    <div class="card-content"><h3>VT {{ '{:,.0f}'.format(total_cost) }}</h3><p>Total Procurement Cost</p></div>
+  </div>
+  <div class="card">
+    <div class="card-icon" style="background:linear-gradient(135deg,#4facfe,#00f2fe);">🏢</div>
+    <div class="card-content"><h3>{{ total_suppliers }}</h3><p>Suppliers</p></div>
+  </div>
+  <div class="card">
+    <div class="card-icon" style="background:linear-gradient(135deg,#43e97b,#38f9d7);">📦</div>
+    <div class="card-content"><h3>VT {{ '{:,.0f}'.format(avg_cost) }}</h3><p>Average Asset Cost</p></div>
+  </div>
+</div>
+
+<!-- Filter -->
+<div class="form-card" style="margin-bottom:20px;">
+  <form method="GET" action="/report-purchasing" style="display:flex;gap:15px;flex-wrap:wrap;align-items:flex-end;">
+    <div class="form-group" style="margin:0;flex:1;min-width:160px;">
+      <label>Supplier</label>
+      <select name="supplier">
+        <option value="">All Suppliers</option>
+        {% for sup in suppliers %}
+        <option value="{{ sup }}" {% if request.args.get('supplier')==sup %}selected{% endif %}>{{ sup }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group" style="margin:0;flex:1;min-width:160px;">
+      <label>From Date</label>
+      <input type="date" name="from_date" value="{{ request.args.get('from_date','') }}">
+    </div>
+    <div class="form-group" style="margin:0;flex:1;min-width:160px;">
+      <label>To Date</label>
+      <input type="date" name="to_date" value="{{ request.args.get('to_date','') }}">
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button type="submit" class="btn-primary">🔍 Filter</button>
+      <a href="/report-purchasing" class="btn-secondary">🔄 Reset</a>
+      <a href="/report-purchasing?{{ request.query_string.decode() }}&export=csv" class="btn-secondary">📥 CSV</a>
+    </div>
+  </form>
+</div>
+
+<!-- By Supplier -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:30px;">
+  <div class="table-card">
+    <h2>By Supplier</h2>
+    {% if by_supplier %}
+    <table class="data-table">
+      <thead><tr><th>Supplier</th><th>Assets</th><th>Total Cost (VT)</th></tr></thead>
+      <tbody>
+        {% for row in by_supplier %}
+        <tr>
+          <td><strong>{{ row.supplier or 'Unknown' }}</strong></td>
+          <td>{{ row.count }}</td>
+          <td>{{ '{:,.2f}'.format(row.total_cost) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="padding:20px;color:#999;">No data available.</p>
+    {% endif %}
+  </div>
+  <div class="table-card">
+    <h2>By Category</h2>
+    {% if by_category %}
+    <table class="data-table">
+      <thead><tr><th>Category</th><th>Assets</th><th>Total Cost (VT)</th></tr></thead>
+      <tbody>
+        {% for row in by_category %}
+        <tr>
+          <td><strong>{{ row.category or 'Uncategorized' }}</strong></td>
+          <td>{{ row.count }}</td>
+          <td>{{ '{:,.2f}'.format(row.total_cost) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="padding:20px;color:#999;">No data available.</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Detailed Purchases -->
+<div class="table-card">
+  <h2>Detailed Purchase List</h2>
+  {% if assets %}
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr><th>#</th><th>Asset Name</th><th>Category</th><th>Supplier</th><th>Qty</th><th>Unit Price (VT)</th><th>Total (VT)</th><th>Purchase Date</th><th>LPO No.</th></tr>
+      </thead>
+      <tbody>
+        {% for a in assets %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td><strong>{{ a.name }}</strong></td>
+          <td>{{ a.category or '-' }}</td>
+          <td>{{ a.supplier or '-' }}</td>
+          <td>{{ a.quantity }}</td>
+          <td>{{ '{:,.2f}'.format(a.price) }}</td>
+          <td>{{ '{:,.2f}'.format(a.quantity * a.price) }}</td>
+          <td>{{ a.purchase_date or '-' }}</td>
+          <td>{{ a.lpo_number or '-' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p style="text-align:center;padding:40px;color:#999;">No purchase records found.</p>
+  {% endif %}
+</div>
+{% endblock %}

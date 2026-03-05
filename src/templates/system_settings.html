@@ -1,0 +1,294 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="mb-0"><i class="bi bi-gear-fill"></i> System Settings</h2>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Configure your system's logo, title, and branding. These settings will be
+                        displayed on the login page, navigation, headers, and throughout the entire system.</p>
+
+                    <!-- Login Page Preview Card -->
+                    <div class="alert alert-info d-flex align-items-center mb-4" role="alert">
+                        <i class="bi bi-info-circle-fill fs-4 me-3"></i>
+                        <div>
+                            <strong>Login Page Branding:</strong> Your logo and organization name will appear
+                            prominently on the login page that users see first.
+                        </div>
+                    </div>
+
+                    <form method="post" enctype="multipart/form-data">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+                        <!-- Current Logo Preview with Edit Button -->
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center">
+                                        <h5 class="card-title">Current Logo</h5>
+                                        <div class="position-relative d-inline-block">
+                                            <img id="current_logo"
+                                                src="{{ settings.get('logo_path', {}).get('value', '/static/asset.png') }}"
+                                                alt="Current Logo" class="img-fluid"
+                                                style="max-height: 200px; max-width: 300px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                            <button type="button" class="btn btn-primary btn-sm position-absolute"
+                                                style="bottom: 10px; right: 10px;"
+                                                onclick="document.getElementById('logo_file').click()">
+                                                <i class="bi bi-pencil-fill me-1"></i>Change Logo
+                                            </button>
+                                        </div>
+                                        <p class="text-muted mt-2 mb-0">
+                                            <small><i class="bi bi-info-circle"></i> Click "Change Logo" or drag & drop
+                                                below to upload new logo</small>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Site Title -->
+                        <div class="mb-3">
+                            <label for="site_title" class="form-label">
+                                <i class="bi bi-building"></i> Organization Name
+                            </label>
+                            <input type="text" class="form-control" id="site_title" name="site_title"
+                                value="{{ settings.get('site_title', {}).get('value', '') }}"
+                                placeholder="e.g., Department of Local Authorities">
+                            <div class="form-text">Your organization's official name - appears on login page and
+                                throughout the system.</div>
+                        </div>
+
+                        <!-- Site Subtitle -->
+                        <div class="mb-3">
+                            <label for="site_subtitle" class="form-label">
+                                <i class="bi bi-tag"></i> System Name
+                            </label>
+                            <input type="text" class="form-control" id="site_subtitle" name="site_subtitle"
+                                value="{{ settings.get('site_subtitle', {}).get('value', '') }}"
+                                placeholder="e.g., Asset Management System">
+                            <div class="form-text">The name of this system - displayed on login page, sidebar, and page
+                                titles.</div>
+                        </div>
+
+                        <!-- Logo Upload with Drag & Drop -->
+                        <div class="mb-4">
+                            <label for="logo_file" class="form-label fw-bold">
+                                <i class="bi bi-cloud-upload"></i> Upload New Logo
+                            </label>
+
+                            <!-- Drag and Drop Area -->
+                            <div id="dropArea" class="border border-2 border-dashed rounded p-4 text-center"
+                                style="background-color: #f8f9fa; cursor: pointer; transition: all 0.3s;">
+                                <input type="file" class="d-none" id="logo_file" name="logo_file"
+                                    accept="image/png,image/jpeg,image/jpg,image/gif,image/svg+xml,image/bmp,image/webp,image/x-icon,image/tiff,image/avif">
+
+                                <div id="uploadInstructions">
+                                    <i class="bi bi-cloud-arrow-up display-4 text-primary mb-3"></i>
+                                    <h5 class="mb-2">Drag & Drop your logo here</h5>
+                                    <p class="text-muted mb-3">or</p>
+                                    <button type="button" class="btn btn-primary"
+                                        onclick="document.getElementById('logo_file').click()">
+                                        <i class="bi bi-folder2-open me-2"></i>Browse Files
+                                    </button>
+                                    <p class="text-muted mt-3 mb-0" style="font-size: 0.9rem;">
+                                        <strong>Accepted:</strong> PNG, JPG, GIF, SVG, BMP, WebP, ICO, TIFF, AVIF |
+                                        <strong>Size:</strong> 200x200px+ (square recommended)
+                                    </p>
+                                </div>
+
+                                <div id="uploadPreview" class="d-none">
+                                    <img id="preview_image" src="" alt="Preview"
+                                        style="max-height: 150px; max-width: 150px; border-radius: 8px;">
+                                    <p class="mt-2 mb-0"><strong id="file_name"></strong></p>
+                                    <button type="button" class="btn btn-sm btn-outline-danger mt-2"
+                                        onclick="clearUpload()">
+                                        <i class="bi bi-x-circle me-1"></i>Remove
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="alert alert-info mt-3 mb-0" role="alert">
+                                <i class="bi bi-lightbulb me-2"></i>
+                                <strong>Tip:</strong> Use a transparent PNG for best results. Your logo will appear on
+                                the login page, navigation bar, and throughout the system.
+                            </div>
+                        </div>
+
+                        <!-- Preview Section -->
+                        <div class="mb-4">
+                            <div class="card border-info">
+                                <div class="card-header bg-info text-white">
+                                    <h5 class="mb-0"><i class="bi bi-eye"></i> Live Preview - How it appears on Login
+                                        Page</h5>
+                                </div>
+                                <div class="card-body text-center" style="background-color: #f8f9fa;">
+                                    <div class="p-4"
+                                        style="background: white; border-radius: 8px; display: inline-block; min-width: 300px;">
+                                        <img id="logo_preview"
+                                            src="{{ settings.get('logo_path', {}).get('value', '/static/asset.png') }}"
+                                            alt="Logo Preview"
+                                            style="max-width: 120px; max-height: 120px; margin-bottom: 15px;">
+                                        <h4 id="subtitle_preview" class="fw-bold mb-1" style="color: #2c3e50;">{{
+                                            settings.get('site_subtitle',
+                                            {}).get('value', 'Asset Management System') }}</h4>
+                                        <p id="title_preview" class="text-muted mb-0">{{ settings.get('site_title',
+                                            {}).get('value', 'Department of Local Authorities') }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-check-circle"></i> Save Settings
+                            </button>
+                            <a href="/" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Back to Dashboard
+                            </a>
+                        </div>
+                    </form>
+
+                    <!-- Additional Info -->
+                    <div class="alert alert-info mt-4" role="alert">
+                        <h5 class="alert-heading"><i class="bi bi-info-circle"></i> Tips</h5>
+                        <ul class="mb-0">
+                            <li>Changes take effect immediately after saving</li>
+                            <li>Use a transparent PNG for best results on different backgrounds</li>
+                            <li>Keep your logo simple and recognizable at small sizes</li>
+                            <li>The logo will be cached - you may need to refresh (Ctrl+F5) to see changes</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Live preview functionality for text fields
+    document.getElementById('site_title').addEventListener('input', function (e) {
+        document.getElementById('title_preview').textContent = e.target.value;
+    });
+
+    document.getElementById('site_subtitle').addEventListener('input', function (e) {
+        document.getElementById('subtitle_preview').textContent = e.target.value;
+    });
+
+    // Enhanced logo file upload with drag & drop
+    const dropArea = document.getElementById('dropArea');
+    const fileInput = document.getElementById('logo_file');
+    const uploadInstructions = document.getElementById('uploadInstructions');
+    const uploadPreview = document.getElementById('uploadPreview');
+    const previewImage = document.getElementById('preview_image');
+    const fileName = document.getElementById('file_name');
+    const logoPreview = document.getElementById('logo_preview');
+    const currentLogo = document.getElementById('current_logo');
+
+    // Prevent default drag behaviors
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, preventDefaults, false);
+        document.body.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    // Highlight drop area when dragging over it
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropArea.addEventListener(eventName, highlight, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, unhighlight, false);
+    });
+
+    function highlight(e) {
+        dropArea.style.backgroundColor = '#e3f2fd';
+        dropArea.style.borderColor = '#2196F3';
+        dropArea.style.transform = 'scale(1.02)';
+    }
+
+    function unhighlight(e) {
+        dropArea.style.backgroundColor = '#f8f9fa';
+        dropArea.style.borderColor = '#dee2e6';
+        dropArea.style.transform = 'scale(1)';
+    }
+
+    // Handle dropped files
+    dropArea.addEventListener('drop', handleDrop, false);
+    dropArea.addEventListener('click', () => fileInput.click());
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            handleFiles(files);
+        }
+    }
+
+    // Handle file selection (both drag-drop and browse)
+    fileInput.addEventListener('change', function (e) {
+        if (e.target.files && e.target.files.length > 0) {
+            handleFiles(e.target.files);
+        }
+    });
+
+    function handleFiles(files) {
+        const file = files[0];
+
+        // Validate file type - accept all common image formats
+        const validTypes = [
+            'image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/svg+xml',
+            'image/bmp', 'image/webp', 'image/x-icon', 'image/vnd.microsoft.icon',
+            'image/tiff', 'image/tif', 'image/avif', 'image/apng'
+        ];
+        if (!validTypes.includes(file.type)) {
+            alert('Please upload a valid image file (PNG, JPG, GIF, SVG, BMP, WebP, ICO, TIFF, AVIF, etc.)');
+            return;
+        }
+
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            alert('File size must be less than 5MB');
+            return;
+        }
+
+        // Show preview
+        const reader = new FileReader();
+        reader.onload = function (event) {
+            // Update drag-drop area preview
+            previewImage.src = event.target.result;
+            fileName.textContent = file.name;
+            uploadInstructions.classList.add('d-none');
+            uploadPreview.classList.remove('d-none');
+
+            // Update live preview
+            logoPreview.src = event.target.result;
+
+            // Update current logo display
+            currentLogo.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function clearUpload() {
+        fileInput.value = '';
+        uploadInstructions.classList.remove('d-none');
+        uploadPreview.classList.add('d-none');
+        previewImage.src = '';
+        fileName.textContent = '';
+
+        // Reset to original logo
+        const originalLogo = "{{ settings.get('logo_path', {}).get('value', '/static/asset.png') }}";
+        logoPreview.src = originalLogo;
+        currentLogo.src = originalLogo;
+    }
+</script>
+{% endblock %}

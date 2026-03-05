@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-header">
+  <h1><i class="bi bi-shield-lock"></i> Manage Permissions</h1>
+  <p>Control user roles, group memberships, and system access permissions</p>
+</div>
+
+<!-- Stats -->
+<div class="dashboard" style="margin-bottom:30px;">
+  <div class="card">
+    <div class="card-icon" style="background:linear-gradient(135deg,#667eea,#764ba2);">👥</div>
+    <div class="card-content"><h3>{{ users|length }}</h3><p>Total Users</p></div>
+  </div>
+  <div class="card">
+    <div class="card-icon" style="background:linear-gradient(135deg,#f093fb,#f5576c);">🔗</div>
+    <div class="card-content"><h3>{{ groups|length }}</h3><p>Roles/Groups</p></div>
+  </div>
+</div>
+
+<!-- Roles Reference -->
+<div class="form-card" style="margin-bottom:30px;">
+  <h2 style="margin-bottom:15px;">📋 Role Permissions Reference</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:15px;">
+    <div style="background:#eaf4fb;border-left:4px solid #3498db;padding:15px;border-radius:6px;">
+      <h4 style="margin:0 0 8px;color:#3498db;">👑 Admin</h4>
+      <p style="margin:0;font-size:13px;color:#555;">Full system access — manage users, settings, reports, and all asset operations.</p>
+    </div>
+    <div style="background:#eafaf1;border-left:4px solid #27ae60;padding:15px;border-radius:6px;">
+      <h4 style="margin:0 0 8px;color:#27ae60;">🏷️ Asset Officer</h4>
+      <p style="margin:0;font-size:13px;color:#555;">Add, update, check-out, check-in, move, and dispose assets. Cannot manage users.</p>
+    </div>
+    <div style="background:#fef9e7;border-left:4px solid #f39c12;padding:15px;border-radius:6px;">
+      <h4 style="margin:0 0 8px;color:#f39c12;">💰 Finance Officer</h4>
+      <p style="margin:0;font-size:13px;color:#555;">View financial reports, depreciation, and purchasing data. Read-only for assets.</p>
+    </div>
+    <div style="background:#f9f0ff;border-left:4px solid #9b59b6;padding:15px;border-radius:6px;">
+      <h4 style="margin:0 0 8px;color:#9b59b6;">👁️ Viewer</h4>
+      <p style="margin:0;font-size:13px;color:#555;">Read-only access. Can view assets and reports but cannot make changes.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Assign Role Form -->
+<div class="form-card" style="margin-bottom:30px;">
+  <h2 style="margin-bottom:20px;">🔗 Assign / Change User Role</h2>
+  <form method="POST" action="/manage-permissions/assign" class="form-grid">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-group">
+      <label>User *</label>
+      <select name="username" required>
+        <option value="">-- Select User --</option>
+        {% for uname, u in users %}
+        <option value="{{ uname }}">{{ uname }} ({{ u.email or 'no email' }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Role / Group *</label>
+      <select name="group" required>
+        <option value="">-- Select Role --</option>
+        {% for gname, g in groups %}
+        <option value="{{ gname }}">{{ gname }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group" style="grid-column:1/-1;text-align:right;">
+      <button type="submit" class="btn-primary">🔗 Assign Role</button>
+    </div>
+  </form>
+</div>
+
+<!-- Users Table with Roles -->
+<div class="table-card">
+  <h2>Users & Permissions</h2>
+  {% if users %}
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr><th>Username</th><th>Email</th><th>Roles / Groups</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for uname, u in users %}
+        <tr>
+          <td><strong>{{ uname }}</strong></td>
+          <td>{{ u.email or '-' }}</td>
+          <td>
+            {% if u.groups %}
+            {% for group in u.groups %}
+            <span class="badge badge-info">{{ group }}</span>
+            {% endfor %}
+            {% else %}
+            <span style="color:#999;">No role assigned</span>
+            {% endif %}
+          </td>
+          <td class="actions">
+            {% for group in u.groups %}
+            <form method="POST" action="/manage-permissions/revoke" style="display:inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <input type="hidden" name="username" value="{{ uname }}">
+              <input type="hidden" name="group" value="{{ group }}">
+              <button type="submit" class="btn-action btn-delete" title="Remove {{ group }}"
+                onclick="return confirm('Remove {{ group }} from {{ uname }}?')">
+                ❌ {{ group }}
+              </button>
+            </form>
+            {% endfor %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p style="text-align:center;padding:40px;color:#999;">No users found.</p>
+  {% endif %}
+</div>
+{% endblock %}

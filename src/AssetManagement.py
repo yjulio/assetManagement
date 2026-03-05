@@ -30,7 +30,8 @@ class InventorySystem:
                 user=DB_CONFIG['user'],
                 password=DB_CONFIG['password'],
                 database=DB_CONFIG['database'],
-                port=DB_CONFIG.get('port', 3306)
+                port=DB_CONFIG.get('port', 3306),
+                autocommit=False
             )
             print("Connected to MySQL database.")
             return conn
@@ -47,6 +48,15 @@ class InventorySystem:
             print("  sudo mysql -e \"CREATE USER IF NOT EXISTS 'root'@'localhost' IDENTIFIED BY 'password';\"")
             print("  sudo mysql -e \"GRANT ALL PRIVILEGES ON db_asset.* TO 'root'@'localhost';\"")
             exit(1)
+
+    def ensure_connection(self):
+        """Ensure database connection is alive, reconnect if needed"""
+        try:
+            self.conn.ping(reconnect=True, attempts=3, delay=1)
+        except mysql.connector.Error:
+            print("Database connection lost. Reconnecting...")
+            self.conn = self.create_connection()
+            self.cursor = self.conn.cursor()
 
     def _create_tables(self):
         self.cursor.execute('''
@@ -96,8 +106,39 @@ class InventorySystem:
                 alter_parts.append('ADD COLUMN useful_life_years INT DEFAULT 5')
             if 'salvage_value' not in cols:
                 alter_parts.append('ADD COLUMN salvage_value DECIMAL(10,2) DEFAULT 0.0')
+            if 'responsible_officer' not in cols:
+                alter_parts.append('ADD COLUMN responsible_officer VARCHAR(255)')
+            if 'province_name' not in cols:
+                alter_parts.append('ADD COLUMN province_name VARCHAR(100)')
+            if 'island' not in cols:
+                alter_parts.append('ADD COLUMN island VARCHAR(100)')
+            if 'unit_section' not in cols:
+                alter_parts.append('ADD COLUMN unit_section VARCHAR(255)')
+            if 'asset_category' not in cols:
+                alter_parts.append('ADD COLUMN asset_category VARCHAR(255)')
+            if 'lpo_number' not in cols:
+                alter_parts.append('ADD COLUMN lpo_number VARCHAR(100)')
+            if 'asset_condition' not in cols:
+                alter_parts.append("ADD COLUMN asset_condition ENUM('Excellent','Good','Fair','Poor','Broken') DEFAULT 'Good'")
+            if 'asset_tag' not in cols:
+                alter_parts.append('ADD COLUMN asset_tag VARCHAR(100)')
+            if 'image_1' not in cols:
+                alter_parts.append('ADD COLUMN image_1 VARCHAR(500)')
+            if 'image_2' not in cols:
+                alter_parts.append('ADD COLUMN image_2 VARCHAR(500)')
+            if 'image_3' not in cols:
+                alter_parts.append('ADD COLUMN image_3 VARCHAR(500)')
+            if 'image_4' not in cols:
+                alter_parts.append('ADD COLUMN image_4 VARCHAR(500)')
+            if 'image_5' not in cols:
+                alter_parts.append('ADD COLUMN image_5 VARCHAR(500)')
             if alter_parts:
-                self.cursor.execute('ALTER TABLE inventory ' + ', '.join(alter_parts))
+                for part in alter_parts:
+                    try:
+                        self.cursor.execute(f'ALTER TABLE inventory {part}')
+                        self.conn.commit()
+                    except Exception as e:
+                        print(f"Note: {e}")
         except Exception as _:
             pass
         # User / Group tables
@@ -212,6 +253,24 @@ class InventorySystem:
                 UNIQUE KEY unique_user_chart (user_id, chart_name)
             )
         ''')
+        # System settings table for editable logo, title, etc.
+        self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS system_settings (
+                setting_key VARCHAR(100) PRIMARY KEY,
+                setting_value TEXT,
+                setting_type VARCHAR(50) DEFAULT 'text',
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                updated_by VARCHAR(255)
+            )
+        ''')
+        # Insert default values if not exists
+        self.cursor.execute("""
+            INSERT IGNORE INTO system_settings (setting_key, setting_value, setting_type) VALUES
+            ('site_title', 'Department of Local Authorities', 'text'),
+            ('site_subtitle', 'Asset Management System', 'text'),
+            ('logo_path', '/static/asset.png', 'file'),
+            ('favicon_path', '/static/asset.png', 'file')
+        """)
         self.conn.commit()
 
     def _load_suppliers(self):
@@ -269,11 +328,13 @@ class InventorySystem:
     def _load_inventory(self):
         self.cursor.execute("""
             SELECT name, quantity, price, description, low_stock_threshold, category, supplier, department, funding_source, location,
-                   model, brand, serial_number, purchase_date, depreciation_method, useful_life_years, salvage_value
+                   model, brand, serial_number, purchase_date, depreciation_method, useful_life_years, salvage_value,
+                   responsible_officer, province_name, island, unit_section, asset_category, lpo_number, asset_condition, asset_tag,
+                   image_1, image_2, image_3, image_4, image_5
             FROM inventory
         """)
         for row in self.cursor.fetchall():
-            name, qty, price, desc, threshold, cat, sup, dept, funding, loc, model, brand, serial_num, purchase_dt, dep_method, useful_life, salvage = row
+            name, qty, price, desc, threshold, cat, sup, dept, funding, loc, model, brand, serial_num, purchase_dt, dep_method, useful_life, salvage, resp_officer, province, island, unit_sec, asset_cat, lpo_num, asset_cond, asset_tag, img1, img2, img3, img4, img5 = row
             self.inventory[name] = {
                 'quantity': qty,
                 'price': float(price) if price is not None else 0.0,
@@ -290,7 +351,20 @@ class InventorySystem:
                 'purchase_date': purchase_dt or None,
                 'depreciation_method': dep_method or 'straight_line',
                 'useful_life_years': useful_life or 5,
-                'salvage_value': float(salvage) if salvage is not None else 0.0
+                'salvage_value': float(salvage) if salvage is not None else 0.0,
+                'responsible_officer': resp_officer or None,
+                'province_name': province or None,
+                'island': island or None,
+                'unit_section': unit_sec or None,
+                'asset_category': asset_cat or None,
+                'lpo_number': lpo_num or None,
+                'asset_condition': asset_cond or 'Good',
+                'asset_tag': asset_tag or None,
+                'image_1': img1 or None,
+                'image_2': img2 or None,
+                'image_3': img3 or None,
+                'image_4': img4 or None,
+                'image_5': img5 or None
             }
 
     def add_supplier(self, name, contact="", email=""):
@@ -396,7 +470,7 @@ class InventorySystem:
             s = self.suppliers[name]
             print(f"- {name}: Contact={s['contact']}, Email={s['email']}")
 
-    def add_item(self, name, quantity, price=0.0, description="", low_stock_threshold=5, category="Uncategorized", supplier="Unknown", department=None, funding_source=None, location=None, model=None, brand=None, serial_number=None, purchase_date=None, depreciation_method='straight_line', useful_life_years=5, salvage_value=0.0):
+    def add_item(self, name, quantity, price=0.0, description="", low_stock_threshold=5, category="Uncategorized", supplier="Unknown", department=None, funding_source=None, location=None, model=None, brand=None, serial_number=None, purchase_date=None, depreciation_method='straight_line', useful_life_years=5, salvage_value=0.0, responsible_officer=None, province_name=None, island=None, unit_section=None, asset_category=None, lpo_number=None, asset_condition='Good', asset_tag=None, image_1=None, image_2=None, image_3=None, image_4=None, image_5=None):
         if name in self.inventory:
             print(f"Item '{name}' already exists. Use update_quantity to adjust stock.")
             return
@@ -409,10 +483,14 @@ class InventorySystem:
             self.cursor.execute("""
                 INSERT INTO inventory 
                 (name, quantity, price, description, low_stock_threshold, category, supplier, department, funding_source, location,
-                 model, brand, serial_number, purchase_date, depreciation_method, useful_life_years, salvage_value)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                 model, brand, serial_number, purchase_date, depreciation_method, useful_life_years, salvage_value,
+                 responsible_officer, province_name, island, unit_section, asset_category, lpo_number, asset_condition, asset_tag,
+                 image_1, image_2, image_3, image_4, image_5)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (name, quantity, price, description, low_stock_threshold, category, supplier, department, funding_source, location,
-                  model, brand, serial_number, purchase_date, depreciation_method, useful_life_years, salvage_value))
+                  model, brand, serial_number, purchase_date, depreciation_method, useful_life_years, salvage_value,
+                  responsible_officer, province_name, island, unit_section, asset_category, lpo_number, asset_condition, asset_tag,
+                  image_1, image_2, image_3, image_4, image_5))
             self.conn.commit()
 
             self.inventory[name] = {
@@ -431,7 +509,20 @@ class InventorySystem:
                 'purchase_date': purchase_date,
                 'depreciation_method': depreciation_method,
                 'useful_life_years': useful_life_years,
-                'salvage_value': salvage_value
+                'salvage_value': salvage_value,
+                'responsible_officer': responsible_officer,
+                'province_name': province_name,
+                'island': island,
+                'unit_section': unit_section,
+                'asset_category': asset_category,
+                'lpo_number': lpo_number,
+                'asset_condition': asset_condition,
+                'asset_tag': asset_tag,
+                'image_1': image_1,
+                'image_2': image_2,
+                'image_3': image_3,
+                'image_4': image_4,
+                'image_5': image_5
             }
             print(f"Added '{name}' (Category: {category}, Supplier: {supplier}).")
         except mysql.connector.Error as err:
@@ -684,6 +775,38 @@ class InventorySystem:
                 break
             else:
                 print("Invalid option.")
+
+    def get_system_setting(self, key, default=None):
+        """Get a system setting value by key"""
+        try:
+            self.cursor.execute("SELECT setting_value FROM system_settings WHERE setting_key = %s", (key,))
+            result = self.cursor.fetchone()
+            return result[0] if result else default
+        except Exception as e:
+            print(f"Error getting system setting {key}: {e}")
+            return default
+
+    def get_all_system_settings(self):
+        """Get all system settings as a dictionary"""
+        try:
+            self.cursor.execute("SELECT setting_key, setting_value, setting_type, updated_at FROM system_settings")
+            return {row[0]: {'value': row[1], 'type': row[2], 'updated_at': row[3]} for row in self.cursor.fetchall()}
+        except Exception as e:
+            print(f"Error getting system settings: {e}")
+            return {}
+
+    def update_system_setting(self, key, value, username=None):
+        """Update a system setting"""
+        try:
+            self.cursor.execute(
+                "UPDATE system_settings SET setting_value = %s, updated_by = %s WHERE setting_key = %s",
+                (value, username, key)
+            )
+            self.conn.commit()
+            return True
+        except Exception as e:
+            print(f"Error updating system setting {key}: {e}")
+            return False
 
 if __name__ == "__main__":
     system = InventorySystem()

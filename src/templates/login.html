@@ -1,192 +1,302 @@
-{% extends 'base.html' %}
-{% block content %}
-  <style>
-    /* Login page specific styling */
-    .login-container {
-      max-width: 450px;
-      margin: 50px auto;
-      padding: 20px;
-    }
-    
-    .login-container h2 {
-      text-align: center;
-      margin-bottom: 30px;
-      font-size: 1.8rem;
-      font-weight: 700;
-    }
-    
-    .login-container .form-group {
-      margin-bottom: 20px;
-    }
-    
-    .login-container label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: 500;
-      font-size: 0.95rem;
-    }
-    
-    .login-container input[type="text"],
-    .login-container input[name="username"],
-    .login-container input[type="password"] {
-      width: 100%;
-      padding: 12px 15px;
-      font-size: 16px;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      box-sizing: border-box;
-      transition: border-color 0.3s, box-shadow 0.3s;
-    }
-    
-    .login-container input:focus {
-      outline: none;
-      border-color: #4ca1af;
-      box-shadow: 0 0 0 3px rgba(76, 161, 175, 0.1);
-    }
-    
-    .password-wrapper {
-      position: relative;
-      width: 100%;
-    }
-    
-    .password-wrapper input {
-      padding-right: 50px !important;
-    }
-    
-    #toggle-password {
-      position: absolute;
-      right: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      font-size: 20px;
-      padding: 8px 12px;
-      color: #666;
-      transition: color 0.2s;
-      -webkit-tap-highlight-color: transparent;
-    }
-    
-    #toggle-password:hover,
-    #toggle-password:active {
-      color: #4ca1af;
-    }
-    
-    .login-container input[type="submit"] {
-      width: 100%;
-      padding: 14px;
-      font-size: 16px;
-      font-weight: 600;
-      background: linear-gradient(135deg, #f9d423 0%, #4ca1af 50%, #2ecc71 100%);
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      margin-top: 10px;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    
-    .login-container input[type="submit"]:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(76, 161, 175, 0.3);
-    }
-    
-    .login-container input[type="submit"]:active {
-      transform: translateY(0);
-    }
-    
-    /* Mobile optimization */
-    @media screen and (max-width: 480px) {
-      .login-container {
-        padding: 15px;
-        max-width: 100%;
-      }
-      
-      .login-container h2 {
-        font-size: 1.5rem;
-        margin-bottom: 25px;
-      }
-      
-      .login-container input[type="text"],
-      .login-container input[name="username"],
-      .login-container input[type="password"] {
-        font-size: 16px; /* Prevents zoom on iOS */
-        padding: 14px 15px;
-      }
-      
-      .password-wrapper input {
-        padding-right: 55px !important;
-      }
-      
-      #toggle-password {
-        font-size: 22px;
-        padding: 10px 14px;
-        right: 8px;
-      }
-      
-      .login-container input[type="submit"] {
-        padding: 16px;
-        font-size: 17px;
-      }
-    }
-  </style>
+<!DOCTYPE html>
+<html lang="en">
 
-  <div class="login-container">
-    <div class="card shadow-lg border-0" style="border-radius:12px;">
-      <div class="card-body p-4">
-        <h2 class="text-center mb-4">
-          <i class="bi bi-shield-lock text-primary"></i>
-          Login
-        </h2>
-        <form method='post'>
-          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-          
-          <div class="mb-3">
-            <label for="username-input" class="form-label fw-semibold">
-              <i class="bi bi-person-fill text-primary me-2"></i>Username
-            </label>
-            <input name='username' type="text" class="form-control form-control-lg" id="username-input" required autocomplete="username" placeholder="Enter your username">
-          </div>
-          
-          <div class="mb-4">
-            <label for="password-input" class="form-label fw-semibold">
-              <i class="bi bi-key-fill text-primary me-2"></i>Password
-            </label>
-            <div class="input-group password-wrapper">
-              <input type='password' name='password' class="form-control form-control-lg" id='password-input' required autocomplete="current-password" placeholder="Enter your password">
-              <button class="btn btn-outline-secondary" type="button" id="toggle-password" title="Show Password" aria-label="Show Password">
-                <i class="bi bi-eye-fill"></i>
-              </button>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ site_title }} - {{ site_subtitle }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 60px 50px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            max-width: 550px;
+            width: 100%;
+        }
+
+        .logo-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo {
+            margin-bottom: 15px;
+        }
+
+        .logo img {
+            max-width: 220px;
+            width: 100%;
+            height: auto;
+            max-height: 100px;
+            object-fit: contain;
+        }
+
+        .organization-name {
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+            line-height: 1.3;
+        }
+
+        .system-title {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .divider {
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, #4A90A4 0%, #F4B942 100%);
+            margin: 20px auto;
+            border-radius: 2px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            top: 38px;
+            cursor: pointer;
+            color: #666;
+            font-size: 14px;
+            user-select: none;
+        }
+
+        .password-toggle:hover {
+            color: #333;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #4A90A4;
+            box-shadow: 0 0 0 3px rgba(74, 144, 164, 0.15);
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(90deg, #4A90A4 0%, #5BA3B5 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(74, 144, 164, 0.4);
+            background: linear-gradient(90deg, #5BA3B5 0%, #4A90A4 100%);
+        }
+
+        .alert {
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .alert-danger {
+            background-color: #fee;
+            color: #c33;
+            border: 1px solid #fcc;
+        }
+
+        .alert-success {
+            background-color: #efe;
+            color: #3c3;
+            border: 1px solid #cfc;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
+            }
+
+            .login-container {
+                padding: 40px 30px;
+                max-width: 100%;
+            }
+
+            .organization-name {
+                font-size: 22px;
+            }
+
+            .system-title {
+                font-size: 16px;
+            }
+
+            .logo img {
+                width: 150px;
+            }
+
+            .form-group input,
+            .form-group select {
+                font-size: 16px;
+                /* Prevents zoom on iOS */
+                padding: 12px 15px;
+            }
+
+            .btn-login {
+                padding: 14px;
+                font-size: 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 30px 20px;
+            }
+
+            .organization-name {
+                font-size: 18px;
+            }
+
+            .system-title {
+                font-size: 14px;
+            }
+
+            .logo img {
+                width: 120px;
+            }
+
+            .form-group {
+                margin-bottom: 20px;
+            }
+
+            .form-group label {
+                font-size: 13px;
+            }
+
+            .alert {
+                font-size: 13px;
+                padding: 10px 12px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-container">
+        <div class="logo-section">
+            <div class="logo">
+                <img src="{{ logo_path }}" alt="{{ site_title }} Logo">
             </div>
-          </div>
-          
-          <div class="d-grid">
-            <button type='submit' class="btn btn-primary btn-lg" style="background:linear-gradient(135deg, #f9d423 0%, #4ca1af 50%, #2ecc71 100%);border:none;">
-              <i class="bi bi-box-arrow-in-right me-2"></i>Login
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
+            <h1 class="organization-name">{{ site_title }}</h1>
+            <p class="system-title">{{ site_subtitle }}</p>
+            <div class="divider"></div>
+        </div>
 
-  <script>
-    document.getElementById('toggle-password').addEventListener('click', function() {
-      const passwordInput = document.getElementById('password-input');
-      const icon = this.querySelector('i');
-      
-      if (passwordInput.type === 'password') {
-        passwordInput.type = 'text';
-        icon.className = 'bi bi-eye-slash-fill';
-        this.title = 'Hide Password';
-        this.setAttribute('aria-label', 'Hide Password');
-      } else {
-        passwordInput.type = 'password';
-        icon.className = 'bi bi-eye-fill';
-        this.title = 'Show Password';
-        this.setAttribute('aria-label', 'Show Password');
-      }
-    });
-  </script>
-{% endblock %}
+        {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
+
+        {% if success %}
+        <div class="alert alert-success">{{ success }}</div>
+        {% endif %}
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="/login">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required autofocus>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+                <span class="password-toggle" onclick="togglePassword()">👁️ Show</span>
+            </div>
+
+            <div class="form-group">
+                <label for="group">Login As</label>
+                <select id="group" name="group" required>
+                    <option value="">Select Role...</option>
+                    {% if groups %}
+                    {% for group_name in groups %}
+                    <option value="{{ group_name }}">{{ group_name }}</option>
+                    {% endfor %}
+                    {% else %}
+                    <option value="Admin">Admin</option>
+                    <option value="manager">Manager</option>
+                    <option value="user">User</option>
+                    {% endif %}
+                </select>
+            </div>
+
+            <button type="submit" class="btn-login">Sign In</button>
+        </form>
+    </div>
+
+    <script>
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const toggleButton = document.querySelector('.password-toggle');
+
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleButton.textContent = '🙈 Hide';
+            } else {
+                passwordInput.type = 'password';
+                toggleButton.textContent = '👁️ Show';
+            }
+        }
+    </script>
+</body>
+
+</html>

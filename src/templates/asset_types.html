@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-tags-fill"></i> Asset Types</h1>
+    <p>Manage asset type classifications used across the system</p>
+</div>
+
+<div class="dashboard" style="margin-bottom:30px;">
+    <div class="card">
+        <div class="card-icon" style="background:linear-gradient(135deg,#667eea,#764ba2);">📋</div>
+        <div class="card-content">
+            <h3>{{ asset_types|length }}</h3>
+            <p>Total Asset Types</p>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-icon" style="background:linear-gradient(135deg,#f093fb,#f5576c);">✅</div>
+        <div class="card-content">
+            <h3>{{ asset_types|selectattr('is_active')|list|length }}</h3>
+            <p>Active Types</p>
+        </div>
+    </div>
+</div>
+
+<!-- Add Form -->
+<div class="form-card" style="margin-bottom:30px;">
+    <h2 style="margin-bottom:20px;">➕ Add Asset Type</h2>
+    <form method="POST" action="/asset-types/add" class="form-grid">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="form-group">
+            <label>Type Name *</label>
+            <input type="text" name="name" required placeholder="e.g., Office Equipment">
+        </div>
+        <div class="form-group">
+            <label>Code</label>
+            <input type="text" name="code" placeholder="e.g., OE" maxlength="20" style="text-transform:uppercase;">
+        </div>
+        <div class="form-group">
+            <label>Description</label>
+            <textarea name="description" rows="2" placeholder="Brief description of this asset type"></textarea>
+        </div>
+        <div class="form-group">
+            <label>Useful Life (years)</label>
+            <input type="number" name="useful_life_years" min="1" max="99" value="5" placeholder="5">
+        </div>
+        <div class="form-group" style="grid-column:1/-1;text-align:right;">
+            <button type="submit" class="btn-primary">💾 Save Asset Type</button>
+        </div>
+    </form>
+</div>
+
+<!-- Table -->
+<div class="table-card">
+    <h2>Asset Types List</h2>
+    {% if asset_types %}
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Name</th>
+                    <th>Code</th>
+                    <th>Description</th>
+                    <th>Useful Life</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for at in asset_types %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><strong>{{ at.name }}</strong></td>
+                    <td><span class="badge badge-info">{{ at.code or '-' }}</span></td>
+                    <td>{{ at.description or '-' }}</td>
+                    <td>{{ at.useful_life_years or 5 }} yrs</td>
+                    <td>
+                        {% if at.is_active %}
+                        <span class="badge" style="background:#27ae60;color:#fff;">Active</span>
+                        {% else %}
+                        <span class="badge" style="background:#e74c3c;color:#fff;">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td class="actions">
+                        <form method="POST" action="/asset-types/delete/{{ at.id }}"
+                            onsubmit="return confirm('Delete this asset type?');" style="display:inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <button type="submit" class="btn-action btn-delete" title="Delete">🗑️</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p style="text-align:center;padding:40px;color:#999;">No asset types found. Add your first asset type above.</p>
+    {% endif %}
+</div>
+{% endblock %}

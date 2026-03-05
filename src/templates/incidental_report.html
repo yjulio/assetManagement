@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-header">
+  <h1><i class="bi bi-exclamation-triangle"></i> Incidental Report</h1>
+  <p>Submit and track incidental findings related to assets</p>
+</div>
+
+<!-- Submit Form -->
+<div class="form-card" style="margin-bottom:30px;">
+  <h2 style="margin-bottom:20px;">📝 Submit Incidental Report</h2>
+  <form method="POST" action="/incidental-report/submit" class="form-grid">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-group">
+      <label>Report Title *</label>
+      <input type="text" name="title" required placeholder="Brief title of the incident">
+    </div>
+    <div class="form-group">
+      <label>Incident Date *</label>
+      <input type="date" name="incident_date" required value="{{ today }}">
+    </div>
+    <div class="form-group">
+      <label>Asset Involved</label>
+      <select name="asset_name">
+        <option value="">-- Select Asset (optional) --</option>
+        {% for asset in assets %}
+        <option value="{{ asset.name }}">{{ asset.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Department</label>
+      <select name="department">
+        <option value="">-- Select Department --</option>
+        {% for dept in departments %}
+        <option value="{{ dept.name }}">{{ dept.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Location</label>
+      <input type="text" name="location" placeholder="Where did it occur?">
+    </div>
+    <div class="form-group">
+      <label>Severity</label>
+      <select name="severity">
+        <option value="low">Low</option>
+        <option value="medium" selected>Medium</option>
+        <option value="high">High</option>
+        <option value="critical">Critical</option>
+      </select>
+    </div>
+    <div class="form-group" style="grid-column:1/-1;">
+      <label>Description *</label>
+      <textarea name="description" rows="4" required placeholder="Describe the incident in detail..."></textarea>
+    </div>
+    <div class="form-group" style="grid-column:1/-1;">
+      <label>Corrective Action Taken</label>
+      <textarea name="action_taken" rows="3" placeholder="What action was taken to resolve this?"></textarea>
+    </div>
+    <div class="form-group" style="grid-column:1/-1;text-align:right;">
+      <button type="submit" class="btn-primary">📋 Submit Report</button>
+    </div>
+  </form>
+</div>
+
+<!-- Reports List -->
+<div class="table-card">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+    <h2>Incidental Reports</h2>
+    <a href="/incidental-report?export=csv" class="btn-secondary">📥 Export</a>
+  </div>
+  {% if reports %}
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr><th>#</th><th>Date</th><th>Title</th><th>Asset</th><th>Dept</th><th>Severity</th><th>Status</th><th>Reported By</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for r in reports %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{{ r.incident_date }}</td>
+          <td><strong>{{ r.title }}</strong></td>
+          <td>{{ r.asset_name or '-' }}</td>
+          <td>{{ r.department or '-' }}</td>
+          <td>
+            {% if r.severity == 'critical' %}
+            <span class="badge" style="background:#8e44ad;color:#fff;">🔴 Critical</span>
+            {% elif r.severity == 'high' %}
+            <span class="badge" style="background:#e74c3c;color:#fff;">⚠️ High</span>
+            {% elif r.severity == 'medium' %}
+            <span class="badge" style="background:#e67e22;color:#fff;">🟡 Medium</span>
+            {% else %}
+            <span class="badge" style="background:#27ae60;color:#fff;">🟢 Low</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if r.status == 'open' %}
+            <span class="badge" style="background:#e74c3c;color:#fff;">Open</span>
+            {% else %}
+            <span class="badge" style="background:#27ae60;color:#fff;">Closed</span>
+            {% endif %}
+          </td>
+          <td>{{ r.reported_by or '-' }}</td>
+          <td class="actions">
+            <a href="/incidental-report/view/{{ r.id }}" class="btn-action" title="View">👁️</a>
+            {% if r.status == 'open' %}
+            <form method="POST" action="/incidental-report/close/{{ r.id }}" style="display:inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <button type="submit" class="btn-action" title="Close Report" onclick="return confirm('Close this report?')">✅</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p style="text-align:center;padding:40px;color:#999;">No incidental reports filed.</p>
+  {% endif %}
+</div>
+{% endblock %}
